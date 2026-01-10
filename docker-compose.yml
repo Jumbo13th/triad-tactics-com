@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      # REQUIRED in production
+      STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      # Optional behavior toggles
+      DISABLE_RATE_LIMITS: ${DISABLE_RATE_LIMITS:-false}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-120}
+    volumes:
+      - db:/app/database
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Put your certs here:
+      #   certs/server.crt
+      #   certs/server.key
+      - ./certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+volumes:
+  db:

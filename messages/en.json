@@ -1,0 +1,126 @@
+{
+  "app": {
+    "title": "TRIAD TACTICS",
+    "subtitle": "ARMA REFORGER SERVER"
+  },
+  "form": {
+    "title": "APPLICATION FORM",
+    "subtitle": "Complete the form below to apply for participation",
+    "loading": "Loading...",
+    "requiredNote": "All fields are required",
+    "ageNote": "We only accept applications from players 18+",
+    "decisionNote": "Please answer the last two questions in detail — we decide who to invite based on them",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "nameHelp": "How should we address you",
+    "age": "Age",
+    "agePlaceholder": "18",
+    "ageHelp": "18+ only",
+    "supportEmail": "triad.tactics@gmail.com",
+    "supportNote": "If something goes wrong during submission, contact",
+    "email": "Email Address",
+    "emailPlaceholder": "your.email@example.com",
+    "emailHelp": "We'll use this to contact you",
+    "nickname": "Desired nickname",
+    "nicknamePlaceholder": "Nickname / callsign",
+    "city": "City",
+    "cityPlaceholder": "Your city",
+    "cityHelp": "For approximate region/time coordination",
+    "country": "Country",
+    "countryPlaceholder": "Your country",
+    "countryHelp": "For approximate region/time coordination",
+    "optional": "optional",
+    "availability": "Typical availability",
+    "availabilityPlaceholder": "Example: weekdays after 18:00, weekends",
+    "availabilityHelp": "Include days and time range (your local time)",
+    "timezone": "Time zone (UTC)",
+    "timezonePlaceholder": "Select your UTC offset",
+    "timezoneHelp": "Helps us schedule sessions",
+    "steamId": "Steam profile URL",
+    "steamIdPlaceholder": "https://steamcommunity.com/profiles/... or https://steamcommunity.com/id/...",
+    "steamIdHelp": "Paste your Steam profile link (profiles/... or id/...). If your profile is public, we may verify Arma Reforger ownership automatically",
+    "experience": "Gaming experience",
+    "experiencePlaceholder": "Tell us about your Arma (A3/Reforger) experience and servers you played on, or your general gaming background",
+    "experienceHelp": "Please answer in detail — this is one of the key questions for the invite decision",
+    "motivation": "Why do you want to join Triad Tactics?",
+    "motivationPlaceholder": "Tell us what you are looking for and what you want to contribute",
+    "motivationHelp": "Please answer in detail — this is one of the key questions for the invite decision",
+    "submit": "SUBMIT APPLICATION",
+    "submitting": "SUBMITTING...",
+    "steamRequiredNote": "Please sign in with Steam before submitting",
+    "success": "APPLICATION SUBMITTED SUCCESSFULLY",
+    "successMessage": "Your application has been received. We will review it and contact you soon.",
+    "backToForm": "BACK TO FORM",
+    "steamAuth": {
+      "title": "Steam verification",
+      "notConnected": "Not connected. Please sign in with Steam to continue",
+      "help": "We require Steam sign-in so we can verify that your account owns Arma Reforger",
+      "clickToConnect": "Click this button to sign in",
+      "connectedAsName": "Connected as {name}",
+      "connectedAsId": "Connected (SteamID64: {steamid64})",
+      "connect": "SIGN IN WITH STEAM",
+      "disconnect": "DISCONNECT",
+      "refresh": "REFRESH"
+    },
+    "rateLimit": {
+      "title": "Already submitted",
+      "message": "You already submitted the form. If you want to resubmit, try again after 2 minutes",
+      "retryIn": "Try again in {time}",
+      "close": "OK"
+    },
+    "duplicate": {
+      "title": "Already submitted",
+      "message": "You have already submitted an application with this Steam account",
+      "close": "OK"
+    },
+    "popup": {
+      "validationTitle": "Please check the form",
+      "message": "Fix the fields below and try again",
+      "errorTitle": "Error",
+      "close": "OK"
+    },
+    "errors": {
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidAge": "Please enter a valid age",
+      "ageMin": "We only accept 18+ applications",
+      "minLength": "Please provide more details (minimum {min} characters)",
+      "maxLength": "Please keep it under {max} characters",
+      "invalidSteamUrl": "Please enter a valid Steam profile URL",
+      "serverError": "An error occurred. Please try again later.",
+      "duplicate": "An application with this email or Steam ID already exists",
+      "rateLimited": "Too many attempts. Please try again later.",
+      "steamNotConnected": "Please sign in with Steam before submitting",
+      "steamApiUnavailable": "Steam verification is temporarily unavailable. Please try again later.",
+      "steamNoGame": "This Steam account does not appear to own Arma Reforger",
+      "steamPrivate": "Your Steam profile is private. Please set it to Public so we can verify Arma Reforger ownership.",
+      "steamInvalidProfile": "We couldn't resolve this Steam profile link. Please paste a valid steamcommunity.com profile URL."
+    }
+  }
+  ,
+  "welcome": {
+    "applyButton": "Join Games",
+    "applyButtonShort": "Join Games",
+    "backToWelcome": "Back to home",
+    "aboutTitle": "Welcome to Triad Tactics",
+    "aboutP1": "Triad Tactics is an Arma Reforger project focused on immersive, teamwork-driven military operations inside the game. Our goal is to deliver sessions that feel structured and believable: carefully prepared scenarios, authentic loadouts, vehicles, and a environment.",
+    "aboutP2": "The server is created and maintained by Triad Team. We welcome players from all over the world - we’ll help you get settled and feel at home in our community.",
+    "highlightsTitle": "What to expect:",
+    "highlights": {
+      "1": "Mission scenarios with an emphasis on tactics and coordination",
+      "2": "Period-appropriate gear and vehicles for each scenario",
+      "3": "Friendly community and support for new players"
+    },
+    "galleryTitle": "Screenshots",
+    "gallerySubtitle": "A few moments from our sessions",
+    "gallery": {
+      "items": {
+        "1": { "alt": "Triad Tactics gameplay screenshot 1" },
+        "2": { "alt": "Triad Tactics gameplay screenshot 2" },
+        "3": { "alt": "Triad Tactics gameplay screenshot 3" }
+      }
+    },
+    "disclaimerTitle": "Important note",
+    "disclaimerText": "Triad Tactics is a gaming project within Arma Reforger. We do not support, promote, or justify real-world war, violence, or hatred, and we do not create missions that depict ongoing real-world conflicts."
+  }
+}

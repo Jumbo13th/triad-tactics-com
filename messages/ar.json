@@ -1,0 +1,126 @@
+{
+  "app": {
+    "title": "TRIAD TACTICS",
+    "subtitle": "ARMA REFORGER SERVER"
+  },
+  "form": {
+    "title": "نموذج الطلب",
+    "subtitle": "أكمل النموذج أدناه للتقديم للمشاركة",
+    "loading": "جاري التحميل...",
+    "requiredNote": "جميع الحقول إلزامية",
+    "ageNote": "نقبل الطلبات من عمر 18+ فقط",
+    "decisionNote": "يرجى الإجابة بتفصيل على آخر سؤالين لأن قرار الدعوة يعتمد عليهما",
+    "name": "الاسم",
+    "namePlaceholder": "اسمك",
+    "nameHelp": "كيف تفضل أن نناديك",
+    "age": "العمر",
+    "agePlaceholder": "18",
+    "ageHelp": "18+ فقط",
+    "supportEmail": "triad.tactics@gmail.com",
+    "supportNote": "إذا حدثت مشكلة أثناء الإرسال، تواصل معنا على",
+    "email": "عنوان البريد الإلكتروني",
+    "emailPlaceholder": "your.email@example.com",
+    "emailHelp": "سنستخدم هذا البريد للتواصل معك",
+    "nickname": "الاسم داخل اللعبة (اللقب)",
+    "nicknamePlaceholder": "الاسم / النداء",
+    "city": "المدينة",
+    "cityPlaceholder": "مدينتك",
+    "cityHelp": "لمعرفة منطقتك وتوقيتك تقريباً",
+    "country": "الدولة",
+    "countryPlaceholder": "دولتك",
+    "countryHelp": "لمعرفة منطقتك وتوقيتك تقريباً",
+    "optional": "اختياري",
+    "availability": "أوقات تواجدك المعتادة",
+    "availabilityPlaceholder": "مثال: أيام الأسبوع بعد 18:00، عطلات نهاية الأسبوع",
+    "availabilityHelp": "اذكر الأيام ونطاق الوقت (بتوقيتك المحلي)",
+    "timezone": "المنطقة الزمنية (UTC)",
+    "timezonePlaceholder": "اختر فرق التوقيت عن UTC",
+    "timezoneHelp": "يساعدنا ذلك على جدولة الجلسات",
+    "steamId": "رابط ملف Steam الشخصي",
+    "steamIdPlaceholder": "https://steamcommunity.com/profiles/... أو https://steamcommunity.com/id/...",
+    "steamIdHelp": "الصق رابط ملفك على Steam (profiles/... أو id/...). إذا كان ملفك عاماً فقد نتحقق تلقائياً من امتلاك Arma Reforger",
+    "experience": "خبرتك في الألعاب",
+    "experiencePlaceholder": "أخبرنا عن خبرتك في Arma (A3/Reforger) والخوادم التي لعبت عليها، أو عن خبرتك العامة في الألعاب",
+    "experienceHelp": "يرجى الإجابة بتفصيل — هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
+    "motivation": "لماذا تريد الانضمام إلى Triad Tactics؟",
+    "motivationPlaceholder": "أخبرنا بما تبحث عنه وكيف ترغب في المساهمة",
+    "motivationHelp": "يرجى الإجابة بتفصيل — هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
+    "submit": "إرسال الطلب",
+    "submitting": "جاري الإرسال...",
+    "steamRequiredNote": "يرجى تسجيل الدخول عبر Steam قبل الإرسال",
+    "success": "تم إرسال الطلب بنجاح",
+    "successMessage": "تم استلام طلبك. سنقوم بمراجعته والاتصال بك قريباً.",
+    "backToForm": "العودة إلى النموذج",
+    "steamAuth": {
+      "title": "التحقق من Steam",
+      "notConnected": "غير متصل. يرجى تسجيل الدخول عبر Steam للمتابعة",
+      "help": "نطلب تسجيل الدخول عبر Steam حتى نتمكن من التحقق من أن حسابك يمتلك Arma Reforger",
+      "clickToConnect": "اضغط على هذا الزر لتسجيل الدخول",
+      "connectedAsName": "متصل باسم {name}",
+      "connectedAsId": "متصل (SteamID64: {steamid64})",
+      "connect": "تسجيل الدخول عبر STEAM",
+      "disconnect": "قطع الاتصال",
+      "refresh": "تحديث"
+    },
+    "rateLimit": {
+      "title": "تم الإرسال بالفعل",
+      "message": "لقد قمت بإرسال النموذج بالفعل. إذا أردت إعادة الإرسال، حاول مرة أخرى بعد دقيقتين",
+      "retryIn": "حاول مرة أخرى خلال {time}",
+      "close": "حسناً"
+    },
+    "duplicate": {
+      "title": "تم الإرسال بالفعل",
+      "message": "لقد قمت بإرسال طلب بالفعل من حساب Steam هذا",
+      "close": "حسناً"
+    },
+    "popup": {
+      "validationTitle": "يرجى التحقق من النموذج",
+      "validationMessage": "قم بتصحيح الحقول أدناه ثم حاول مرة أخرى",
+      "errorTitle": "خطأ",
+      "close": "حسناً"
+    },
+    "errors": {
+      "required": "هذا الحقل مطلوب",
+      "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح",
+      "invalidAge": "يرجى إدخال عمر صحيح",
+      "ageMin": "نقبل الطلبات من عمر 18+ فقط",
+      "minLength": "يرجى تقديم المزيد من التفاصيل (الحد الأدنى {min} حرفاً)",
+      "maxLength": "يرجى تقصير النص (الحد الأقصى {max} حرفاً)",
+      "invalidSteamUrl": "يرجى إدخال رابط صحيح لملف Steam الشخصي",
+      "serverError": "حدث خطأ. يرجى المحاولة مرة أخرى لاحقاً.",
+      "duplicate": "يوجد طلب بالفعل بهذا البريد الإلكتروني أو Steam ID",
+      "rateLimited": "محاولات كثيرة جداً. يرجى المحاولة مرة أخرى لاحقاً.",
+      "steamNotConnected": "يرجى تسجيل الدخول عبر Steam قبل الإرسال",
+      "steamApiUnavailable": "التحقق من Steam غير متاح مؤقتاً. يرجى المحاولة لاحقاً.",
+      "steamNoGame": "بحسب بيانات Steam هذا الحساب لا يمتلك Arma Reforger",
+      "steamPrivate": "ملفك الشخصي على Steam خاص. يرجى جعله عاماً حتى نتمكن من التحقق من امتلاك Arma Reforger.",
+      "steamInvalidProfile": "تعذر علينا تحديد ملف Steam من هذا الرابط. يرجى لصق رابط صحيح لملف steamcommunity.com الشخصي."
+    }
+  }
+  ,
+  "welcome": {
+    "applyButton": "انضم للألعاب",
+    "applyButtonShort": "انضم للألعاب",
+    "backToWelcome": "العودة إلى الصفحة الرئيسية",
+    "aboutTitle": "مرحباً بك في Triad Tactics",
+    "aboutP1": "Triad Tactics هو مشروع لـ Arma Reforger يركّز على جلسات غامرة تعتمد على العمل الجماعي والعمليات العسكرية داخل اللعبة. هدفنا تقديم تجربة منظمة وقابلة للتصديق: سيناريوهات مُحضّرة بعناية، عتاد واقعي، مركبات، وبيئة متناسقة.",
+    "aboutP2": "الخادم مُنشأ ويُدار من قبل Triad Team. نرحّب باللاعبين من جميع أنحاء العالم - سنساعدك على التأقلم والانضمام إلى المجتمع بسهولة.",
+    "highlightsTitle": "ما الذي تتوقعه",
+    "highlights": {
+      "1": "سيناريوهات مهام تركّز على التكتيك والتنسيق",
+      "2": "عتاد ومركبات مناسبة للفترة وسيناريو المهمة",
+      "3": "مجتمع ودود ودعم للاعبين الجدد"
+    },
+    "galleryTitle": "لقطات الشاشة",
+    "gallerySubtitle": "بعض اللحظات من جلساتنا",
+    "gallery": {
+      "items": {
+        "1": { "alt": "لقطة لعب Triad Tactics 1" },
+        "2": { "alt": "لقطة لعب Triad Tactics 2" },
+        "3": { "alt": "لقطة لعب Triad Tactics 3" }
+      }
+    },
+    "disclaimerTitle": "تنبيه مهم",
+    "disclaimerText": "Triad Tactics هو مشروع ألعاب ومحاكاة خيالية ضمن Arma Reforger. نحن لا ندعم أو نروّج أو نبرّر الحروب الواقعية أو العنف أو الكراهية، كما أننا لا نصمّم مهاماً تُجسّد صراعات واقعية جارية."
+  }
+}
