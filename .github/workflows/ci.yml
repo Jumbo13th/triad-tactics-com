@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
+
+      TEST_STEAMID64_OWNED: ${{ vars.TEST_STEAMID64_OWNED }}
+      TEST_STEAMID64_NOT_OWNED: ${{ vars.TEST_STEAMID64_NOT_OWNED }}
+      TEST_STEAMID64_PRIVATE: ${{ vars.TEST_STEAMID64_PRIVATE }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint (format check)
+      run: npm run lint
+
+    - name: Tests
+      run: npm test
