@@ -17,7 +17,7 @@ export default function WelcomePage() {
 
   return (
     <main className="min-h-screen bg-neutral-950">
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
+      <div className="mx-auto max-w-4xl px-4 pt-6 pb-10 sm:pt-8 sm:pb-14">
         <header className="flex flex-col gap-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div className="flex min-w-0 items-start gap-4">
