@@ -32,3 +32,25 @@
 - Nginx listens on `80` and `443`; the Next.js app runs internally on `3000`.
 - Steam sign-in uses `x-forwarded-host`/`x-forwarded-proto` from Nginx; keep the proxy config as-is.
 - Admin is an API endpoint, not a UI: GET `/api/admin` with header `x-admin-password: <ADMIN_PASSWORD>`.
+
+## Firewall (Ubuntu)
+
+Expose only what you need publicly:
+- `80/tcp` and `443/tcp` (Nginx)
+- `22/tcp` (SSH)
+
+Do **not** publish the Next.js app port (`3000`) to the internet. In `docker-compose.yml`, keep it internal (no `ports: "3000:3000"` on the `app` service).
+
+### UFW example
+
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+
+sudo ufw enable
+sudo ufw status verbose
+```
