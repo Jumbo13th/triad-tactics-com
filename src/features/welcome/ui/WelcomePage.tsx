@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import LanguageSwitcher from '@/features/language/ui/LanguageSwitcher';
+import SocialLinks from '@/features/social/ui/SocialLinks';
 import { Link } from '@/i18n/routing';
 import ScreenshotStrip from '@/features/welcome/ui/ScreenshotStrip';
 
@@ -90,7 +91,10 @@ export default function WelcomePage() {
         </section>
 
         <footer className="mt-10 border-t border-neutral-900 pt-6 text-sm text-neutral-500">
-          <p>&copy; 2026 Triad Tactics</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p>&copy; 2026 Triad Tactics</p>
+            <SocialLinks />
+          </div>
         </footer>
       </div>
     </main>
