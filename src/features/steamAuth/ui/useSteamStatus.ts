@@ -10,6 +10,7 @@ export type SteamStatus =
 			personaName: string | null;
 			hasExisting: boolean;
 			submittedAt: string | null;
+			accessLevel: 'guest' | 'player' | 'admin';
 	  };
 
 export function useSteamStatus() {

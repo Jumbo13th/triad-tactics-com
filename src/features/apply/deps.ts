@@ -7,6 +7,9 @@ export const submitApplicationDeps: SubmitApplicationDeps = {
 		insertApplication: (application) => dbOperations.insertApplication(application),
 		getBySteamId64: dbOperations.getBySteamId64
 	},
+	users: {
+		upsertUser: dbOperations.upsertUser
+	},
 	steam: {
 		verifySteamOwnsGameOrReject
 	}

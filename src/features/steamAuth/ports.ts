@@ -19,9 +19,20 @@ export type SteamAuthApplicationsRepo = {
 	getBySteamId64: (steamid64: string) => { created_at?: string } | null;
 };
 
+export type SteamAuthUsersRepo = {
+	upsertUser: (user: { steamid64: string; persona_name?: string | null }) => { success: boolean };
+	getUserBySteamId64: (steamid64: string) => { player_confirmed_at?: string | null } | null;
+};
+
+export type SteamAuthAdminAccess = {
+	isAdminSteamId: (steamid64: string) => boolean;
+};
+
 export type SteamAuthDeps = {
 	sessions: SteamAuthSessionRepo;
 	applications: SteamAuthApplicationsRepo;
+	users: SteamAuthUsersRepo;
+	admin: SteamAuthAdminAccess;
 	openId: SteamOpenIdVerifier;
 	persona: SteamPersonaFetcher;
 };

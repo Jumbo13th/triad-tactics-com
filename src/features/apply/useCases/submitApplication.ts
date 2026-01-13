@@ -60,6 +60,9 @@ export async function submitApplication(
     return { ok: false, status: 400, json: { error: 'steam_not_connected' } };
   }
 
+	// Ensure the user exists in our DB as soon as they interact with the system.
+	deps.users.upsertUser({ steamid64, persona_name: personaName });
+
   if (!input.bypassRateLimit) {
     if (!input.rateLimitDecision.allowed) {
       return {

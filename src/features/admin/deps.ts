@@ -1,8 +1,15 @@
 import { dbOperations } from '@/platform/db';
-import type { ListApplicationsDeps } from './ports';
+import type { ConfirmApplicationDeps, ListApplicationsDeps } from './ports';
 
 export const listApplicationsDeps: ListApplicationsDeps<ReturnType<typeof dbOperations.getAllApplications>[number]> = {
 	repo: {
-		getAllApplications: dbOperations.getAllApplications
+		getApplicationsByStatus: dbOperations.getApplicationsByStatus,
+		countApplicationsByStatus: dbOperations.countApplicationsByStatus
+	}
+};
+
+export const confirmApplicationDeps: ConfirmApplicationDeps = {
+	repo: {
+		confirmApplication: dbOperations.confirmApplication
 	}
 };

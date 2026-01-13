@@ -4,12 +4,16 @@ import type { SubmitApplicationDeps } from '@/features/apply/ports';
 
 function makeDeps(overrides?: {
 	repo?: Partial<SubmitApplicationDeps['repo']>;
+	users?: Partial<SubmitApplicationDeps['users']>;
 	steam?: Partial<SubmitApplicationDeps['steam']>;
 }): SubmitApplicationDeps {
 	const deps: SubmitApplicationDeps = {
 		repo: {
 			insertApplication: () => ({ success: true, id: 1 }),
 			getBySteamId64: () => null
+		},
+		users: {
+			upsertUser: () => ({ success: true })
 		},
 		steam: {
 			verifySteamOwnsGameOrReject: async () => ({ ok: true })
@@ -19,6 +23,7 @@ function makeDeps(overrides?: {
 		...deps,
 		...overrides,
 		repo: { ...deps.repo, ...(overrides?.repo ?? {}) },
+		users: { ...deps.users, ...(overrides?.users ?? {}) },
 		steam: { ...deps.steam, ...(overrides?.steam ?? {}) }
 	};
 }

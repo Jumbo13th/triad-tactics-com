@@ -28,12 +28,22 @@
     "forbiddenText": "У этого Steam аккаунта нет прав администратора.",
     "applicationsTitle": "Заявки",
     "applicationsCount": "Всего: {count}",
+    "tabActive": "Активные",
+    "tabArchived": "Архив",
+    "searchPlaceholder": "Поиск по имени / email / Steam",
+    "noMatches": "Совпадений не найдено.",
     "noApplications": "Пока нет заявок.",
     "loadError": "Не удалось загрузить заявки. Попробуйте ещё раз.",
     "colSteam": "Steam",
     "colEmail": "Email",
     "colLocale": "Язык",
-    "colCreated": "Дата"
+    "colCreated": "Дата",
+    "confirm": "Подтвердить",
+    "confirming": "Подтверждаем...",
+    "confirmed": "Подтверждено",
+    "confirmedAt": "Подтверждено",
+    "confirmedBy": "Подтвердил {steamid64}",
+    "confirmError": "Не удалось подтвердить заявку. Попробуйте ещё раз."
   },
   "form": {
     "title": "ФОРМА ЗАЯВКИ",

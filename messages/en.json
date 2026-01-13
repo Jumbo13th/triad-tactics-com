@@ -28,12 +28,22 @@
     "forbiddenText": "Your Steam account does not have admin access.",
     "applicationsTitle": "Applications",
     "applicationsCount": "{count} total",
+    "tabActive": "Active",
+    "tabArchived": "Archived",
+    "searchPlaceholder": "Search by name / email / Steam",
+    "noMatches": "No matching applications.",
     "noApplications": "No applications yet.",
     "loadError": "Couldn't load applications. Please try again. ",
     "colSteam": "Steam",
     "colEmail": "Email",
     "colLocale": "Locale",
-    "colCreated": "Created"
+    "colCreated": "Created",
+    "confirm": "Confirm",
+    "confirming": "Confirming...",
+    "confirmed": "Confirmed",
+    "confirmedAt": "Confirmed",
+    "confirmedBy": "Confirmed by {steamid64}",
+    "confirmError": "Couldn't confirm the application. Please try again."
   },
   "form": {
     "title": "APPLICATION FORM",

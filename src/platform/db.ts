@@ -100,6 +100,33 @@ const migrations: Migration[] = [
 					OR json_type(answers, '$.verified_game_access') IS NOT NULL
 				);
 		`
+	},
+	{
+		id: 4,
+		name: 'users_and_application_confirmation',
+		up: `
+			-- Users represent Steam identities known to our system.
+			CREATE TABLE IF NOT EXISTS users (
+				steamid64 TEXT PRIMARY KEY,
+				persona_name TEXT,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				player_confirmed_at DATETIME,
+				confirmed_application_id INTEGER,
+				FOREIGN KEY (confirmed_application_id) REFERENCES applications(id)
+			);
+
+			-- Add application confirmation metadata.
+			ALTER TABLE applications ADD COLUMN confirmed_at DATETIME;
+			ALTER TABLE applications ADD COLUMN confirmed_by_steamid64 TEXT;
+
+			CREATE INDEX IF NOT EXISTS idx_users_player_confirmed_at ON users(player_confirmed_at);
+			CREATE INDEX IF NOT EXISTS idx_applications_confirmed_at ON applications(confirmed_at);
+
+			-- Backfill users for existing applications (migration).
+			INSERT OR IGNORE INTO users (steamid64, persona_name, created_at)
+			SELECT steamid64, persona_name, created_at
+			FROM applications;
+		`
 	}
 ];
 
@@ -201,6 +228,16 @@ export interface Application {
 	ip_address?: string;
 	locale?: string;
 	created_at?: string;
+	confirmed_at?: string | null;
+	confirmed_by_steamid64?: string | null;
+}
+
+export interface User {
+	steamid64: string;
+	persona_name?: string | null;
+	created_at?: string;
+	player_confirmed_at?: string | null;
+	confirmed_application_id?: number | null;
 }
 
 export interface SteamSession {
@@ -228,6 +265,16 @@ type ApplicationRow = {
 	ip_address: string | null;
 	locale: string | null;
 	created_at: string;
+	confirmed_at: string | null;
+	confirmed_by_steamid64: string | null;
+};
+
+type UserRow = {
+	steamid64: string;
+	persona_name: string | null;
+	created_at: string;
+	player_confirmed_at: string | null;
+	confirmed_application_id: number | null;
 };
 
 export const dbOperations = {
@@ -330,7 +377,7 @@ export const dbOperations = {
 	getAllApplications: () => {
 		const db = getDb();
 		const stmt = db.prepare(`
-			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at
+			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
 			FROM applications
 			ORDER BY created_at DESC
 		`);
@@ -340,14 +387,59 @@ export const dbOperations = {
 			...row,
 			ip_address: row.ip_address ?? undefined,
 			locale: row.locale ?? undefined,
+			confirmed_at: row.confirmed_at ?? null,
+			confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
 			answers: JSON.parse(row.answers) as Application['answers']
 		}));
+	},
+
+	getApplicationsByStatus: (status: 'active' | 'archived' | 'all') => {
+		const db = getDb();
+		const where =
+			status === 'active'
+				? 'WHERE confirmed_at IS NULL'
+				: status === 'archived'
+					? 'WHERE confirmed_at IS NOT NULL'
+					: '';
+		const orderBy = status === 'archived' ? 'ORDER BY confirmed_at DESC' : 'ORDER BY created_at DESC';
+		const stmt = db.prepare(`
+			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+			FROM applications
+			${where}
+			${orderBy}
+		`);
+		const rows = stmt.all() as ApplicationRow[];
+		return rows.map((row) => ({
+			...row,
+			ip_address: row.ip_address ?? undefined,
+			locale: row.locale ?? undefined,
+			confirmed_at: row.confirmed_at ?? null,
+			confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+			answers: JSON.parse(row.answers) as Application['answers']
+		}));
+	},
+
+	countApplicationsByStatus: (status: 'active' | 'archived' | 'all') => {
+		const db = getDb();
+		const where =
+			status === 'active'
+				? 'WHERE confirmed_at IS NULL'
+				: status === 'archived'
+					? 'WHERE confirmed_at IS NOT NULL'
+					: '';
+		const stmt = db.prepare(`
+			SELECT COUNT(1) as count
+			FROM applications
+			${where}
+		`);
+		const row = stmt.get() as { count: number } | undefined;
+		return row?.count ?? 0;
 	},
 
 	getByEmail: (email: string) => {
 		const db = getDb();
 		const stmt = db.prepare(`
-			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at
+			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
 			FROM applications
 			WHERE email = ?
 		`);
@@ -358,6 +450,8 @@ export const dbOperations = {
 			...row,
 			ip_address: row.ip_address ?? undefined,
 			locale: row.locale ?? undefined,
+			confirmed_at: row.confirmed_at ?? null,
+			confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
 			answers: JSON.parse(row.answers) as Application['answers']
 		};
 	},
@@ -365,7 +459,7 @@ export const dbOperations = {
 	getBySteamId64: (steamid64: string) => {
 		const db = getDb();
 		const stmt = db.prepare(`
-			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at
+			SELECT id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
 			FROM applications
 			WHERE steamid64 = ?
 		`);
@@ -376,8 +470,90 @@ export const dbOperations = {
 			...row,
 			ip_address: row.ip_address ?? undefined,
 			locale: row.locale ?? undefined,
+			confirmed_at: row.confirmed_at ?? null,
+			confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
 			answers: JSON.parse(row.answers) as Application['answers']
 		};
+	},
+
+	upsertUser: (user: { steamid64: string; persona_name?: string | null }) => {
+		const db = getDb();
+		const insert = db.prepare(`
+			INSERT OR IGNORE INTO users (steamid64, persona_name)
+			VALUES (?, ?)
+		`);
+		const update = db.prepare(`
+			UPDATE users
+			SET persona_name = COALESCE(?, persona_name)
+			WHERE steamid64 = ?
+		`);
+
+		try {
+			const run = db.transaction(() => {
+				insert.run(user.steamid64, user.persona_name ?? null);
+				update.run(user.persona_name ?? null, user.steamid64);
+			});
+			run();
+			return { success: true as const };
+		} catch {
+			return { success: false as const, error: 'database_error' as const };
+		}
+	},
+
+	getUserBySteamId64: (steamid64: string): User | null => {
+		const db = getDb();
+		const stmt = db.prepare(`
+			SELECT steamid64, persona_name, created_at, player_confirmed_at, confirmed_application_id
+			FROM users
+			WHERE steamid64 = ?
+		`);
+
+		const row = stmt.get(steamid64) as UserRow | undefined;
+		if (!row) return null;
+		return row;
+	},
+
+	confirmApplication: (applicationId: number, confirmedBySteamId64: string) => {
+		const db = getDb();
+		const selectApp = db.prepare(`
+			SELECT id, steamid64, persona_name
+			FROM applications
+			WHERE id = ?
+		`);
+		const updateApp = db.prepare(`
+			UPDATE applications
+			SET confirmed_at = COALESCE(confirmed_at, CURRENT_TIMESTAMP),
+				confirmed_by_steamid64 = COALESCE(confirmed_by_steamid64, ?)
+			WHERE id = ?
+		`);
+		const ensureUser = db.prepare(`
+			INSERT OR IGNORE INTO users (steamid64, persona_name)
+			VALUES (?, ?)
+		`);
+		const updateUser = db.prepare(`
+			UPDATE users
+			SET player_confirmed_at = COALESCE(player_confirmed_at, CURRENT_TIMESTAMP),
+				confirmed_application_id = COALESCE(confirmed_application_id, ?)
+			WHERE steamid64 = ?
+		`);
+
+		try {
+			const run = db.transaction(() => {
+				const row = selectApp.get(applicationId) as
+					| { id: number; steamid64: string; persona_name: string | null }
+					| undefined;
+				if (!row) return { success: false as const, error: 'not_found' as const };
+
+				updateApp.run(confirmedBySteamId64, applicationId);
+				ensureUser.run(row.steamid64, row.persona_name);
+				updateUser.run(applicationId, row.steamid64);
+				return { success: true as const };
+			});
+
+			return run();
+		} catch {
+			return { success: false as const, error: 'database_error' as const };
+		}
 	},
 
 	deleteBySteamId64: (steamid64: string) => {
@@ -398,7 +574,7 @@ export const dbOperations = {
 	clearAll: () => {
 		const db = getDb();
 		try {
-			db.exec('DELETE FROM applications; DELETE FROM steam_sessions;');
+			db.exec('DELETE FROM applications; DELETE FROM steam_sessions; DELETE FROM users;');
 			return { success: true };
 		} catch {
 			return { success: false, error: 'database_error' };

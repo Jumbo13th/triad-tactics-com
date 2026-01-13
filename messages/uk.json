@@ -28,12 +28,22 @@
     "forbiddenText": "Цей Steam акаунт не має прав адміністратора.",
     "applicationsTitle": "Заявки",
     "applicationsCount": "Усього: {count}",
+    "tabActive": "Активні",
+    "tabArchived": "Архів",
+    "searchPlaceholder": "Пошук за ім’ям / email / Steam",
+    "noMatches": "Нічого не знайдено.",
     "noApplications": "Поки що заявок немає.",
     "loadError": "Не вдалося завантажити заявки. Спробуйте ще раз.",
     "colSteam": "Steam",
     "colEmail": "Email",
     "colLocale": "Мова",
-    "colCreated": "Дата"
+    "colCreated": "Дата",
+    "confirm": "Підтвердити",
+    "confirming": "Підтверджуємо...",
+    "confirmed": "Підтверджено",
+    "confirmedAt": "Підтверджено",
+    "confirmedBy": "Підтвердив {steamid64}",
+    "confirmError": "Не вдалося підтвердити заявку. Спробуйте ще раз."
   },
   "form": {
     "title": "ФОРМА ЗАЯВКИ",

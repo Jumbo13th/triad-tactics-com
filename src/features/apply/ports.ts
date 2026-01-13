@@ -14,5 +14,8 @@ export type ApplySteamVerifier = {
 
 export type SubmitApplicationDeps = {
 	repo: ApplyApplicationRepo;
+	users: {
+		upsertUser: (user: { steamid64: string; persona_name?: string | null }) => { success: boolean };
+	};
 	steam: ApplySteamVerifier;
 };

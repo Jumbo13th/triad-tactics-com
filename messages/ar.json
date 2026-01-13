@@ -28,12 +28,22 @@
     "forbiddenText": "حساب Steam هذا لا يملك صلاحيات الإدارة.",
     "applicationsTitle": "الطلبات",
     "applicationsCount": "الإجمالي: {count}",
+    "tabActive": "نشطة",
+    "tabArchived": "مؤرشفة",
+    "searchPlaceholder": "ابحث بالاسم / البريد / Steam",
+    "noMatches": "لا توجد طلبات مطابقة.",
     "noApplications": "لا توجد طلبات بعد.",
     "loadError": "تعذر تحميل الطلبات. حاول مرة أخرى.",
     "colSteam": "Steam",
     "colEmail": "البريد",
     "colLocale": "اللغة",
-    "colCreated": "التاريخ"
+    "colCreated": "التاريخ",
+    "confirm": "تأكيد",
+    "confirming": "جارٍ التأكيد...",
+    "confirmed": "تم التأكيد",
+    "confirmedAt": "تم التأكيد",
+    "confirmedBy": "تم التأكيد بواسطة {steamid64}",
+    "confirmError": "تعذر تأكيد الطلب. حاول مرة أخرى."
   },
   "form": {
     "title": "نموذج الطلب",
