@@ -1,6 +1,6 @@
 const requiredInProduction = [
-  'ADMIN_PASSWORD',
   'STEAM_WEB_API_KEY',
+  'ADMIN_STEAM_IDS',
   // Ensures stable Server Action encryption keys across deploys/instances.
   'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
 ];

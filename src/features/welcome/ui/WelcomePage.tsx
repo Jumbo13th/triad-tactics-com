@@ -1,8 +1,6 @@
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import LanguageSwitcher from '@/features/language/ui/LanguageSwitcher';
 import SocialLinks from '@/features/social/ui/SocialLinks';
-import { Link } from '@/i18n/routing';
+import SiteHeader from '@/features/appShell/ui/SiteHeader';
 import ScreenshotStrip from '@/features/welcome/ui/ScreenshotStrip';
 
 export default function WelcomePage() {
@@ -18,43 +16,14 @@ export default function WelcomePage() {
   return (
     <main className="min-h-screen bg-neutral-950">
       <div className="mx-auto max-w-4xl px-4 pt-6 pb-10 sm:pt-8 sm:pb-14">
-        <header className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <div className="flex min-w-0 items-start gap-4">
-              <Link href="/" aria-label={t('title')} className="shrink-0">
-                <Image
-                  src="/triad-logo.png"
-                  alt="Triad Tactics"
-                  width={80}
-                  height={80}
-                  priority
-                />
-              </Link>
-              <div className="min-w-0 max-w-2xl">
-                <h1 className="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
-                  <Link href="/" className="hover:text-[color:var(--accent)]">
-                    {t('title')}
-                  </Link>
-                </h1>
-                <div className="mt-3 h-px w-24 bg-[color:var(--accent)]/80" />
-                <p className="mt-3 text-base text-neutral-300">{t('subtitle')}</p>
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Link
-                    href="/apply"
-                    className="inline-flex items-center justify-center rounded-xl bg-[color:var(--accent)] px-6 py-3.5 text-base font-semibold tracking-wide text-neutral-950 shadow-lg shadow-black/40 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
-                  >
-                    {tw('applyButtonShort')}
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <div className="pt-1 sm:shrink-0 sm:self-auto">
-              <LanguageSwitcher />
-            </div>
-          </div>
-        </header>
+        <SiteHeader
+          homeAriaLabel={t('title')}
+          title={t('title')}
+          subtitle={t('subtitle')}
+          primaryAction={{ href: '/apply', label: tw('applyButtonShort') }}
+        />
 
-        <section className="mt-10 grid gap-8">
+        <section className="mt-6 grid gap-8">
           <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
             <h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">
               {tw('aboutTitle')}

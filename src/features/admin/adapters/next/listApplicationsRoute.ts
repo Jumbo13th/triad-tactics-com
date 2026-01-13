@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_PASSWORD } from '@/platform/env';
 import { listApplications } from '@/features/admin/useCases/listApplications';
 import { listApplicationsDeps } from '@/features/admin/deps';
 import { errorToLogObject, logger } from '@/platform/logger';
+import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
+import { steamAuthDeps } from '@/features/steamAuth/deps';
+import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
+import { isAdminConfigured, isAdminSteamId } from '@/platform/admin';
 
 export async function getAdminApplicationsRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		if (!ADMIN_PASSWORD) {
+		if (!isAdminConfigured()) {
 			return NextResponse.json({ error: 'admin_not_configured' }, { status: 500 });
 		}
 
-		const password = request.headers.get('x-admin-password');
-		if (password !== ADMIN_PASSWORD) {
-			return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value ?? null;
+		const identity = getSteamIdentity(steamAuthDeps, sid);
+		if (!identity.connected) {
+			return NextResponse.json({ error: 'steam_not_logged_in' }, { status: 401 });
+		}
+		if (!isAdminSteamId(identity.steamid64)) {
+			return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 		}
 
 		const { applications } = listApplications(listApplicationsDeps);

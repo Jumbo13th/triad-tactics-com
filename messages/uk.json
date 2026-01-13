@@ -3,6 +3,38 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "Навігація",
+    "home": "Головна",
+    "joinGames": "Приєднатися"
+  },
+  "auth": {
+    "signInSteam": "Увійти через Steam",
+    "signOut": "Вийти",
+    "signingOut": "Вихід...",
+    "signedInAs": "Ви увійшли як {name}",
+    "notAssociatedWithValve": "Цей сервіс не пов’язаний з Valve Corp.",
+    "clickSteamButton": "Натисніть кнопку вище, щоб продовжити."
+  },
+  "admin": {
+    "nav": "Адмін",
+    "title": "Адмін",
+    "subtitle": "Панель адміністратора",
+    "loading": "Завантаження...",
+    "loginTitle": "Доступ адміністратора",
+    "loginText": "Увійдіть через Steam, щоб продовжити.",
+    "signInSteam": "Увійти через Steam",
+    "forbiddenTitle": "Доступ заборонено",
+    "forbiddenText": "Цей Steam акаунт не має прав адміністратора.",
+    "applicationsTitle": "Заявки",
+    "applicationsCount": "Усього: {count}",
+    "noApplications": "Поки що заявок немає.",
+    "loadError": "Не вдалося завантажити заявки. Спробуйте ще раз.",
+    "colSteam": "Steam",
+    "colEmail": "Email",
+    "colLocale": "Мова",
+    "colCreated": "Дата"
+  },
   "form": {
     "title": "ФОРМА ЗАЯВКИ",
     "subtitle": "Заповніть форму нижче для подачі заявки на участь",

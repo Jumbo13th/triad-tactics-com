@@ -3,6 +3,38 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "Navigation",
+    "home": "Home",
+    "joinGames": "Join Games"
+  },
+  "auth": {
+    "signInSteam": "Sign in with Steam",
+    "signOut": "Sign out",
+    "signingOut": "Signing out...",
+    "signedInAs": "Signed in as {name}",
+    "notAssociatedWithValve": "This service is not associated with Valve Corp.",
+    "clickSteamButton": "Click the button above to continue."
+  },
+  "admin": {
+    "nav": "Admin",
+    "title": "Admin",
+    "subtitle": "Admin dashboard",
+    "loading": "Loading...",
+    "loginTitle": "Admin access",
+    "loginText": "Sign in with Steam to continue.",
+    "signInSteam": "Sign in with Steam",
+    "forbiddenTitle": "Access denied",
+    "forbiddenText": "Your Steam account does not have admin access.",
+    "applicationsTitle": "Applications",
+    "applicationsCount": "{count} total",
+    "noApplications": "No applications yet.",
+    "loadError": "Couldn't load applications. Please try again. ",
+    "colSteam": "Steam",
+    "colEmail": "Email",
+    "colLocale": "Locale",
+    "colCreated": "Created"
+  },
   "form": {
     "title": "APPLICATION FORM",
     "subtitle": "Complete the form below to apply for participation",

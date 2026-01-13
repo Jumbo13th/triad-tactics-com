@@ -3,6 +3,38 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "التنقل",
+    "home": "الرئيسية",
+    "joinGames": "انضم إلى اللعب"
+  },
+  "auth": {
+    "signInSteam": "تسجيل الدخول عبر Steam",
+    "signOut": "تسجيل الخروج",
+    "signingOut": "جارٍ تسجيل الخروج...",
+    "signedInAs": "تم تسجيل الدخول باسم {name}",
+    "notAssociatedWithValve": "هذه الخدمة غير مرتبطة بشركة Valve Corp.",
+    "clickSteamButton": "اضغط على الزر أعلاه للمتابعة."
+  },
+  "admin": {
+    "nav": "الإدارة",
+    "title": "الإدارة",
+    "subtitle": "لوحة الإدارة",
+    "loading": "جاري التحميل...",
+    "loginTitle": "دخول الإدارة",
+    "loginText": "سجّل الدخول عبر Steam للمتابعة.",
+    "signInSteam": "تسجيل الدخول عبر Steam",
+    "forbiddenTitle": "تم رفض الوصول",
+    "forbiddenText": "حساب Steam هذا لا يملك صلاحيات الإدارة.",
+    "applicationsTitle": "الطلبات",
+    "applicationsCount": "الإجمالي: {count}",
+    "noApplications": "لا توجد طلبات بعد.",
+    "loadError": "تعذر تحميل الطلبات. حاول مرة أخرى.",
+    "colSteam": "Steam",
+    "colEmail": "البريد",
+    "colLocale": "اللغة",
+    "colCreated": "التاريخ"
+  },
   "form": {
     "title": "نموذج الطلب",
     "subtitle": "أكمل النموذج أدناه للتقديم للمشاركة",

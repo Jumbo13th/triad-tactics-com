@@ -7,7 +7,7 @@ services:
       NODE_ENV: production
       # REQUIRED in production
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_STEAM_IDS: ${ADMIN_STEAM_IDS}
       NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
 
       # Optional behavior toggles

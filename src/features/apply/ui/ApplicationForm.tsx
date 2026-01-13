@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { applicationSchema, type ApplicationFormData } from '../schema';
 import type { ZodIssue } from 'zod';
+import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
 
 const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset => {
   const sign = offset >= 0 ? '+' : '-';
@@ -449,19 +450,12 @@ export default function ApplicationForm() {
             ) : (
               <>
                 <span className="text-sm text-neutral-300">{t('steamAuth.clickToConnect')}</span>
-                <a
-                  href={`/api/auth/steam/start?redirect=${encodeURIComponent(`/${locale}/apply`)}`}
-                  aria-label={t('steamAuth.connect')}
-                  className="inline-flex items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
-                >
-                  <span className="sr-only">{t('steamAuth.connect')}</span>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="https://community.fastly.steamstatic.com/public/images/signinthroughsteam/sits_02.png"
-                    alt={t('steamAuth.connect')}
-                    className="h-11 w-auto"
-                  />
-                </a>
+                <SteamSignInButton
+                  redirectPath={`/${locale}/apply`}
+                  ariaLabel={t('steamAuth.connect')}
+                  size="large"
+                  imageClassName="h-11 w-auto"
+                />
               </>
             )}
           </div>
