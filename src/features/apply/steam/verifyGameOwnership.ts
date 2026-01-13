@@ -58,9 +58,10 @@ async function fetchJson(
       return null;
     }
 
+    const resForJson = res.clone();
     let json: unknown;
     try {
-      json = (await res.json()) as unknown;
+      json = (await resForJson.json()) as unknown;
     } catch (error: unknown) {
       const bodySnippet = await safeReadBodySnippet(res);
       logger.warn(
