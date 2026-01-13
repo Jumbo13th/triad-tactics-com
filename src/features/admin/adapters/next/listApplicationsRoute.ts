@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_PASSWORD } from '@/platform/env';
 import { listApplications } from '@/features/admin/useCases/listApplications';
 import { listApplicationsDeps } from '@/features/admin/deps';
+import { errorToLogObject, logger } from '@/platform/logger';
 
 export async function getAdminApplicationsRoute(request: NextRequest): Promise<NextResponse> {
 	try {
@@ -20,7 +21,8 @@ export async function getAdminApplicationsRoute(request: NextRequest): Promise<N
 			count: applications.length,
 			applications
 		});
-	} catch {
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_list_applications_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }

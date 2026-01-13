@@ -4,6 +4,7 @@ import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { handleSteamCallback } from '@/features/steamAuth/useCases/handleSteamCallback';
 import { getRequestOrigin } from './origin';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
+import { errorToLogObject, logger } from '@/platform/logger';
 
 export async function getSteamCallbackRoute(request: NextRequest): Promise<NextResponse> {
 	try {
@@ -19,7 +20,8 @@ export async function getSteamCallbackRoute(request: NextRequest): Promise<NextR
 		});
 
 		return NextResponse.redirect(new URL(redirectPath || '/', origin));
-	} catch {
+	} catch (error: unknown) {
+		logger.warn({ ...errorToLogObject(error) }, 'steam_callback_route_failed');
 		return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 	}
 }

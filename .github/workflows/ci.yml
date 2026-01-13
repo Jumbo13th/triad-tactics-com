@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      NODE_ENV: test
       STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
 
       TEST_STEAMID64_OWNED: ${{ vars.TEST_STEAMID64_OWNED }}

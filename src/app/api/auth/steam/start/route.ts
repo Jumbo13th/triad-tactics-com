@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { getSteamStartRoute } from '@/features/steamAuth/adapters/next/startRoute';
+import { withApiLogging } from '@/platform/nextRouteLogging';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-	return getSteamStartRoute(request);
-}
+export const GET = withApiLogging(getSteamStartRoute, { name: 'api.auth.steam.start' });

@@ -8,6 +8,7 @@ services:
       # REQUIRED in production
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
 
       # Optional behavior toggles
       DISABLE_RATE_LIMITS: ${DISABLE_RATE_LIMITS:-false}

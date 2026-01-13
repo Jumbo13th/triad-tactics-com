@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { getAdminApplicationsRoute } from '@/features/admin/adapters/next/listApplicationsRoute';
+import { withApiLogging } from '@/platform/nextRouteLogging';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-	return getAdminApplicationsRoute(request);
-}
+export const GET = withApiLogging(getAdminApplicationsRoute, { name: 'api.admin.listApplications' });

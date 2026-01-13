@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { postSubmitApplicationRoute } from '@/features/apply/adapters/next/submitRoute';
+import { withApiLogging } from '@/platform/nextRouteLogging';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
-	return postSubmitApplicationRoute(request);
-}
+export const POST = withApiLogging(postSubmitApplicationRoute, { name: 'api.submit' });

@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { getSteamMeRoute } from '@/features/steamAuth/adapters/next/meRoute';
+import { withApiLogging } from '@/platform/nextRouteLogging';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-	return getSteamMeRoute(request);
-}
+export const GET = withApiLogging(getSteamMeRoute, { name: 'api.auth.steam.me' });
