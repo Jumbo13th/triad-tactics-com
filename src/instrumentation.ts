@@ -30,8 +30,52 @@ function errorToPlainObject(error: unknown): unknown {
 			stack: error.stack
 		};
 	}
+
 	if (typeof error === 'string') return { message: error };
-	return { type: typeof error, value: error };
+	if (typeof error === 'bigint') return { type: 'bigint', value: error.toString() };
+	if (typeof error === 'number' || typeof error === 'boolean') return { type: typeof error, value: error };
+	if (typeof error === 'undefined') return { type: 'undefined', value: 'undefined' };
+	if (error === null) return { type: 'null', value: 'null' };
+	if (typeof error === 'symbol') return { type: 'symbol', value: String(error) };
+	if (typeof error === 'function') {
+		const fn = error as (...args: unknown[]) => unknown;
+		return { type: 'function', value: `[Function${fn.name ? ` ${fn.name}` : ''}]` };
+	}
+
+	if (typeof error === 'object') {
+		try {
+			const seen = new WeakSet<object>();
+			const json = JSON.stringify(error, (_key, value: unknown) => {
+				if (typeof value === 'bigint') return value.toString();
+				if (typeof value === 'symbol') return String(value);
+				if (typeof value === 'function') {
+					const fn = value as (...args: unknown[]) => unknown;
+					return `[Function${fn.name ? ` ${fn.name}` : ''}]`;
+				}
+				if (value && typeof value === 'object') {
+					const obj = value as object;
+					if (seen.has(obj)) return '[Circular]';
+					seen.add(obj);
+				}
+				return value as unknown;
+			});
+
+			if (json === undefined) {
+				return { type: 'object', value: String(error) };
+			}
+
+			// Prefer a structured object when possible; otherwise keep the JSON string.
+			try {
+				return { type: 'object', value: JSON.parse(json) as unknown };
+			} catch {
+				return { type: 'object', value: json };
+			}
+		} catch {
+			return { type: 'object', value: String(error) };
+		}
+	}
+
+	return { type: typeof error, value: String(error) };
 }
 
 function warningToSafeObject(warning: unknown): { name?: string; message?: string; stack?: string } {
