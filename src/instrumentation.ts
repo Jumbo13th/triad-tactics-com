@@ -5,9 +5,14 @@
 // - no direct references to Node globals (like `process`)
 // - no dynamic code evaluation (e.g. `new Function`, `eval`), which Edge forbids
 
-function getProcessLike(): { env?: Record<string, string | undefined>; on?: Function } | undefined {
+type ProcessLike = {
+	env?: Record<string, string | undefined>;
+	on?: (event: string, listener: (...args: unknown[]) => void) => unknown;
+};
+
+function getProcessLike(): ProcessLike | undefined {
 	return (globalThis as unknown as Record<string, unknown>)['process'] as
-		| { env?: Record<string, string | undefined>; on?: Function }
+		| ProcessLike
 		| undefined;
 }
 
