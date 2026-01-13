@@ -34,6 +34,23 @@ function errorToPlainObject(error: unknown): unknown {
 	return { type: typeof error, value: error };
 }
 
+function warningToSafeObject(warning: unknown): { name?: string; message?: string; stack?: string } {
+	if (warning instanceof Error) {
+		return { name: warning.name, message: warning.message, stack: warning.stack };
+	}
+
+	if (warning && typeof warning === 'object') {
+		const maybe = warning as { name?: unknown; message?: unknown; stack?: unknown };
+		const name = typeof maybe.name === 'string' ? maybe.name : undefined;
+		const message = typeof maybe.message === 'string' ? maybe.message : undefined;
+		const stack = typeof maybe.stack === 'string' ? maybe.stack : undefined;
+		return { name, message, stack };
+	}
+
+	if (typeof warning === 'string') return { message: warning };
+	return {};
+}
+
 function log(level: 'fatal' | 'warn', msg: string, extra?: Record<string, unknown>): void {
 	const payload = {
 		level,
@@ -66,9 +83,9 @@ export async function register(): Promise<void> {
 		// Do not call exit here; runtime may be managed.
 	});
 
-	proc.on('warning', (warning: { name?: string; message?: string; stack?: string }) => {
+	proc.on('warning', (...args: unknown[]) => {
 		log('warn', 'process_warning', {
-			warning: { name: warning.name, message: warning.message, stack: warning.stack }
+			warning: warningToSafeObject(args[0])
 		});
 	});
 }

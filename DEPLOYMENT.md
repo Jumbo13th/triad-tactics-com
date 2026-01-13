@@ -21,8 +21,8 @@
 ## Deploy on a fresh server (high level)
 1. Put the repo on the server.
 2. Create `.env` (same folder as `docker-compose.yml`) based on `.env.example` and set:
-   - `STEAM_WEB_API_KEY=...`
-   - `ADMIN_PASSWORD=...`
+  - `STEAM_WEB_API_KEY=...`
+  - `ADMIN_PASSWORD=...`
   - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=...`
 3. Place TLS files:
   - `certs/server.crt`
