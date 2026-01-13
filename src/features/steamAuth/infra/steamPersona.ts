@@ -1,3 +1,6 @@
+import { errorToLogObject, logger } from '@/platform/logger';
+import { fetchWithLogging } from '@/platform/http';
+
 export async function fetchSteamPersonaName(steamApiKey: string, steamid64: string): Promise<string | null> {
 	try {
 		const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
@@ -6,9 +9,9 @@ export async function fetchSteamPersonaName(steamApiKey: string, steamid64: stri
 		url.searchParams.set('key', steamApiKey);
 		url.searchParams.set('steamids', steamid64);
 
-		const res = await fetch(url.toString(), {
+		const res = await fetchWithLogging(url.toString(), {
 			signal: AbortSignal.timeout(5000)
-		});
+		}, { name: 'steam.webapi.playerSummaries' });
 
 		if (!res.ok) return null;
 		const json: unknown = (await res.json()) as unknown;
@@ -21,7 +24,8 @@ export async function fetchSteamPersonaName(steamApiKey: string, steamid64: stri
 		if (!isRecord(player)) return null;
 		const name = typeof player.personaname === 'string' ? player.personaname : null;
 		return name;
-	} catch {
+	} catch (error: unknown) {
+		logger.warn({ ...errorToLogObject(error) }, 'steam_persona_lookup_failed');
 		return null;
 	}
 }

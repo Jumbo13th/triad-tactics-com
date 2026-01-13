@@ -1,4 +1,9 @@
-const requiredInProduction = ['ADMIN_PASSWORD', 'STEAM_WEB_API_KEY'];
+const requiredInProduction = [
+  'ADMIN_PASSWORD',
+  'STEAM_WEB_API_KEY',
+  // Ensures stable Server Action encryption keys across deploys/instances.
+  'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
+];
 
 if (process.env.NODE_ENV !== 'production') {
   process.exit(0);

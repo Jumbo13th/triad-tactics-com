@@ -7,6 +7,7 @@ import { submitApplication } from '@/features/apply/useCases/submitApplication';
 import { submitApplicationDeps } from '@/features/apply/deps';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
+import { errorToLogObject, logger } from '@/platform/logger';
 
 function localeFromAcceptLanguage(header: string | null): string {
 	if (!header) return 'en';
@@ -56,7 +57,8 @@ export async function postSubmitApplicationRoute(request: NextRequest): Promise<
 		});
 
 		return NextResponse.json(result.json, { status: result.status });
-	} catch {
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'submit_application_route_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }

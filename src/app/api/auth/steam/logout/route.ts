@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { postSteamLogoutRoute } from '@/features/steamAuth/adapters/next/logoutRoute';
+import { withApiLogging } from '@/platform/nextRouteLogging';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
-	return postSteamLogoutRoute(request);
-}
+export const POST = withApiLogging(postSteamLogoutRoute, { name: 'api.auth.steam.logout' });
