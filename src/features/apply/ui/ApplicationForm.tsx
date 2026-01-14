@@ -266,10 +266,26 @@ export default function ApplicationForm() {
           refreshSteamAuth();
         } else if (errorCode === 'steam_api_unavailable') {
           setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
-        } else if (errorCode === 'steam_no_game' || errorCode === 'steam_game_required') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamNoGame') });
-        } else if (errorCode === 'steam_private' || errorCode === 'steam_profile_private') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamPrivate') });
+        } else if (
+          errorCode === 'steam_game_not_detected' ||
+          errorCode === 'steam_no_game' ||
+          errorCode === 'steam_game_required' ||
+          errorCode === 'steam_private' ||
+          errorCode === 'steam_profile_private'
+        ) {
+          setPopup({
+            title: t('popup.errorTitle'),
+            message: t('errors.steamGameNotDetected'),
+            lines: [
+              t('steamAuth.detect.title'),
+              `• ${t('steamAuth.detect.profilePublic')}`,
+              `• ${t('steamAuth.detect.gameDetailsPublic')}`,
+              `• ${t('steamAuth.detect.gameNotHidden')}`,
+              `• ${t('steamAuth.detect.delayAfterChange')}`,
+              `• ${t('steamAuth.detect.canRehideAfterSubmit')}`,
+              t('steamAuth.detect.incognitoCheck')
+            ]
+          });
         } else {
           setPopup({ title: t('popup.errorTitle'), message: t('errors.serverError') });
         }
@@ -408,6 +424,18 @@ export default function ApplicationForm() {
               </p>
             )}
             <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.help')}</p>
+
+            <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+              <p className="text-xs font-medium text-neutral-200">{t('steamAuth.detect.title')}</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+                <li>{t('steamAuth.detect.profilePublic')}</li>
+                <li>{t('steamAuth.detect.gameDetailsPublic')}</li>
+                <li>{t('steamAuth.detect.gameNotHidden')}</li>
+                <li>{t('steamAuth.detect.delayAfterChange')}</li>
+                <li>{t('steamAuth.detect.canRehideAfterSubmit')}</li>
+              </ul>
+              <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.detect.incognitoCheck')}</p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {steamAuth?.connected ? (
