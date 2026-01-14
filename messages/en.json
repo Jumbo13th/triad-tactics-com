@@ -55,6 +55,15 @@
       "title": "Steam verification",
       "notConnected": "Not connected. Please sign in with Steam to continue",
       "help": "We require Steam sign-in so we can verify that your account owns Arma Reforger",
+      "detect": {
+        "title": "How ownership detection works",
+        "profilePublic": "Your Steam Profile must be Public.",
+        "gameDetailsPublic": "Your Game details must be Public (not hidden in Steam privacy settings).",
+        "gameNotHidden": "Arma Reforger must not be hidden on your Steam profile.",
+        "delayAfterChange": "If your account was private and you changed it to public, it may take some time before our website can see the change.",
+        "canRehideAfterSubmit": "After you submit the application, you can make your profile private again.",
+        "incognitoCheck": "To check if the game is detectable: open your Steam profile in an incognito/private window (logged out from Steam) and search for Arma Reforger in your games list. If you can find it there, the site will be able to find it too."
+      },
       "clickToConnect": "Click this button to sign in",
       "connectedAsName": "Connected as {name}",
       "connectedAsId": "Connected (SteamID64: {steamid64})",
@@ -92,8 +101,8 @@
       "rateLimited": "Too many attempts. Please try again later.",
       "steamNotConnected": "Please sign in with Steam before submitting",
       "steamApiUnavailable": "Steam verification is temporarily unavailable. Please try again later.",
+      "steamGameNotDetected": "We couldn't verify Arma Reforger ownership. Either this Steam account doesn't own the game, or your Steam Profile/Game details privacy settings prevent verification.",
       "steamNoGame": "This Steam account does not appear to own Arma Reforger",
-      "steamPrivate": "Your Steam profile is private. Please set it to Public so we can verify Arma Reforger ownership.",
       "steamInvalidProfile": "We couldn't resolve this Steam profile link. Please paste a valid steamcommunity.com profile URL."
     }
   }

@@ -32,7 +32,7 @@ export type SubmitApplicationResult =
   | { ok: true; status: 201; json: { success: true; id: number } }
   | { ok: false; status: 400; json: { error: 'validation_error'; details: unknown } }
   | { ok: false; status: 400; json: { error: 'steam_not_connected' } }
-  | { ok: false; status: 400; json: { error: 'steam_game_required' | 'steam_profile_private' | 'steam_api_unavailable' } }
+  | { ok: false; status: 400; json: { error: 'steam_game_not_detected' | 'steam_api_unavailable' } }
   | { ok: false; status: 429; json: { error: 'rate_limited'; retryAfterSeconds: number } }
   | { ok: false; status: 409; json: { error: 'duplicate'; submittedAt: string | null } }
   | { ok: false; status: 500; json: { error: 'server_error' | 'steam_api_unavailable' } }
@@ -88,10 +88,7 @@ export async function submitApplication(
     if (verification.error === 'steam_api_unavailable') {
       return { ok: false, status: 503, json: { error: 'steam_api_unavailable' } };
     }
-    if (verification.error === 'steam_private') {
-      return { ok: false, status: 400, json: { error: 'steam_profile_private' } };
-    }
-    return { ok: false, status: 400, json: { error: 'steam_game_required' } };
+    return { ok: false, status: 400, json: { error: 'steam_game_not_detected' } };
   }
 
   const { email, ...answersRaw } = data;
