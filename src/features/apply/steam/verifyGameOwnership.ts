@@ -151,19 +151,56 @@ async function checkOwnedGame(
 
   const games = response.games;
   if (Array.isArray(games)) {
+    const hasOnlyObjects = games.every(isRecord);
+    if (!hasOnlyObjects) {
+      logger.warn(
+        {
+          endpoint: 'IPlayerService.GetOwnedGames',
+          status: result.status,
+          steamid64,
+          appId,
+          gameCountShape: jsonShape(gameCount),
+          gamesShape: jsonShape(games),
+          reason: 'unexpected_shape'
+        },
+        'steam_owned_games_unexpected_value'
+      );
+      return { status: 'not_detected', reason: 'unexpected_shape' };
+    }
+
     return games.length > 0 ? { status: 'owned' } : { status: 'not_detected', reason: 'not_owned' };
   }
-  logger.warn(
-    { endpoint: 'IPlayerService.GetOwnedGames', status: result.status, steamid64, appId, gameCountShape: jsonShape(gameCount) },
-    'steam_owned_games_unexpected_value'
-  );
+
   if (gameCount === undefined && games === undefined) {
+    logger.warn(
+      {
+        endpoint: 'IPlayerService.GetOwnedGames',
+        status: result.status,
+        steamid64,
+        appId,
+        gameCountShape: jsonShape(gameCount),
+        gamesShape: jsonShape(games),
+        reason: 'missing_game_count'
+      },
+      'steam_owned_games_unexpected_value'
+    );
     return { status: 'not_detected', reason: 'missing_game_count' };
   }
   if (!Array.isArray(games)) {
+    logger.warn(
+      {
+        endpoint: 'IPlayerService.GetOwnedGames',
+        status: result.status,
+        steamid64,
+        appId,
+        gameCountShape: jsonShape(gameCount),
+        gamesShape: jsonShape(games),
+        reason: 'missing_games_list'
+      },
+      'steam_owned_games_unexpected_value'
+    );
     return { status: 'not_detected', reason: 'missing_games_list' };
   }
-  return { status: 'not_detected', reason: 'unexpected_shape' };
 }
 
 export async function verifySteamOwnsGameOrReject(

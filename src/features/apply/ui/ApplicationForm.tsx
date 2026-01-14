@@ -266,13 +266,7 @@ export default function ApplicationForm() {
           refreshSteamAuth();
         } else if (errorCode === 'steam_api_unavailable') {
           setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
-        } else if (
-          errorCode === 'steam_game_not_detected' ||
-          errorCode === 'steam_no_game' ||
-          errorCode === 'steam_game_required' ||
-          errorCode === 'steam_private' ||
-          errorCode === 'steam_profile_private'
-        ) {
+        } else if (errorCode === 'steam_game_not_detected') {
           setPopup({
             title: t('popup.errorTitle'),
             message: t('errors.steamGameNotDetected'),

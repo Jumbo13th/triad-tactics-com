@@ -75,6 +75,8 @@ describe('Apply workflow: submit route (live Steam via API route)', () => {
 	it('accepts a profile that owns Arma Reforger', async () => {
 		process.env.STEAM_WEB_API_KEY = requireEnv('STEAM_WEB_API_KEY');
 		const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
+		const { dbOperations } = await import('@/platform/db');
+		dbOperations.deleteBySteamId64(steamid64);
 
 		const res = await postSubmitWithSteamSession({
 			steamid64,
