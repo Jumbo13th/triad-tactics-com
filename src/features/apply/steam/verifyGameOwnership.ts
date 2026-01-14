@@ -186,21 +186,20 @@ async function checkOwnedGame(
     );
     return { status: 'not_detected', reason: 'missing_game_count' };
   }
-  if (!Array.isArray(games)) {
-    logger.warn(
-      {
-        endpoint: 'IPlayerService.GetOwnedGames',
-        status: result.status,
-        steamid64,
-        appId,
-        gameCountShape: jsonShape(gameCount),
-        gamesShape: jsonShape(games),
-        reason: 'missing_games_list'
-      },
-      'steam_owned_games_unexpected_value'
-    );
-    return { status: 'not_detected', reason: 'missing_games_list' };
-  }
+
+  logger.warn(
+    {
+      endpoint: 'IPlayerService.GetOwnedGames',
+      status: result.status,
+      steamid64,
+      appId,
+      gameCountShape: jsonShape(gameCount),
+      gamesShape: jsonShape(games),
+      reason: 'missing_games_list'
+    },
+    'steam_owned_games_unexpected_value'
+  );
+  return { status: 'not_detected', reason: 'missing_games_list' };
 }
 
 export async function verifySteamOwnsGameOrReject(
