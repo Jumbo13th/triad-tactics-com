@@ -31,11 +31,18 @@ export default function SiteHeader({ homeAriaLabel, title, subtitle, primaryActi
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h1 className="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
-                  <Link href="/" className="hover:text-[color:var(--accent)]">
-                    {title}
-                  </Link>
-                </h1>
+                <div className="inline-block min-w-0">
+                  <h1 className="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
+                    <Link href="/" className="block hover:text-[color:var(--accent)]">
+                      {title}
+                    </Link>
+                  </h1>
+
+                  <div
+                    className="mt-2 h-1 w-full rounded-full bg-gradient-to-r from-[color:var(--accent)] via-[color:var(--accent)] to-transparent"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
 
               <p className="mt-1.5 text-base text-neutral-200/90">{subtitle}</p>

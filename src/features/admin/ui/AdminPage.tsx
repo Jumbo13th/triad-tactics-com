@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
 import type { Application } from '@/platform/db';
-import SiteHeader from '@/features/appShell/ui/SiteHeader';
 import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
 
 type AdminStatus =
@@ -27,8 +26,6 @@ function buildLocalizedPath(locale: string, pathname: string) {
 }
 
 export default function AdminPage() {
-	const t = useTranslations('app');
-	const tw = useTranslations('welcome');
 	const ta = useTranslations('admin');
 	const tf = useTranslations('form');
 	const pathname = usePathname();
@@ -117,16 +114,7 @@ export default function AdminPage() {
 	};
 
 	return (
-		<main className="min-h-screen bg-neutral-950">
-			<div className="mx-auto max-w-4xl px-4 pt-6 pb-10 sm:pt-8 sm:pb-14">
-				<SiteHeader
-					homeAriaLabel={t('title')}
-					title={t('title')}
-					subtitle={ta('subtitle')}
-					primaryAction={{ href: '/apply', label: tw('applyButtonShort') }}
-				/>
-
-				<section className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
+		<section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
 					{status === null ? (
 						<p className="text-sm text-neutral-300">{ta('loading')}</p>
 					) : !status.connected ? (
@@ -350,12 +338,6 @@ export default function AdminPage() {
 							)}
 						</div>
 					)}
-				</section>
-
-				<footer className="mt-10 border-t border-neutral-900 pt-6 text-sm text-neutral-500">
-					<p>&copy; 2026 Triad Tactics</p>
-				</footer>
-			</div>
-		</main>
+		</section>
 	);
 }

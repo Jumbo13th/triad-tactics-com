@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import fs from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,21 +63,20 @@ async function waitForHttp(baseUrl: string, timeoutMs: number): Promise<void> {
 	throw new Error(`Timed out waiting for server at ${baseUrl}`);
 }
 
-function startNextDevServer(opts: { port: number; env: Record<string, string> }) {
+function spawnNext(
+	args: string[],
+	opts: { env: Record<string, string> }
+): { child: ChildProcessWithoutNullStreams; output: { stdout: string[]; stderr: string[] }; stop: () => Promise<void> } {
 	const nextBin = require.resolve('next/dist/bin/next');
-	const child = spawn(
-		process.execPath,
-		[nextBin, 'dev', '-p', String(opts.port), '-H', '127.0.0.1'],
-		{
-			cwd: process.cwd(),
-			env: {
-				...process.env,
-				...opts.env,
-				NEXT_TELEMETRY_DISABLED: '1'
-			},
-			stdio: 'pipe'
-		}
-	);
+	const child = spawn(process.execPath, [nextBin, ...args], {
+		cwd: process.cwd(),
+		env: {
+			...process.env,
+			...opts.env,
+			NEXT_TELEMETRY_DISABLED: '1'
+		},
+		stdio: 'pipe'
+	});
 
 	const output: { stdout: string[]; stderr: string[] } = { stdout: [], stderr: [] };
 	child.stdout.setEncoding('utf8');
@@ -105,10 +105,37 @@ function startNextDevServer(opts: { port: number; env: Record<string, string> })
 	return { child, output, stop };
 }
 
+async function runNextBuild(opts: { env: Record<string, string> }) {
+	const { child, output, stop } = spawnNext(['build'], { env: opts.env });
+
+	const exitCode = await new Promise<number>((resolve, reject) => {
+		child.on('error', reject);
+		child.on('close', (code) => resolve(code ?? 1));
+	});
+
+	if (exitCode !== 0) {
+		await stop();
+		throw new Error(
+			[
+				`next build failed with exit code ${exitCode}`,
+				'--- stdout ---',
+				...output.stdout,
+				'--- stderr ---',
+				...output.stderr
+			].join('')
+		);
+	}
+}
+
+function startNextProdServer(opts: { port: number; env: Record<string, string> }) {
+	return spawnNext(['start', '-p', String(opts.port), '-H', '127.0.0.1'], { env: opts.env });
+}
+
 let baseUrl = '';
 let serverProcess: ChildProcessWithoutNullStreams | null = null;
 let stopServer: (() => Promise<void>) | null = null;
 let dbPathForE2e = '';
+let distDirForE2e = '';
 
 describe('Apply workflow: submit route (e2e over HTTP)', () => {
 	beforeAll(async () => {
@@ -118,18 +145,24 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 		const dbPath = path.join(os.tmpdir(), `triad-tactics-e2e-${ts}.db`);
 		dbPathForE2e = dbPath;
 		process.env.DB_PATH = dbPathForE2e;
+		distDirForE2e = path.join('.next-e2e', ts);
 		vi.resetModules();
 
 		const port = await getAvailablePort();
 		baseUrl = `http://127.0.0.1:${port}`;
 
-		const { child, stop } = startNextDevServer({
+		const commonEnv = {
+			DB_PATH: dbPathForE2e,
+			DISABLE_RATE_LIMITS: 'true',
+			STEAM_WEB_API_KEY: steamWebApiKey,
+			NEXT_DIST_DIR: distDirForE2e
+		};
+
+		await runNextBuild({ env: commonEnv });
+
+		const { child, stop } = startNextProdServer({
 			port,
-			env: {
-				DB_PATH: dbPathForE2e,
-				DISABLE_RATE_LIMITS: 'true',
-				STEAM_WEB_API_KEY: steamWebApiKey
-			}
+			env: commonEnv
 		});
 
 		serverProcess = child;
@@ -151,6 +184,19 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 					resolve();
 				});
 			});
+		}
+
+		try {
+			if (distDirForE2e) {
+				await fs.rm(distDirForE2e, { recursive: true, force: true });
+			}
+		} catch {
+		}
+		try {
+			if (dbPathForE2e) {
+				await fs.rm(dbPathForE2e, { force: true });
+			}
+		} catch {
 		}
 	}, 30_000);
 
