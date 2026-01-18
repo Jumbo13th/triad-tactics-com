@@ -57,7 +57,19 @@
     ".next-e2e/2026-01-18T11-38-49-394Z/types/**/*.ts",
     ".next-e2e/2026-01-18T11-38-49-394Z/dev/types/**/*.ts",
     ".next-e2e/2026-01-18T11-42-16-793Z/types/**/*.ts",
-    ".next-e2e/2026-01-18T11-42-16-793Z/dev/types/**/*.ts"
+    ".next-e2e/2026-01-18T11-42-16-793Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-52-31-631Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-52-31-631Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-54-22-764Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-54-22-764Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-56-37-594Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-56-37-594Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-57-20-865Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T11-57-20-865Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T12-06-17-779Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T12-06-17-779Z/dev/types/**/*.ts",
+    ".next-e2e/2026-01-18T12-06-49-808Z/types/**/*.ts",
+    ".next-e2e/2026-01-18T12-06-49-808Z/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

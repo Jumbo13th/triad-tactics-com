@@ -11,6 +11,10 @@ function isActivePath(currentPathname: string, href: string) {
 	return currentPathname === href || currentPathname.startsWith(`${href}/`);
 }
 
+function isActiveExact(currentPathname: string, href: string) {
+	return currentPathname === href;
+}
+
 export default function SiteNavBar() {
 	const t = useTranslations('nav');
 	const ta = useTranslations('admin');
@@ -42,7 +46,7 @@ export default function SiteNavBar() {
 								className={
 									'inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 ' +
 									(active
-										? 'bg-white/10 text-neutral-50'
+										? 'bg-[color:var(--accent)] text-neutral-950'
 										: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
 								}
 							>
@@ -89,7 +93,7 @@ export default function SiteNavBar() {
 									}}
 									className={
 										'flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 ' +
-										(isActivePath(pathname, '/admin')
+										(isActiveExact(pathname, '/admin')
 											? 'bg-white/10 text-neutral-50'
 											: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
 									}
