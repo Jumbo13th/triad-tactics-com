@@ -3,4 +3,4 @@ import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const POST = withApiGuards(postSubmitApplicationRoute, { name: 'api.submit' });
+export const POST = withApiGuards(postSubmitApplicationRoute, { name: 'api.submit', logSteamId: true });

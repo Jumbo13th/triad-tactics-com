@@ -22,10 +22,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function postSubmitApplicationRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		const body: unknown = await request.json();
-
 		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value;
 		const identity = getSteamIdentity(steamAuthDeps, sid ?? null);
+		if (!identity.connected) {
+			return NextResponse.json({ error: 'steam_required' }, { status: 401 });
+		}
+
+		const body: unknown = await request.json();
 		const steamid64 = identity.connected ? identity.steamid64 : null;
 		const personaName = identity.connected ? identity.personaName : null;
 

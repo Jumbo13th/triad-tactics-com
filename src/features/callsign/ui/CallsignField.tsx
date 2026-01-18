@@ -27,9 +27,24 @@ export default function CallsignField(props: {
 	const abortRef = useRef<AbortController | null>(null);
 	const debouncedValue = useDebouncedValue(value, 450);
 	const trimmed = useMemo(() => debouncedValue.trim(), [debouncedValue]);
+	const isSyntaxValid = useMemo(() => /^[A-Za-z0-9_]+$/.test(trimmed), [trimmed]);
+
+	useEffect(() => {
+		if (!error) return;
+		// If the parent form detects an error (e.g. invalid chars), stop any pending checks
+		// so we don't show a generic availability error.
+		abortRef.current?.abort();
+		abortRef.current = null;
+	}, [error]);
 
 	useEffect(() => {
 		if (trimmed.length < 3) return;
+		if (error) return;
+		if (!isSyntaxValid) {
+			abortRef.current?.abort();
+			abortRef.current = null;
+			return;
+		}
 
 		abortRef.current?.abort();
 		const controller = new AbortController();
@@ -75,7 +90,7 @@ export default function CallsignField(props: {
 		return () => {
 			controller.abort();
 		};
-	}, [trimmed]);
+	}, [trimmed, error, isSyntaxValid]);
 
 	return (
 		<div>
@@ -89,7 +104,9 @@ export default function CallsignField(props: {
 				onChange={(e) => {
 					const next = e.target.value;
 					onChange(next);
-					if (next.trim().length < 3) {
+					const nextTrimmed = next.trim();
+					const nextSyntaxValid = /^[A-Za-z0-9_]*$/.test(nextTrimmed);
+					if (nextTrimmed.length < 3 || !nextSyntaxValid) {
 						abortRef.current?.abort();
 						abortRef.current = null;
 						setStatus({ state: 'idle' });

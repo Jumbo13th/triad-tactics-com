@@ -78,6 +78,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 			new NextRequest('http://localhost/api/admin/rename-required', {
 				method: 'POST',
 				headers: {
+					origin: 'http://localhost',
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${adminSid}`
 				},
@@ -138,6 +139,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 			new NextRequest('http://localhost/api/admin/rename-requests/decide', {
 				method: 'POST',
 				headers: {
+					origin: 'http://localhost',
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${adminSid}`
 				},

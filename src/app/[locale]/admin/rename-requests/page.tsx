@@ -4,6 +4,7 @@ import AdminRenameRequestsPage from '@/features/admin/ui/AdminRenameRequestsPage
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';
+import { getUserFlowRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 
 export default async function AdminRenameRequestsGatePage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
@@ -11,14 +12,8 @@ export default async function AdminRenameRequestsGatePage({ params }: { params: 
 	const sid = cookieStore.get(STEAM_SESSION_COOKIE)?.value ?? null;
 	const status = getSteamStatus(steamAuthDeps, sid);
 
-	if (status.connected) {
-		if (status.renameRequired && !status.hasPendingRenameRequest) {
-			redirect(`/${locale}/rename`);
-		}
-		if (!status.hasExisting) {
-			redirect(`/${locale}/apply`);
-		}
-	}
+	const flowRedirect = getUserFlowRedirect(locale, status);
+	if (flowRedirect) redirect(flowRedirect);
 
 	return <AdminRenameRequestsPage />;
 }

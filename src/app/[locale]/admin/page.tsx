@@ -4,6 +4,7 @@ import AdminPage from '@/features/admin/ui/AdminPage';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';
+import { getUserFlowRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 
 export default async function AdminGatePage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
@@ -11,16 +12,8 @@ export default async function AdminGatePage({ params }: { params: Promise<{ loca
 	const sid = cookieStore.get(STEAM_SESSION_COOKIE)?.value ?? null;
 	const status = getSteamStatus(steamAuthDeps, sid);
 
-	// If the user is logged in (Steam) but has NOT applied yet,
-	// keep them on the application flow.
-	if (status.connected) {
-		if (status.renameRequired && !status.hasPendingRenameRequest) {
-			redirect(`/${locale}/rename`);
-		}
-		if (!status.hasExisting) {
-			redirect(`/${locale}/apply`);
-		}
-	}
+	const flowRedirect = getUserFlowRedirect(locale, status);
+	if (flowRedirect) redirect(flowRedirect);
 
 	return <AdminPage />;
 }

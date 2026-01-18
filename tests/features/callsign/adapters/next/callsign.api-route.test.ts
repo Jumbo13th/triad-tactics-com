@@ -6,8 +6,28 @@ async function loadCallsignApiHarness() {
 	const { dbOperations } = await import('@/platform/db');
 	const { GET: GET_CHECK } = await import('@/app/api/callsign/check/route');
 	const { GET: GET_SEARCH } = await import('@/app/api/callsign/search/route');
+	const { STEAM_SESSION_COOKIE } = await import('@/features/steamAuth/sessionCookie');
 	const { NextRequest } = await import('next/server');
-	return { dbOperations, GET_CHECK, GET_SEARCH, NextRequest };
+	return { dbOperations, GET_CHECK, GET_SEARCH, NextRequest, STEAM_SESSION_COOKIE };
+}
+
+type DbOperationsForSteamSession = {
+	createSteamSession: (session: { id: string; redirect_path: string }) => { success: boolean };
+	setSteamSessionIdentity: (
+		sessionId: string,
+		identity: { steamid64: string; persona_name?: string | null }
+	) => { success: boolean };
+};
+
+function createConnectedSteamCookie(
+	dbOperations: DbOperationsForSteamSession,
+	cookieName: string
+): { cookieHeader: string } {
+	const sid = `test-${crypto.randomUUID()}`;
+	const steamid64 = `765611980${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`;
+	dbOperations.createSteamSession({ id: sid, redirect_path: '/' });
+	dbOperations.setSteamSessionIdentity(sid, { steamid64, persona_name: 'Test' });
+	return { cookieHeader: `${cookieName}=${sid}` };
 }
 
 function buildMinimalApplication(opts: { email: string; steamid64: string; callsign: string }) {
@@ -43,8 +63,12 @@ describe('Callsign API routes', () => {
 	});
 
 	it('GET /api/callsign/check returns 400 on invalid callsign', async () => {
-		const { GET_CHECK, NextRequest } = await loadCallsignApiHarness();
-		const req = new NextRequest('http://localhost/api/callsign/check?callsign=ab', { method: 'GET' });
+		const { dbOperations, GET_CHECK, NextRequest, STEAM_SESSION_COOKIE } = await loadCallsignApiHarness();
+		const { cookieHeader } = createConnectedSteamCookie(dbOperations, STEAM_SESSION_COOKIE);
+		const req = new NextRequest('http://localhost/api/callsign/check?callsign=ab', {
+			method: 'GET',
+			headers: { cookie: cookieHeader }
+		});
 		const res = await GET_CHECK(req);
 		expect(res.status).toBe(400);
 		const json = await res.json();
@@ -52,8 +76,12 @@ describe('Callsign API routes', () => {
 	});
 
 	it('GET /api/callsign/check returns ok when available', async () => {
-		const { GET_CHECK, NextRequest } = await loadCallsignApiHarness();
-		const req = new NextRequest('http://localhost/api/callsign/check?callsign=Charlie', { method: 'GET' });
+		const { dbOperations, GET_CHECK, NextRequest, STEAM_SESSION_COOKIE } = await loadCallsignApiHarness();
+		const { cookieHeader } = createConnectedSteamCookie(dbOperations, STEAM_SESSION_COOKIE);
+		const req = new NextRequest('http://localhost/api/callsign/check?callsign=Charlie', {
+			method: 'GET',
+			headers: { cookie: cookieHeader }
+		});
 		const res = await GET_CHECK(req);
 		expect(res.status).toBe(200);
 		const json = await res.json();
@@ -63,7 +91,8 @@ describe('Callsign API routes', () => {
 	});
 
 	it('GET /api/callsign/check reports a sound-alike conflict (Ghost vs G0st)', async () => {
-		const { dbOperations, GET_CHECK, NextRequest } = await loadCallsignApiHarness();
+		const { dbOperations, GET_CHECK, NextRequest, STEAM_SESSION_COOKIE } = await loadCallsignApiHarness();
+		const { cookieHeader } = createConnectedSteamCookie(dbOperations, STEAM_SESSION_COOKIE);
 
 		// Seed an existing callsign.
 		dbOperations.insertApplication(
@@ -74,7 +103,10 @@ describe('Callsign API routes', () => {
 			})
 		);
 
-		const req = new NextRequest('http://localhost/api/callsign/check?callsign=Ghost', { method: 'GET' });
+		const req = new NextRequest('http://localhost/api/callsign/check?callsign=Ghost', {
+			method: 'GET',
+			headers: { cookie: cookieHeader }
+		});
 		const res = await GET_CHECK(req);
 		expect(res.status).toBe(200);
 		const json = await res.json();
@@ -83,8 +115,12 @@ describe('Callsign API routes', () => {
 	});
 
 	it('GET /api/callsign/search returns 400 without q', async () => {
-		const { GET_SEARCH, NextRequest } = await loadCallsignApiHarness();
-		const req = new NextRequest('http://localhost/api/callsign/search', { method: 'GET' });
+		const { dbOperations, GET_SEARCH, NextRequest, STEAM_SESSION_COOKIE } = await loadCallsignApiHarness();
+		const { cookieHeader } = createConnectedSteamCookie(dbOperations, STEAM_SESSION_COOKIE);
+		const req = new NextRequest('http://localhost/api/callsign/search', {
+			method: 'GET',
+			headers: { cookie: cookieHeader }
+		});
 		const res = await GET_SEARCH(req);
 		expect(res.status).toBe(400);
 		const json = await res.json();
@@ -92,7 +128,8 @@ describe('Callsign API routes', () => {
 	});
 
 	it('GET /api/callsign/search returns results and caps at 25', async () => {
-		const { dbOperations, GET_SEARCH, NextRequest } = await loadCallsignApiHarness();
+		const { dbOperations, GET_SEARCH, NextRequest, STEAM_SESSION_COOKIE } = await loadCallsignApiHarness();
+		const { cookieHeader } = createConnectedSteamCookie(dbOperations, STEAM_SESSION_COOKIE);
 
 		for (let i = 0; i < 30; i++) {
 			const n = String(i).padStart(2, '0');
@@ -105,7 +142,10 @@ describe('Callsign API routes', () => {
 			);
 		}
 
-		const req = new NextRequest('http://localhost/api/callsign/search?q=User_', { method: 'GET' });
+		const req = new NextRequest('http://localhost/api/callsign/search?q=User_', {
+			method: 'GET',
+			headers: { cookie: cookieHeader }
+		});
 		const res = await GET_SEARCH(req);
 		expect(res.status).toBe(200);
 		const json = await res.json();

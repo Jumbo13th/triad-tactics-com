@@ -28,6 +28,7 @@ export default async function RenameRoutePage({ params }: { params: Promise<{ lo
 			steamid64={status.steamid64}
 			renameRequiredReason={status.renameRequiredReason}
 			renameRequiredBySteamId64={status.renameRequiredBySteamId64}
+			renameRequiredByCallsign={status.renameRequiredByCallsign}
 			hasPendingRenameRequest={status.hasPendingRenameRequest}
 		/>
 	);

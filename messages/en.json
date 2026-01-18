@@ -108,7 +108,7 @@
     "errorServer": "Something went wrong. Please try again."
   },
   "form": {
-    "title": "APPLICATION FORM",
+    "title": "Application",
     "subtitle": "Complete the form below to apply for participation",
     "loading": "Loading...",
     "requiredNote": "All fields are required except Name",
@@ -196,7 +196,7 @@
     "steamAuth": {
       "title": "Steam verification",
       "notConnected": "Not connected. Please sign in with Steam to continue",
-      "help": "We require Steam sign-in so we can verify that your account owns Arma Reforger",
+      "help": "We only use publicly available Steam profile information to verify that your account owns Arma Reforger.",
       "detect": {
         "title": "How ownership detection works",
         "profilePublic": "Your Steam Profile must be Public.",

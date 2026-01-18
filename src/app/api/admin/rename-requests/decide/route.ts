@@ -3,4 +3,4 @@ import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const POST = withApiGuards(postDecideRenameRequestRoute, { name: 'api.admin.decideRenameRequest' });
+export const POST = withApiGuards(postDecideRenameRequestRoute, { name: 'api.admin.decideRenameRequest', logSteamId: true });

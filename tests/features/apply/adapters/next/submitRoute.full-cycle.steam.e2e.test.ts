@@ -286,7 +286,7 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 	);
 
 	it(
-		'returns steam_not_connected end-to-end when no Steam session cookie is provided',
+		'returns steam_required end-to-end when no Steam session cookie is provided',
 		async () => {
 			const res = await fetch(`${baseUrl}/api/submit`, {
 				method: 'POST',
@@ -297,9 +297,9 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 				body: JSON.stringify(buildApplicationPayload('en'))
 			});
 
-			expect(res.status).toBe(400);
+			expect(res.status).toBe(401);
 			const json = await res.json();
-			expect(json.error).toBe('steam_not_connected');
+			expect(json.error).toBe('steam_required');
 		},
 		30_000
 	);

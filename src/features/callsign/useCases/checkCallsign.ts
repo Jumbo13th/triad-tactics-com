@@ -1,5 +1,6 @@
 import type { CallsignDeps } from '../ports';
 import { findCallsignConflicts } from '../match';
+import { getCachedExistingCallsigns } from './cachedCallsigns';
 
 export type CheckCallsignResult =
 	| { ok: true; normalized: string; exactMatches: string[]; soundMatches: string[] }
@@ -18,7 +19,7 @@ export function checkCallsign(deps: CallsignDeps, input: { callsign: unknown }):
 	}
 
 	try {
-		const existing = deps.repo.listCallsigns({ includeActive: true, includeConfirmed: true });
+		const existing = getCachedExistingCallsigns(deps);
 		const conflicts = findCallsignConflicts(callsign, existing);
 		return {
 			ok: true,

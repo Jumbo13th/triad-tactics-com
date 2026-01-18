@@ -69,6 +69,13 @@ export default function CallsignSearch() {
 			return;
 		}
 
+		if (trimmed.length < 2 || !/^[A-Za-z0-9_]+$/.test(trimmed)) {
+			abortRef.current?.abort();
+			abortRef.current = null;
+			setStatus({ state: 'idle' });
+			return;
+		}
+
 		timerRef.current = window.setTimeout(() => {
 			timerRef.current = null;
 			void runSearch(trimmed);

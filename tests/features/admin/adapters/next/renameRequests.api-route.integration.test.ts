@@ -55,6 +55,7 @@ describe('Admin rename endpoints (integration)', () => {
 			new NextRequest('http://localhost/api/admin/rename-required', {
 				method: 'POST',
 				headers: {
+					origin: 'http://localhost',
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${adminSid}`
 				},
@@ -121,7 +122,11 @@ describe('Admin rename endpoints (integration)', () => {
 		const bad = await POST_DECIDE(
 			new NextRequest('http://localhost/api/admin/rename-requests/decide', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json', cookie: `tt_steam_session=${adminSid}` },
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
 				body: JSON.stringify({ requestId: 'nope', decision: 'maybe' })
 			})
 		);
@@ -130,7 +135,11 @@ describe('Admin rename endpoints (integration)', () => {
 		const res = await POST_DECIDE(
 			new NextRequest('http://localhost/api/admin/rename-requests/decide', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json', cookie: `tt_steam_session=${adminSid}` },
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
 				body: JSON.stringify({ requestId: created.id, decision: 'decline', declineReason: 'Nope' })
 			})
 		);
@@ -142,7 +151,11 @@ describe('Admin rename endpoints (integration)', () => {
 		const res2 = await POST_DECIDE(
 			new NextRequest('http://localhost/api/admin/rename-requests/decide', {
 				method: 'POST',
-				headers: { 'content-type': 'application/json', cookie: `tt_steam_session=${adminSid}` },
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
 				body: JSON.stringify({ requestId: created.id, decision: 'decline' })
 			})
 		);

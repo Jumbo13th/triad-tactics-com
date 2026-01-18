@@ -18,10 +18,11 @@ const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset
   };
 });
 
-export default function ApplicationForm() {
+export default function ApplicationForm(props: { initialSteamConnected?: boolean } = {}) {
   const t = useTranslations('form');
   const params = useParams();
   const locale = (params?.locale as string | undefined) ?? 'en';
+  const initialSteamConnected = props.initialSteamConnected === true;
   const supportEmail = t('supportEmail');
   const showSupportEmail = typeof supportEmail === 'string' && supportEmail.includes('@');
   const [formData, setFormData] = useState<ApplicationFormData>({
@@ -61,6 +62,8 @@ export default function ApplicationForm() {
   const isSteamConnected = steamAuth?.connected === true;
   const hasExistingApplication = steamAuth?.connected === true && steamAuth?.hasExisting === true;
   const canSubmit = !isSubmitting;
+
+  const isSteamReadyConnected = isSteamConnected || (steamAuth === null && initialSteamConnected);
 
   useEffect(() => {
     if (isSteamConnected) {
@@ -201,11 +204,31 @@ export default function ApplicationForm() {
       [field]: value
     }));
 
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[field];
-      return newErrors;
+  // Callsign availability checks are async; make syntax errors immediate to avoid confusing
+  // "couldn't check" messages for obviously invalid inputs like "[TT]".
+  if (field === 'callsign') {
+    const trimmed = value.trim();
+    const hasValue = trimmed.length > 0;
+    const charsAllowed = /^[A-Za-z0-9_]*$/.test(trimmed);
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      // Clear prior field errors by default.
+      delete next[field];
+
+      if (hasValue && !charsAllowed) {
+        next[field] = t('errors.callsignInvalidChars');
+      }
+      return next;
     });
+    return;
+  }
+
+  setErrors(prev => {
+    const newErrors = { ...prev };
+    delete newErrors[field];
+    return newErrors;
+  });
   };
 
   const handleBlur = (field: keyof ApplicationFormData) => {
@@ -245,7 +268,7 @@ export default function ApplicationForm() {
       return;
     }
 
-    if (steamAuth?.connected !== true) {
+    if (!isSteamReadyConnected) {
       setSteamRequiredAttempted(true);
       setTimeout(() => scrollToSteamAuth(), 0);
       return;
@@ -267,35 +290,50 @@ export default function ApplicationForm() {
 
       const data: unknown = await response.json();
       const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-      const errorCode = isRecord(data) ? data.error : undefined;
+      const payload = isRecord(data) ? data : {};
+      const errorCode = typeof payload.error === 'string' ? payload.error : undefined;
 
       if (!response.ok) {
-        if (errorCode === 'rate_limited') {
-          const seconds = isRecord(data) && typeof data.retryAfterSeconds === 'number' ? data.retryAfterSeconds : 120;
-          setRateLimitSecondsLeft(Math.max(0, Math.floor(seconds)));
-        } else if (errorCode === 'duplicate') {
-          setPopup({ title: t('duplicate.title'), message: t('duplicate.message') });
-        } else if (errorCode === 'steam_not_connected') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamNotConnected') });
-          refreshSteamAuth();
-        } else if (errorCode === 'steam_api_unavailable') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
-        } else if (errorCode === 'steam_game_not_detected') {
-          setPopup({
-            title: t('popup.errorTitle'),
-            message: t('errors.steamGameNotDetected'),
-            lines: [
-              t('steamAuth.detect.title'),
-              `• ${t('steamAuth.detect.profilePublic')}`,
-              `• ${t('steamAuth.detect.gameDetailsPublic')}`,
-              `• ${t('steamAuth.detect.gameNotHidden')}`,
-              `• ${t('steamAuth.detect.delayAfterChange')}`,
-              `• ${t('steamAuth.detect.canRehideAfterSubmit')}`,
-              t('steamAuth.detect.incognitoCheck')
-            ]
-          });
-        } else {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.serverError') });
+        switch (errorCode) {
+          case 'rate_limited': {
+            const seconds = typeof payload.retryAfterSeconds === 'number' ? payload.retryAfterSeconds : 120;
+            setRateLimitSecondsLeft(Math.max(0, Math.floor(seconds)));
+            break;
+          }
+          case 'duplicate': {
+            setPopup({ title: t('duplicate.title'), message: t('duplicate.message') });
+            break;
+          }
+          case 'steam_not_connected':
+          case 'steam_required': {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.steamNotConnected') });
+            refreshSteamAuth();
+            break;
+          }
+          case 'steam_api_unavailable': {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
+            break;
+          }
+          case 'steam_game_not_detected': {
+            setPopup({
+              title: t('popup.errorTitle'),
+              message: t('errors.steamGameNotDetected'),
+              lines: [
+                t('steamAuth.detect.title'),
+                `• ${t('steamAuth.detect.profilePublic')}`,
+                `• ${t('steamAuth.detect.gameDetailsPublic')}`,
+                `• ${t('steamAuth.detect.gameNotHidden')}`,
+                `• ${t('steamAuth.detect.delayAfterChange')}`,
+                `• ${t('steamAuth.detect.canRehideAfterSubmit')}`,
+                t('steamAuth.detect.incognitoCheck')
+              ]
+            });
+            break;
+          }
+          default: {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.serverError') });
+            break;
+          }
         }
         setIsSubmitting(false);
         return;
@@ -472,15 +510,32 @@ export default function ApplicationForm() {
               </>
             )}
           </div>
+
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {isSteamReadyConnected ? (
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4 shadow-sm shadow-black/20">
           <div className="flex flex-col gap-2">
             <h3 className="text-base font-semibold text-neutral-50">{t('callsignSection.title')}</h3>
             <p className="text-sm text-neutral-300">{t('callsignSection.intro')}</p>
           </div>
+
+            <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+              <p className="text-xs font-medium text-neutral-200">{t('callsignRules.title')}</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+                <li>{t('callsignRules.allowedChars')}</li>
+                <li>{t('callsignRules.uniqueness')}</li>
+                <li>{t('callsignRules.noOffense')}</li>
+                <li>{t('callsignRules.neutral')}</li>
+                <li>{t('callsignRules.noProjectSquads')}</li>
+                <li>{t('callsignRules.noRealUnits')}</li>
+                <li>{t('callsignRules.noEquipment')}</li>
+                <li>{t('callsignRules.keepSimple')}</li>
+              </ul>
+              <p className="mt-2 text-xs text-neutral-400">{t('callsignRules.adminNote')}</p>
+            </div>
 
           <div className="mt-4">
             <CallsignField value={formData.callsign} onChange={(v) => handleChange('callsign', v)} onBlur={() => handleBlur('callsign')} error={errors.callsign} />
@@ -488,21 +543,6 @@ export default function ApplicationForm() {
 
           <div className="mt-4">
             <CallsignSearch />
-          </div>
-
-          <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
-            <p className="text-xs font-medium text-neutral-200">{t('callsignRules.title')}</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
-              <li>{t('callsignRules.allowedChars')}</li>
-              <li>{t('callsignRules.uniqueness')}</li>
-              <li>{t('callsignRules.noOffense')}</li>
-              <li>{t('callsignRules.neutral')}</li>
-              <li>{t('callsignRules.noProjectSquads')}</li>
-              <li>{t('callsignRules.noRealUnits')}</li>
-              <li>{t('callsignRules.noEquipment')}</li>
-              <li>{t('callsignRules.keepSimple')}</li>
-            </ul>
-            <p className="mt-2 text-xs text-neutral-400">{t('callsignRules.adminNote')}</p>
           </div>
         </div>
 
@@ -731,7 +771,12 @@ export default function ApplicationForm() {
             <p className="mt-2 text-xs text-red-400">{t('steamRequiredNote')}</p>
           )}
         </div>
-      </form>
+        </form>
+      ) : (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+          <p className="text-sm text-neutral-300">{t('steamAuth.notConnected')}</p>
+        </div>
+      )}
     </div>
   );
 }

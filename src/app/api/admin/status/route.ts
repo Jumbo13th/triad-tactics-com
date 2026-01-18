@@ -3,4 +3,4 @@ import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const GET = withApiGuards(getAdminStatusRoute, { name: 'api.admin.status' });
+export const GET = withApiGuards(getAdminStatusRoute, { name: 'api.admin.status', logSteamId: true });

@@ -14,6 +14,7 @@ export type SteamStatusResult =
       hasPendingRenameRequest: boolean;
       renameRequiredReason: string | null;
       renameRequiredBySteamId64: string | null;
+		renameRequiredByCallsign: string | null;
       accessLevel: 'guest' | 'player' | 'admin';
     };
 
@@ -28,6 +29,10 @@ export function getSteamStatus(deps: SteamAuthDeps, sid: string | null): SteamSt
   const existing = user?.id ? deps.applications.getByUserId(user.id) : null;
   const renameRequired = !!user?.rename_required_at;
 	const hasPendingRenameRequest = user?.id ? deps.renameRequests.hasPendingByUserId(user.id) : false;
+	const renameRequiredBySteamId64 = user?.rename_required_by_steamid64 ?? null;
+	const renameRequiredByCallsign = renameRequiredBySteamId64
+		? (deps.users.getUserBySteamId64(renameRequiredBySteamId64)?.current_callsign ?? null)
+		: null;
   const isAdmin = deps.admin.isAdminSteamId(identity.steamid64);
   const accessLevel: 'guest' | 'player' | 'admin' = isAdmin
     ? 'admin'
@@ -45,7 +50,8 @@ export function getSteamStatus(deps: SteamAuthDeps, sid: string | null): SteamSt
     renameRequired,
 		hasPendingRenameRequest,
     renameRequiredReason: user?.rename_required_reason ?? null,
-    renameRequiredBySteamId64: user?.rename_required_by_steamid64 ?? null,
+		renameRequiredBySteamId64,
+		renameRequiredByCallsign,
     accessLevel
   };
 }

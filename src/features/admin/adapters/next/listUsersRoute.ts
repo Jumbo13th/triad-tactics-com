@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
-import { steamAuthDeps } from '@/features/steamAuth/deps';
-import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
-import { isAdminConfigured, isAdminSteamId } from '@/platform/admin';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { listUsers } from '@/features/admin/useCases/listUsers';
 import { listUsersDeps } from '@/features/admin/deps';
+import { requireAdmin } from './adminAuth';
 
 function normalizeStatus(value: string | null): 'all' | 'rename_required' | 'confirmed' {
 	if (!value) return 'all';
@@ -35,18 +32,8 @@ function matchesQuery(row: Record<string, unknown>, q: string) {
 
 export async function getAdminUsersRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		if (!isAdminConfigured()) {
-			return NextResponse.json({ error: 'admin_not_configured' }, { status: 500 });
-		}
-
-		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value ?? null;
-		const identity = getSteamIdentity(steamAuthDeps, sid);
-		if (!identity.connected) {
-			return NextResponse.json({ error: 'steam_not_logged_in' }, { status: 401 });
-		}
-		if (!isAdminSteamId(identity.steamid64)) {
-			return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-		}
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
 
 		const status = normalizeStatus(request.nextUrl.searchParams.get('status'));
 		const q = request.nextUrl.searchParams.get('q') ?? '';

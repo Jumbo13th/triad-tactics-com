@@ -1,4 +1,5 @@
 import type { CallsignDeps } from '../ports';
+import { getCachedExistingCallsigns } from './cachedCallsigns';
 
 export type SearchCallsignResult =
 	| { ok: true; query: string; results: string[]; total: number }
@@ -10,12 +11,15 @@ export function searchCallsign(deps: CallsignDeps, input: { query: unknown }): S
 	}
 
 	const query = input.query.trim();
-	if (query.length < 1 || query.length > 50) {
+	if (query.length < 2 || query.length > 50) {
+		return { ok: false, error: 'invalid_request' };
+	}
+	if (!/^[A-Za-z0-9_]+$/.test(query)) {
 		return { ok: false, error: 'invalid_request' };
 	}
 
 	try {
-		const existing = deps.repo.listCallsigns({ includeActive: true, includeConfirmed: true });
+		const existing = getCachedExistingCallsigns(deps);
 		const q = query.toLowerCase();
 		const filtered = existing.filter((c) => c.toLowerCase().includes(q));
 		const results = filtered.slice(0, 25);

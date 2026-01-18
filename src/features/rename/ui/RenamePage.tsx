@@ -20,6 +20,7 @@ type Props = {
 	steamid64: string;
 	renameRequiredReason: string | null;
 	renameRequiredBySteamId64: string | null;
+	renameRequiredByCallsign: string | null;
 	hasPendingRenameRequest: boolean;
 };
 
@@ -150,7 +151,7 @@ export default function RenamePage(props: Props) {
 					<p className="mt-1 text-sm text-neutral-300">{props.renameRequiredReason}</p>
 					{props.renameRequiredBySteamId64 ? (
 						<p className="mt-2 text-xs text-neutral-500">
-							{t('requestedByLabel')}: {props.renameRequiredBySteamId64}
+							{t('requestedByLabel')}: {props.renameRequiredByCallsign ?? props.renameRequiredBySteamId64}
 						</p>
 					) : null}
 				</div>
