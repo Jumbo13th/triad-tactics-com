@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
 import type { Application } from '@/platform/db';
 import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
+import AdminNav from '@/features/admin/ui/AdminNav';
 
 type AdminStatus =
 	| { connected: false; isAdmin: false }
-	| { connected: true; isAdmin: boolean; steamid64: string; personaName: string | null };
+	| { connected: true; isAdmin: boolean; steamid64: string; personaName: string | null; callsign: string | null };
 
 type AdminApplicationsResponse =
 	| {
@@ -38,8 +39,11 @@ export default function AdminPage() {
 	const [apps, setApps] = useState<AdminApplicationsResponse | null>(null);
 	const [appsStatus, setAppsStatus] = useState<'active' | 'archived'>('active');
 	const [query, setQuery] = useState('');
+	const searchInputRef = useRef<HTMLInputElement | null>(null);
 	const [confirmingId, setConfirmingId] = useState<number | null>(null);
 	const [confirmError, setConfirmError] = useState<string | null>(null);
+	const [renamingSteamId, setRenamingSteamId] = useState<string | null>(null);
+	const [renameError, setRenameError] = useState<string | null>(null);
 
 	const [debouncedQuery, setDebouncedQuery] = useState('');
 	useEffect(() => {
@@ -113,6 +117,32 @@ export default function AdminPage() {
 		}
 	};
 
+	const handleRequestRename = async (steamid64: string) => {
+		try {
+			setRenameError(null);
+			setRenamingSteamId(steamid64);
+			const reasonRaw = window.prompt(ta('renameReasonPrompt'));
+			const reason = typeof reasonRaw === 'string' ? reasonRaw.trim() : '';
+			const res = await fetch('/api/admin/rename-required', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ steamid64, reason: reason || null })
+			});
+			if (!res.ok) {
+				setRenameError('rename_failed');
+				return;
+			}
+
+			// Refresh current view.
+			const json = await loadApps({ status: appsStatus, q: debouncedQuery });
+			setApps(json);
+		} catch {
+			setRenameError('rename_failed');
+		} finally {
+			setRenamingSteamId(null);
+		}
+	};
+
 	return (
 		<section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
 					{status === null ? (
@@ -142,6 +172,7 @@ export default function AdminPage() {
 						</div>
 					) : (
 						<div className="grid gap-4">
+							<AdminNav />
 							<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex flex-wrap items-baseline justify-between gap-2">
 									<h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">
@@ -182,12 +213,39 @@ export default function AdminPage() {
 										</button>
 										<div className="relative">
 											<input
-												type="search"
+												ref={searchInputRef}
+												type="text"
 												value={query}
 												onChange={(e) => setQuery(e.target.value)}
 												placeholder={ta('searchPlaceholder')}
-												className="h-10 w-64 rounded-2xl border border-neutral-800 bg-neutral-950 px-3 text-sm text-neutral-100 placeholder:text-neutral-500 shadow-sm shadow-black/20 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
+												className="h-10 w-64 rounded-2xl border border-neutral-800 bg-neutral-950 px-3 pr-10 text-sm text-neutral-100 placeholder:text-neutral-500 shadow-sm shadow-black/20 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
 											/>
+
+											{query.trim() ? (
+												<button
+													type="button"
+													onClick={() => {
+														setQuery('');
+														searchInputRef.current?.focus();
+													}}
+													className="absolute right-1 top-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 text-neutral-200 shadow-sm shadow-black/30 hover:border-neutral-500 hover:bg-white/5 hover:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
+													aria-label="Clear"
+												>
+													<svg
+														aria-hidden="true"
+														viewBox="0 0 24 24"
+														className="h-4 w-4"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="2.5"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+													>
+														<path d="M6 6l12 12" />
+														<path d="M18 6L6 18" />
+													</svg>
+												</button>
+											) : null}
 										</div>
 									</div>
 								) : null}
@@ -205,6 +263,9 @@ export default function AdminPage() {
 								<div className="grid gap-3">
 									{confirmError ? (
 										<p className="text-sm text-neutral-300">{ta('confirmError')}</p>
+									) : null}
+									{renameError ? (
+										<p className="text-sm text-neutral-300">{ta('renameError')}</p>
 									) : null}
 
 									{apps.applications.map((row, idx) => {
@@ -234,6 +295,18 @@ export default function AdminPage() {
 													</div>
 
 													<div className="flex shrink-0 items-center gap-2">
+														<button
+															type="button"
+															onClick={(e) => {
+																e.preventDefault();
+																void handleRequestRename(row.steamid64);
+															}}
+															disabled={renamingSteamId === row.steamid64}
+															className="inline-flex items-center justify-center rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-50 shadow-sm shadow-black/30 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 disabled:opacity-60"
+														>
+															{renamingSteamId === row.steamid64 ? ta('requestingRename') : ta('requestRename')}
+														</button>
+
 														{isConfirmed ? (
 															<span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-neutral-200">
 																{ta('confirmed')}
@@ -280,8 +353,9 @@ export default function AdminPage() {
 													</div>
 
 													<div className="grid gap-2 rounded-xl border border-neutral-900 bg-neutral-950/40 p-3">
-														<p className="text-xs font-semibold tracking-wide text-neutral-400">{tf('name')}</p>
-														<p className="whitespace-pre-wrap text-neutral-200">{row.answers?.name}</p>
+														<p className="text-xs font-semibold tracking-wide text-neutral-400">{tf('callsign')}</p>
+														<p className="whitespace-pre-wrap text-neutral-200">{row.answers?.callsign}</p>
+														{row.answers?.name ? <p className="text-xs text-neutral-400">{tf('name')}: {row.answers.name}</p> : null}
 													</div>
 
 													<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

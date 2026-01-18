@@ -10,10 +10,11 @@ function makeDeps(overrides?: {
 	const deps: SubmitApplicationDeps = {
 		repo: {
 			insertApplication: () => ({ success: true, id: 1 }),
-			getBySteamId64: () => null
+			getBySteamId64: () => null,
+			getByUserId: () => null
 		},
 		users: {
-			upsertUser: () => ({ success: true })
+			upsertUser: () => ({ success: true, userId: 1 })
 		},
 		steam: {
 			verifySteamOwnsGameOrReject: async () => ({ ok: true })
@@ -30,7 +31,8 @@ function makeDeps(overrides?: {
 
 function buildValidBody() {
 	return {
-		name: 'Test User',
+		callsign: 'Test_User',
+		name: 'Test Name',
 		age: '25',
 		email: 'test@example.com',
 		city: 'Test City',
@@ -87,15 +89,15 @@ describe('submitApplication (use case)', () => {
 		const deps = makeDeps({
 			repo: {
 				insertApplication: () => ({ success: false, error: 'duplicate' }),
-				getBySteamId64: () => ({
+				getByUserId: () => ({
 					id: 1,
 					email: 'test@example.com',
 					steamid64: '76561198000000000',
 					persona_name: 'Persona',
 					answers: {
-						name: 'Test User',
+						callsign: 'Test_User',
+						name: 'Test Name',
 						age: '25',
-						email: 'test@example.com',
 						city: 'Test City',
 						country: 'Test Country',
 						availability: 'Weekends and evenings',

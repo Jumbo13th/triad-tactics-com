@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 
 export type AdminStatus =
 	| { connected: false; isAdmin: false }
-	| { connected: true; isAdmin: boolean; steamid64: string; personaName: string | null };
+	| {
+			connected: true;
+			isAdmin: boolean;
+			steamid64: string;
+			personaName: string | null;
+			callsign: string | null;
+	  };
 
 export function useAdminStatus() {
 	const [status, setStatus] = useState<AdminStatus | null>(null);

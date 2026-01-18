@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import { applicationSchema, type ApplicationFormData } from '../schema';
 import type { ZodIssue } from 'zod';
 import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
+import CallsignField from '@/features/callsign/ui/CallsignField';
+import CallsignSearch from '@/features/callsign/ui/CallsignSearch';
 
 const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset => {
   const sign = offset >= 0 ? '+' : '-';
@@ -23,6 +25,7 @@ export default function ApplicationForm() {
   const supportEmail = t('supportEmail');
   const showSupportEmail = typeof supportEmail === 'string' && supportEmail.includes('@');
   const [formData, setFormData] = useState<ApplicationFormData>({
+    callsign: '',
     name: '',
     age: '',
     email: '',
@@ -36,7 +39,15 @@ export default function ApplicationForm() {
 
   const [steamAuth, setSteamAuth] = useState<
     | { connected: false }
-    | { connected: true; steamid64: string; personaName: string | null; hasExisting?: boolean; submittedAt?: string | null }
+    | {
+        connected: true;
+        steamid64: string;
+        personaName: string | null;
+        hasExisting?: boolean;
+        submittedAt?: string | null;
+        renameRequired?: boolean;
+        hasPendingRenameRequest?: boolean;
+      }
     | null
   >(null);
 
@@ -83,7 +94,9 @@ export default function ApplicationForm() {
           steamid64: json.steamid64,
           personaName: typeof json.personaName === 'string' ? json.personaName : null,
           hasExisting: json.hasExisting === true,
-          submittedAt: typeof json.submittedAt === 'string' ? json.submittedAt : null
+          submittedAt: typeof json.submittedAt === 'string' ? json.submittedAt : null,
+          renameRequired: json.renameRequired === true,
+          hasPendingRenameRequest: json.hasPendingRenameRequest === true
         });
       } else {
         setSteamAuth({ connected: false });
@@ -463,10 +476,40 @@ export default function ApplicationForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4 shadow-sm shadow-black/20">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-base font-semibold text-neutral-50">{t('callsignSection.title')}</h3>
+            <p className="text-sm text-neutral-300">{t('callsignSection.intro')}</p>
+          </div>
+
+          <div className="mt-4">
+            <CallsignField value={formData.callsign} onChange={(v) => handleChange('callsign', v)} onBlur={() => handleBlur('callsign')} error={errors.callsign} />
+          </div>
+
+          <div className="mt-4">
+            <CallsignSearch />
+          </div>
+
+          <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+            <p className="text-xs font-medium text-neutral-200">{t('callsignRules.title')}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+              <li>{t('callsignRules.allowedChars')}</li>
+              <li>{t('callsignRules.uniqueness')}</li>
+              <li>{t('callsignRules.noOffense')}</li>
+              <li>{t('callsignRules.neutral')}</li>
+              <li>{t('callsignRules.noProjectSquads')}</li>
+              <li>{t('callsignRules.noRealUnits')}</li>
+              <li>{t('callsignRules.noEquipment')}</li>
+              <li>{t('callsignRules.keepSimple')}</li>
+            </ul>
+            <p className="mt-2 text-xs text-neutral-400">{t('callsignRules.adminNote')}</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-neutral-200">
-              {t('name')}
+              {t('name')} <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="name"

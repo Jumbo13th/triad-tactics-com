@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "next.config.{js,cjs,mjs,ts}",
+    "postcss.config.{js,cjs,mjs,ts}",
+    "eslint.config.{js,cjs,mjs,ts}",
+    "vitest.config.{js,cjs,mjs,ts}",
+    "scripts/**/*.{js,cjs,mjs,ts}",
+    "src/instrumentation.{ts,tsx}",
+    "src/proxy.{ts,tsx}",
+    "src/app/**/*.{ts,tsx}",
+    "src/pages/**/*.{ts,tsx}",
+    "src/middleware.{ts,tsx}",
+    "tests/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "tsconfig.json"
+  ],
+  "ignore": [
+    ".next/**",
+    ".next-e2e/**",
+    "database/**"
+  ]
+}

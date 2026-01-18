@@ -18,7 +18,8 @@ function requireEnv(name: string): string {
 
 function buildApplicationPayload(locale: string) {
 	return {
-		name: 'Test User',
+		callsign: 'Test_User',
+		name: 'Test Name',
 		age: '25',
 		email: 'test@example.com',
 		city: 'Test City',
@@ -136,10 +137,33 @@ let serverProcess: ChildProcessWithoutNullStreams | null = null;
 let stopServer: (() => Promise<void>) | null = null;
 let dbPathForE2e = '';
 let distDirForE2e = '';
+let originalTsconfigJson: string | null = null;
+let originalNextEnvDts: string | null = null;
 
 describe('Apply workflow: submit route (e2e over HTTP)', () => {
 	beforeAll(async () => {
 		const steamWebApiKey = requireEnv('STEAM_WEB_API_KEY');
+
+		// Next may auto-adjust tsconfig/next-env based on NEXT_DIST_DIR during build.
+		// Snapshot and restore to avoid timestamp churn in git-tracked files.
+		try {
+			originalTsconfigJson = await fs.readFile(path.join(process.cwd(), 'tsconfig.json'), 'utf8');
+		} catch {
+			originalTsconfigJson = null;
+		}
+		try {
+			originalNextEnvDts = await fs.readFile(path.join(process.cwd(), 'next-env.d.ts'), 'utf8');
+		} catch {
+			originalNextEnvDts = null;
+		}
+
+			// Ensure we don't keep stale generated route types from previous runs.
+			// The e2e suite builds into a custom distDir, but tsconfig may still include
+			// the default .next folder if it exists.
+			try {
+				await fs.rm(path.join(process.cwd(), '.next'), { recursive: true, force: true });
+			} catch {
+			}
 
 		const ts = new Date().toISOString().replace(/[:.]/g, '-');
 		const dbPath = path.join(os.tmpdir(), `triad-tactics-e2e-${ts}.db`);
@@ -160,6 +184,20 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 
 		await runNextBuild({ env: commonEnv });
 
+		// Restore config files after build to keep working tree clean.
+		try {
+			if (originalTsconfigJson !== null) {
+				await fs.writeFile(path.join(process.cwd(), 'tsconfig.json'), originalTsconfigJson, 'utf8');
+			}
+		} catch {
+		}
+		try {
+			if (originalNextEnvDts !== null) {
+				await fs.writeFile(path.join(process.cwd(), 'next-env.d.ts'), originalNextEnvDts, 'utf8');
+			}
+		} catch {
+		}
+
 		const { child, stop } = startNextProdServer({
 			port,
 			env: commonEnv
@@ -172,6 +210,20 @@ describe('Apply workflow: submit route (e2e over HTTP)', () => {
 	}, 60_000);
 
 	afterAll(async () => {
+		// Best-effort restore in case build/start mutated them later.
+		try {
+			if (originalTsconfigJson !== null) {
+				await fs.writeFile(path.join(process.cwd(), 'tsconfig.json'), originalTsconfigJson, 'utf8');
+			}
+		} catch {
+		}
+		try {
+			if (originalNextEnvDts !== null) {
+				await fs.writeFile(path.join(process.cwd(), 'next-env.d.ts'), originalNextEnvDts, 'utf8');
+			}
+		} catch {
+		}
+
 		if (stopServer) {
 			await stopServer();
 		}

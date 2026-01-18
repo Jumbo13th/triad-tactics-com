@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
 export const applicationSchema = z.object({
-  name: z.string().trim().min(2, 'required').max(100, 'maxLength'),
+  callsign: z
+    .string()
+    .trim()
+    .min(1, 'required')
+    .min(3, 'minLength')
+    .max(100, 'maxLength')
+    .refine((v) => /^[A-Za-z0-9_]+$/.test(v), 'callsignInvalidChars'),
+  name: z.string().trim().max(100, 'maxLength').optional().default(''),
   age: z
     .string()
     .trim()

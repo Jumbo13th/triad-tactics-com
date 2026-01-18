@@ -13,8 +13,13 @@ export default async function AdminGatePage({ params }: { params: Promise<{ loca
 
 	// If the user is logged in (Steam) but has NOT applied yet,
 	// keep them on the application flow.
-	if (status.connected && !status.hasExisting) {
-		redirect(`/${locale}/apply`);
+	if (status.connected) {
+		if (status.renameRequired && !status.hasPendingRenameRequest) {
+			redirect(`/${locale}/rename`);
+		}
+		if (!status.hasExisting) {
+			redirect(`/${locale}/apply`);
+		}
 	}
 
 	return <AdminPage />;

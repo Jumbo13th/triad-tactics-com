@@ -1,8 +1,6 @@
-import { NextRequest } from 'next/server';
 import { postConfirmApplicationRoute } from '@/features/admin/adapters/next/confirmApplicationRoute';
+import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
-	return postConfirmApplicationRoute(request);
-}
+export const POST = withApiGuards(postConfirmApplicationRoute, { name: 'api.admin.confirmApplication' });

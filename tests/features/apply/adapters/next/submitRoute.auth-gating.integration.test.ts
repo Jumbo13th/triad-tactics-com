@@ -10,7 +10,8 @@ async function loadSubmitApiRoute() {
 
 function buildApplicationPayload(overrides: Partial<Record<string, unknown>> = {}) {
 	return {
-		name: 'Test User',
+		callsign: 'Test_User',
+		name: 'Test Name',
 		age: '25',
 		email: 'test@example.com',
 		city: 'Test City',

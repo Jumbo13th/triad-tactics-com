@@ -17,11 +17,29 @@ export type SteamAuthSessionRepo = {
 
 export type SteamAuthApplicationsRepo = {
 	getBySteamId64: (steamid64: string) => { created_at?: string } | null;
+	getByUserId: (userId: number) => { created_at?: string } | null;
 };
 
 export type SteamAuthUsersRepo = {
-	upsertUser: (user: { steamid64: string; persona_name?: string | null }) => { success: boolean };
-	getUserBySteamId64: (steamid64: string) => { player_confirmed_at?: string | null } | null;
+	upsertUser: (user: { steamid64: string }) =>
+		| { success: true; userId: number }
+		| { success: false };
+	getUserBySteamId64: (
+		steamid64: string
+	) =>
+		| {
+				id: number;
+				player_confirmed_at?: string | null;
+				current_callsign?: string | null;
+				rename_required_at?: string | null;
+				rename_required_reason?: string | null;
+				rename_required_by_steamid64?: string | null;
+			}
+		| null;
+};
+
+export type SteamAuthRenameRequestsRepo = {
+	hasPendingByUserId: (userId: number) => boolean;
 };
 
 export type SteamAuthAdminAccess = {
@@ -32,6 +50,7 @@ export type SteamAuthDeps = {
 	sessions: SteamAuthSessionRepo;
 	applications: SteamAuthApplicationsRepo;
 	users: SteamAuthUsersRepo;
+	renameRequests: SteamAuthRenameRequestsRepo;
 	admin: SteamAuthAdminAccess;
 	openId: SteamOpenIdVerifier;
 	persona: SteamPersonaFetcher;

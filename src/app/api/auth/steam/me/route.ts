@@ -1,6 +1,6 @@
 import { getSteamMeRoute } from '@/features/steamAuth/adapters/next/meRoute';
-import { withApiLogging } from '@/platform/nextRouteLogging';
+import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const GET = withApiLogging(getSteamMeRoute, { name: 'api.auth.steam.me' });
+export const GET = withApiGuards(getSteamMeRoute, { name: 'api.auth.steam.me' });

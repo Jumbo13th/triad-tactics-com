@@ -61,7 +61,8 @@ export async function submitApplication(
   }
 
 	// Ensure the user exists in our DB as soon as they interact with the system.
-	deps.users.upsertUser({ steamid64, persona_name: personaName });
+  const ensuredUser = deps.users.upsertUser({ steamid64 });
+  const userId = ensuredUser.success ? ensuredUser.userId : null;
 
   if (!input.bypassRateLimit) {
     if (!input.rateLimitDecision.allowed) {
@@ -111,11 +112,14 @@ export async function submitApplication(
 
   if (!result.success) {
     if (result.error === 'duplicate') {
-      const existingBySteam = deps.repo.getBySteamId64(steamid64);
+      const existing =
+        userId != null
+          ? deps.repo.getByUserId(userId)
+          : deps.repo.getBySteamId64(steamid64);
       return {
         ok: false,
         status: 409,
-        json: { error: 'duplicate', submittedAt: existingBySteam?.created_at ?? null }
+        json: { error: 'duplicate', submittedAt: existing?.created_at ?? null }
       };
     }
 

@@ -70,7 +70,8 @@ describe('Admin API: Steam allowlist auth', () => {
 			steamid64: '76561198011111111',
 			persona_name: 'Applicant',
 			answers: {
-				name: 'Applicant',
+				callsign: 'Applicant',
+				name: 'Applicant Name',
 				age: '25',
 				city: 'Test City',
 				country: 'Test Country',

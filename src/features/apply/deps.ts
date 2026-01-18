@@ -5,7 +5,8 @@ import type { SubmitApplicationDeps } from './ports';
 export const submitApplicationDeps: SubmitApplicationDeps = {
 	repo: {
 		insertApplication: (application) => dbOperations.insertApplication(application),
-		getBySteamId64: dbOperations.getBySteamId64
+		getBySteamId64: dbOperations.getBySteamId64,
+		getByUserId: dbOperations.getByUserId
 	},
 	users: {
 		upsertUser: dbOperations.upsertUser

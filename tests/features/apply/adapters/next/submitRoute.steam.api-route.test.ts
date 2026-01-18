@@ -10,7 +10,8 @@ function requireEnv(name: string): string {
 
 function buildApplicationPayload(locale: string) {
 	return {
-		name: 'Test User',
+		callsign: 'Test_User',
+		name: 'Test Name',
 		age: '25',
 		email: 'test@example.com',
 		city: 'Test City',
@@ -100,7 +101,7 @@ describe('Apply workflow: submit route (live Steam via API route)', () => {
 		expect(json.error).toBe('steam_game_not_detected');
 	});
 
-	it('enforces uniqueness per steamid64 (second submit is duplicate)', async () => {
+	it('enforces uniqueness per user (second submit is duplicate)', async () => {
 		process.env.STEAM_WEB_API_KEY = requireEnv('STEAM_WEB_API_KEY');
 		const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
 		const { dbOperations } = await import('@/platform/db');

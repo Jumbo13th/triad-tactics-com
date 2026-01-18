@@ -49,7 +49,7 @@ export default function SteamAuthControls() {
 		);
 	}
 
-	const name = status.personaName || status.steamid64;
+	const name = status.callsign || status.personaName || status.steamid64;
 
 	return (
 		<div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
@@ -68,9 +68,7 @@ export default function SteamAuthControls() {
 			</button>
 		</div>
 	);
-	
 }
-
 function SteamLoginModalButton({ redirectPath }: { redirectPath: string }) {
 	const t = useTranslations('auth');
 	const [open, setOpen] = useState(false);
@@ -168,4 +166,3 @@ function SteamLoginModalButton({ redirectPath }: { redirectPath: string }) {
 		</>
 	);
 }
-

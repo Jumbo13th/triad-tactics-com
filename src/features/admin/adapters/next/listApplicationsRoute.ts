@@ -19,11 +19,14 @@ function normalizeStatus(value: string | null): 'active' | 'archived' | 'all' {
 function matchesQuery(app: Application, q: string) {
 	const needle = q.trim().toLowerCase();
 	if (!needle) return true;
+	const callsign = app.answers?.callsign ?? '';
+	const name = app.answers?.name ?? '';
 	const haystacks = [
 		app.email ?? '',
 		app.steamid64 ?? '',
 		app.persona_name ?? '',
-		app.answers.name ?? ''
+		callsign,
+		name
 	];
 	return haystacks.some((h) => h.toLowerCase().includes(needle));
 }

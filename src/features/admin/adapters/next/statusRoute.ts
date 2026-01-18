@@ -15,6 +15,12 @@ export async function getAdminStatusRoute(request: NextRequest): Promise<NextRes
 		connected: true,
 		steamid64: identity.steamid64,
 		personaName: identity.personaName,
+		callsign: (() => {
+			// Ensure user exists even if they haven't applied.
+			steamAuthDeps.users.upsertUser({ steamid64: identity.steamid64 });
+			const user = steamAuthDeps.users.getUserBySteamId64(identity.steamid64);
+			return user?.current_callsign ?? null;
+		})(),
 		isAdmin: isAdminSteamId(identity.steamid64)
 	});
 }

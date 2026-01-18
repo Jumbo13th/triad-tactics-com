@@ -12,11 +12,15 @@ export const steamAuthDeps: SteamAuthDeps = {
 		deleteSteamSession: dbOperations.deleteSteamSession
 	},
 	applications: {
-		getBySteamId64: dbOperations.getBySteamId64
+		getBySteamId64: dbOperations.getBySteamId64,
+		getByUserId: dbOperations.getByUserId
 	},
 	users: {
 		upsertUser: dbOperations.upsertUser,
 		getUserBySteamId64: dbOperations.getUserBySteamId64
+	},
+	renameRequests: {
+		hasPendingByUserId: dbOperations.hasPendingRenameRequestByUserId
 	},
 	admin: {
 		isAdminSteamId

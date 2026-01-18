@@ -6,6 +6,7 @@ export type ApplyApplicationRepo = {
 		| { success: true; id: unknown }
 		| { success: false; error: 'duplicate' | 'constraint_error' | 'database_error' };
 	getBySteamId64: (steamid64: string) => Application | null;
+	getByUserId: (userId: number) => Application | null;
 };
 
 export type ApplySteamVerifier = {
@@ -15,7 +16,9 @@ export type ApplySteamVerifier = {
 export type SubmitApplicationDeps = {
 	repo: ApplyApplicationRepo;
 	users: {
-		upsertUser: (user: { steamid64: string; persona_name?: string | null }) => { success: boolean };
+		upsertUser: (user: { steamid64: string }) =>
+			| { success: true; userId: number }
+			| { success: false };
 	};
 	steam: ApplySteamVerifier;
 };

@@ -13,10 +13,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
 	// If the user is logged in (Steam) but has NOT applied yet,
 	// send them directly to the application form as the primary flow.
-	if (status.connected && !status.hasExisting) {
-		redirect(`/${locale}/apply`);
+	if (status.connected) {
+		// If an admin requested a rename and the user hasn't submitted a rename request yet,
+		// block the site until they do so.
+		if (status.renameRequired && !status.hasPendingRenameRequest) {
+			redirect(`/${locale}/rename`);
+		}
+
+		if (!status.hasExisting) {
+			redirect(`/${locale}/apply`);
+		}
 	}
 
 	return <WelcomePage />;
 }
-

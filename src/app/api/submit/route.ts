@@ -1,6 +1,6 @@
 import { postSubmitApplicationRoute } from '@/features/apply/adapters/next/submitRoute';
-import { withApiLogging } from '@/platform/nextRouteLogging';
+import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const POST = withApiLogging(postSubmitApplicationRoute, { name: 'api.submit' });
+export const POST = withApiGuards(postSubmitApplicationRoute, { name: 'api.submit' });

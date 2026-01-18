@@ -34,6 +34,19 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+    rules: {
+      // Formatting hygiene
+      "eol-last": ["error", "always"],
+      "no-trailing-spaces": "error",
+      "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 0 }],
+
+      // Tabbing/indentation safety (allow tabs, prevent accidental mixed indentation)
+      "no-tabs": "off",
+      "no-mixed-spaces-and-tabs": ["error", "smart-tabs"],
+    },
+  },
+  {
     files: ["src/features/**/useCases/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
