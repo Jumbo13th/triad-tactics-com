@@ -19,6 +19,14 @@ export type ConfirmApplicationDeps = {
 };
 
 export type AdminUserRenameRepo = {
+	getUserBySteamId64: (steamid64: string) =>
+		| {
+				id: number;
+				player_confirmed_at?: string | null;
+				rename_required_at?: string | null;
+		  }
+		| null;
+	hasPendingRenameRequestByUserId: (userId: number) => boolean;
 	setUserRenameRequired: (input: {
 		steamid64: string;
 		requestedBySteamId64: string;

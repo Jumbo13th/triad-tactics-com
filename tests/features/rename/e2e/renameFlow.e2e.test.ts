@@ -5,10 +5,11 @@ import { createSteamSession } from '../../../fixtures/steamSession';
 async function loadHandlers() {
 	const { POST: POST_RENAME } = await import('@/app/api/rename/route');
 	const { POST: POST_RENAME_REQUIRED } = await import('@/app/api/admin/rename-required/route');
+	const { POST: POST_CONFIRM } = await import('@/app/api/admin/confirm/route');
 	const { POST: POST_DECIDE } = await import('@/app/api/admin/rename-requests/decide/route');
 	const { POST: POST_SUBMIT } = await import('@/app/api/submit/route');
 	const { NextRequest } = await import('next/server');
-	return { POST_RENAME, POST_RENAME_REQUIRED, POST_DECIDE, POST_SUBMIT, NextRequest };
+	return { POST_RENAME, POST_RENAME_REQUIRED, POST_CONFIRM, POST_DECIDE, POST_SUBMIT, NextRequest };
 }
 describe('Rename flow (e2e via API handlers)', () => {
 	beforeAll(async () => {
@@ -19,7 +20,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 	});
 
 	it('blocks APIs until rename request is submitted; admin can approve and clear the rename block', async () => {
-		const { POST_RENAME, POST_RENAME_REQUIRED, POST_DECIDE, POST_SUBMIT, NextRequest } =
+		const { POST_RENAME, POST_RENAME_REQUIRED, POST_CONFIRM, POST_DECIDE, POST_SUBMIT, NextRequest } =
 			await loadHandlers();
 		const { dbOperations } = await import('@/platform/db');
 
@@ -31,13 +32,31 @@ describe('Rename flow (e2e via API handlers)', () => {
 		const userSid = createSteamSession(dbOperations, { steamid64: userSteamId, redirectPath: '/en' });
 
 		// Model the real-world flow: rename-required happens to users who already applied.
-		dbOperations.insertApplication(
+		const inserted = dbOperations.insertApplication(
 			buildTestApplicationRecord({
 				email: `rename-e2e-${crypto.randomUUID()}@example.com`,
 				steamid64: userSteamId,
 				callsign: 'Existing_E2E_User'
 			})
 		);
+		expect(inserted.success).toBe(true);
+		if (!inserted.success) throw new Error('Expected application to be inserted');
+		const applicationId = Number(inserted.id);
+		expect(Number.isFinite(applicationId)).toBe(true);
+
+		// Admin: confirm the application (required for rename-required).
+		const resConfirm = await POST_CONFIRM(
+			new NextRequest('http://localhost/api/admin/confirm', {
+				method: 'POST',
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
+				body: JSON.stringify({ applicationId })
+			})
+		);
+		expect(resConfirm.status).toBe(200);
 
 		// Admin: mark user as rename-required.
 		const resRequire = await POST_RENAME_REQUIRED(

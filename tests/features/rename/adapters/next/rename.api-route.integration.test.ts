@@ -122,6 +122,51 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 		expect(typeof json.requestId).toBe('number');
 	});
 
+	it('returns 409 callsign_taken when an existing user already has the callsign (case-insensitive exact match)', async () => {
+		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
+
+		// Seed an existing user callsign via application insertion.
+		dbOperations.insertApplication(
+			buildTestApplicationRecord({
+				email: `rename-taken-seed-${crypto.randomUUID()}@example.com`,
+				steamid64: '76561198000000999',
+				callsign: 'Ghost'
+			})
+		);
+
+		const steamid64 = '76561198000000005';
+		const sid = createSteamSession(dbOperations, { steamid64, redirectPath: '/en' });
+
+		// Seed an application so apply-required doesn't block /api/rename.
+		dbOperations.insertApplication(
+			buildTestApplicationRecord({
+				email: `rename-taken-${crypto.randomUUID()}@example.com`,
+				steamid64,
+				callsign: 'Existing_User_5'
+			})
+		);
+
+		dbOperations.setUserRenameRequiredBySteamId64({
+			steamid64,
+			requestedBySteamId64: '76561198012345678',
+			reason: 'Policy'
+		});
+
+		const req = new NextRequest('http://localhost/api/rename', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				cookie: `tt_steam_session=${sid}`
+			},
+			body: JSON.stringify({ callsign: 'gHoSt' })
+		});
+
+		const res = await POST(req);
+		expect(res.status).toBe(409);
+		const json = await res.json();
+		expect(json).toEqual({ ok: false, error: 'callsign_taken' });
+	});
+
 	it('returns ok already_pending when a pending request exists', async () => {
 		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
 		const steamid64 = '76561198000000004';

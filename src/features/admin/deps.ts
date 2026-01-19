@@ -22,6 +22,8 @@ export const confirmApplicationDeps: ConfirmApplicationDeps = {
 
 export const renameRequiredDeps: RenameRequiredDeps = {
 	repo: {
+		getUserBySteamId64: dbOperations.getUserBySteamId64,
+		hasPendingRenameRequestByUserId: dbOperations.hasPendingRenameRequestByUserId,
 		setUserRenameRequired: dbOperations.setUserRenameRequiredBySteamId64,
 		clearUserRenameRequired: dbOperations.clearUserRenameRequiredBySteamId64
 	}

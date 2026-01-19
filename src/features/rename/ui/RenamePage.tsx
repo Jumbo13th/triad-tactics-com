@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { ZodIssue } from 'zod';
 import { z } from 'zod';
 import { applicationSchema } from '@/features/apply/schema';
-import CallsignField from '@/features/callsign/ui/CallsignField';
+import CallsignField, { type CallsignAvailabilityStatus } from '@/features/callsign/ui/CallsignField';
 import CallsignSearch from '@/features/callsign/ui/CallsignSearch';
 
 const renameRequestSchema = z.object({
@@ -33,6 +33,7 @@ export default function RenamePage(props: Props) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [pending, setPending] = useState(props.hasPendingRenameRequest);
+	const [availability, setAvailability] = useState<CallsignAvailabilityStatus>({ state: 'idle' });
 
 	const translateIssue = (issue: ZodIssue) => {
 		const params: Record<string, string | number | Date> = {};
@@ -45,7 +46,8 @@ export default function RenamePage(props: Props) {
 		return tForm(`errors.${issue.message}`, params);
 	};
 
-	const canSubmit = !isSubmitting && !pending;
+	const hasExactConflict = availability.state === 'conflict' && availability.exactMatches.length > 0;
+	const canSubmit = !isSubmitting && !pending && !hasExactConflict;
 
 	const rules = useMemo(() => {
 		return [
@@ -112,6 +114,10 @@ export default function RenamePage(props: Props) {
 			if (code === 'duplicate_pending') {
 				setPending(true);
 				setErrors(prev => ({ ...prev, general: t('errorDuplicatePending') }));
+				return;
+			}
+			if (code === 'callsign_taken') {
+				setErrors(prev => ({ ...prev, callsign: t('errorCallsignTaken') }));
 				return;
 			}
 
@@ -206,6 +212,7 @@ export default function RenamePage(props: Props) {
 									if (issue) setErrors(prev => ({ ...prev, callsign: translateIssue(issue) }));
 								}
 							}}
+							onStatusChange={(s) => setAvailability(s)}
 							error={errors.callsign}
 						/>
 						<CallsignSearch />

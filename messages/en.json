@@ -105,6 +105,7 @@
     "errorNotSignedIn": "You need to sign in with Steam to submit a rename request.",
     "errorRenameNotRequired": "Rename is not required for your account.",
     "errorDuplicatePending": "You already have a pending rename request.",
+    "errorCallsignTaken": "That callsign is already taken. Please choose a different one.",
     "errorServer": "Something went wrong. Please try again."
   },
   "form": {
@@ -148,6 +149,7 @@
     "callsignCheck": {
       "checking": "Checking availability…",
       "available": "Looks available.",
+      "taken": "This callsign is already taken.",
       "conflict": "Potential conflict with existing callsigns.",
       "exact": "Exact match: {example}",
       "sound": "Similar sound/look: {example}",

@@ -916,6 +916,11 @@ export const dbOperations = {
 		const stmt = db.prepare(`
 			SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
 				u.current_callsign, u.rename_required_at, u.rename_required_reason, u.rename_required_by_steamid64,
+				EXISTS(
+					SELECT 1
+					FROM rename_requests rr
+					WHERE rr.user_id = u.id AND rr.status = 'pending'
+				) as has_pending_rename_request,
 				ui.provider_user_id as steamid64
 			FROM users u
 			LEFT JOIN user_identities ui

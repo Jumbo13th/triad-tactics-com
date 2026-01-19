@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { applicationSchema } from '@/features/apply/schema';
+import { checkCallsign } from '@/features/callsign/useCases/checkCallsign';
+import { callsignDeps } from '@/features/callsign/deps';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
@@ -35,6 +37,12 @@ export async function postRenameRequestRoute(request: NextRequest): Promise<Next
 		const userId = ensured.user.id;
 		if (dbOperations.hasPendingRenameRequestByUserId(userId)) {
 			return NextResponse.json({ ok: true, status: 'already_pending' }, { status: 200 });
+		}
+
+		// Block requests for callsigns that already exist (exact-match normalization).
+		const conflict = checkCallsign(callsignDeps, { callsign: parsed.data.callsign });
+		if (conflict.ok && conflict.exactMatches.length > 0) {
+			return NextResponse.json({ ok: false, error: 'callsign_taken' }, { status: 409 });
 		}
 
 		const created = dbOperations.createRenameRequest({

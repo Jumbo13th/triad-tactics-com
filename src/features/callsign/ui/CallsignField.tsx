@@ -7,14 +7,27 @@ type CallsignCheckResponse =
 	| { ok: true; normalized: string; exactMatches: string[]; soundMatches: string[] }
 	| { ok: false; error: 'invalid_request' | 'server_error' };
 
+export type CallsignAvailabilityStatus =
+	| { state: 'idle' }
+	| { state: 'checking' }
+	| { state: 'available'; normalized: string }
+	| { state: 'conflict'; normalized: string; exactMatches: string[]; soundMatches: string[] }
+	| { state: 'error' };
+
 export default function CallsignField(props: {
 	value: string;
 	onChange: (value: string) => void;
 	onBlur: () => void;
 	error?: string;
+	onStatusChange?: (status: CallsignAvailabilityStatus) => void;
 }) {
 	const t = useTranslations('form');
-	const { value, onChange, onBlur, error } = props;
+	const { value, onChange, onBlur, error, onStatusChange } = props;
+
+	const onStatusChangeRef = useRef<typeof onStatusChange>(onStatusChange);
+	useEffect(() => {
+		onStatusChangeRef.current = onStatusChange;
+	}, [onStatusChange]);
 
 	const [status, setStatus] = useState<
 		| { state: 'idle' }
@@ -23,6 +36,16 @@ export default function CallsignField(props: {
 		| { state: 'conflict'; normalized: string; exactMatches: string[]; soundMatches: string[] }
 		| { state: 'error' }
 	>({ state: 'idle' });
+
+	useEffect(() => {
+		const cb = onStatusChangeRef.current;
+		if (!cb) return;
+		if (status.state === 'ok') {
+			cb({ state: 'available', normalized: status.normalized });
+			return;
+		}
+		cb(status);
+	}, [status]);
 
 	const abortRef = useRef<AbortController | null>(null);
 	const debouncedValue = useDebouncedValue(value, 450);
@@ -130,7 +153,11 @@ export default function CallsignField(props: {
 						<p className="text-xs text-emerald-300">{t('callsignCheck.available')}</p>
 					) : status.state === 'conflict' ? (
 						<div className="grid gap-1">
-							<p className="text-xs text-amber-300">{t('callsignCheck.conflict')}</p>
+							{status.exactMatches.length > 0 ? (
+								<p className="text-xs text-red-400">{t('callsignCheck.taken')}</p>
+							) : (
+								<p className="text-xs text-amber-300">{t('callsignCheck.conflict')}</p>
+							)}
 							{status.exactMatches.length > 0 ? (
 								<p className="text-xs text-neutral-300">
 									{t('callsignCheck.exact', { example: status.exactMatches.slice(0, 3).join(', ') })}
@@ -141,7 +168,9 @@ export default function CallsignField(props: {
 									{t('callsignCheck.sound', { example: status.soundMatches.slice(0, 3).join(', ') })}
 								</p>
 							) : null}
-							<p className="text-xs text-neutral-400">{t('callsignCheck.note')}</p>
+							{status.exactMatches.length === 0 ? (
+								<p className="text-xs text-neutral-400">{t('callsignCheck.note')}</p>
+							) : null}
 						</div>
 					) : (
 						<p className="text-xs text-neutral-400">{t('callsignCheck.error')}</p>

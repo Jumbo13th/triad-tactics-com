@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
 import { createSteamSession } from '../../../../fixtures/steamSession';
+import { buildTestApplicationRecord } from '../../../../fixtures/application';
 
 async function loadAdminRenameHarness() {
 	const { dbOperations } = await import('@/platform/db');
@@ -36,6 +37,21 @@ describe('Admin rename endpoints (integration)', () => {
 			redirectPath: '/en/admin'
 		});
 		const targetSteamId = '76561198000000020';
+
+		// Confirm the player (rename-required gate requires confirmed user).
+		const inserted = dbOperations.insertApplication(
+			buildTestApplicationRecord({
+				email: `admin-rename-${crypto.randomUUID()}@example.com`,
+				steamid64: targetSteamId,
+				callsign: 'Confirmed_Admin_Target'
+			})
+		);
+		expect(inserted.success).toBe(true);
+		if (!inserted.success) throw new Error('Expected application to be inserted');
+		const applicationId = Number(inserted.id);
+		expect(Number.isFinite(applicationId)).toBe(true);
+		const confirmed = dbOperations.confirmApplication(applicationId, '76561198012345678');
+		expect(confirmed.success).toBe(true);
 
 		// Require rename.
 		const resRequire = await POST_RENAME_REQUIRED(
