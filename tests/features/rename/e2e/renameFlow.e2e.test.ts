@@ -1,18 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-
-async function setupIsolatedDb(prefix: string) {
-	const os = await import('node:os');
-	const path = await import('node:path');
-	const ts = new Date().toISOString().replace(/[:.]/g, '-');
-	process.env.DB_PATH = path.join(os.tmpdir(), `${prefix}-${ts}-${crypto.randomUUID()}.db`);
-	process.env.DISABLE_RATE_LIMITS = 'true';
-	process.env.ADMIN_STEAM_IDS = '76561198012345678';
-
-	const { dbOperations } = await import('@/platform/db');
-	dbOperations.clearAll();
-	return { dbOperations };
-}
-
+import { setupIsolatedDb } from '../../../fixtures/isolatedDb';
+import { buildTestApplicationRecord } from '../../../fixtures/application';
+import { createSteamSession } from '../../../fixtures/steamSession';
 async function loadHandlers() {
 	const { POST: POST_RENAME } = await import('@/app/api/rename/route');
 	const { POST: POST_RENAME_REQUIRED } = await import('@/app/api/admin/rename-required/route');
@@ -21,38 +10,12 @@ async function loadHandlers() {
 	const { NextRequest } = await import('next/server');
 	return { POST_RENAME, POST_RENAME_REQUIRED, POST_DECIDE, POST_SUBMIT, NextRequest };
 }
-
-async function createSteamSession(steamid64: string, redirectPath = '/en') {
-	const { dbOperations } = await import('@/platform/db');
-	const sid = crypto.randomUUID();
-	dbOperations.createSteamSession({ id: sid, redirect_path: redirectPath });
-	dbOperations.setSteamSessionIdentity(sid, { steamid64, persona_name: 'Test Persona' });
-	return sid;
-}
-
-function buildMinimalApplication(opts: { email: string; steamid64: string; callsign: string }) {
-	return {
-		email: opts.email,
-		steamid64: opts.steamid64,
-		persona_name: 'Applicant',
-		answers: {
-			callsign: opts.callsign,
-			age: '25',
-			city: 'Test City',
-			country: 'Test Country',
-			availability: 'Weekends',
-			timezone: 'UTC+00:00',
-			experience: 'Test experience',
-			motivation: 'Test motivation'
-		},
-		ip_address: '203.0.113.10',
-		locale: 'en'
-	};
-}
-
 describe('Rename flow (e2e via API handlers)', () => {
 	beforeAll(async () => {
-		await setupIsolatedDb('triad-tactics-rename-e2e-test');
+		await setupIsolatedDb({
+			prefix: 'triad-tactics-rename-e2e-test',
+			adminSteamIds: '76561198012345678'
+		});
 	});
 
 	it('blocks APIs until rename request is submitted; admin can approve and clear the rename block', async () => {
@@ -60,13 +23,16 @@ describe('Rename flow (e2e via API handlers)', () => {
 			await loadHandlers();
 		const { dbOperations } = await import('@/platform/db');
 
-		const adminSid = await createSteamSession('76561198012345678', '/en/admin');
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: '76561198012345678',
+			redirectPath: '/en/admin'
+		});
 		const userSteamId = '76561198000000030';
-		const userSid = await createSteamSession(userSteamId, '/en');
+		const userSid = createSteamSession(dbOperations, { steamid64: userSteamId, redirectPath: '/en' });
 
 		// Model the real-world flow: rename-required happens to users who already applied.
 		dbOperations.insertApplication(
-			buildMinimalApplication({
+			buildTestApplicationRecord({
 				email: `rename-e2e-${crypto.randomUUID()}@example.com`,
 				steamid64: userSteamId,
 				callsign: 'Existing_E2E_User'

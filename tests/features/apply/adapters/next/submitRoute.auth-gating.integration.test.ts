@@ -1,50 +1,42 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
+import { buildApplySubmitPayload } from '../../../../fixtures/applyPayload';
+import { createSteamCookieHeader } from '../../../../fixtures/steamSession';
 
 async function loadSubmitApiRoute() {
-	process.env.DISABLE_RATE_LIMITS = 'true';
-
 	const { dbOperations } = await import('@/platform/db');
 	const { POST } = await import('@/app/api/submit/route');
 	const { NextRequest } = await import('next/server');
 	return { dbOperations, POST, NextRequest };
 }
 
-function buildApplicationPayload(overrides: Partial<Record<string, unknown>> = {}) {
-	return {
-		callsign: 'Test_User',
-		name: 'Test Name',
-		age: '25',
-		email: 'test@example.com',
-		city: 'Test City',
-		country: 'Test Country',
-		availability: 'Weekends and evenings',
-		timezone: 'UTC+02:00',
-		experience: 'I have experience with milsim communities and moderation.',
-		motivation: 'I want to help the community and contribute in a positive way.',
-		...overrides
-	};
-}
+let previousSteamWebApiKey: string | undefined;
 
 beforeAll(() => {
+	previousSteamWebApiKey = process.env.STEAM_WEB_API_KEY;
 	delete process.env.STEAM_WEB_API_KEY;
 });
 
+afterAll(() => {
+	if (typeof previousSteamWebApiKey === 'string' && previousSteamWebApiKey.length > 0) {
+		process.env.STEAM_WEB_API_KEY = previousSteamWebApiKey;
+	} else {
+		delete process.env.STEAM_WEB_API_KEY;
+	}
+});
+
 beforeAll(async () => {
-	const os = await import('node:os');
-	const path = await import('node:path');
-	const ts = new Date().toISOString().replace(/[:.]/g, '-');
-	process.env.DB_PATH = path.join(os.tmpdir(), `triad-tactics-submit-auth-gating-${ts}-${crypto.randomUUID()}.db`);
 	vi.resetModules();
-	const { dbOperations } = await import('@/platform/db');
-	dbOperations.clearAll();
+	await setupIsolatedDb('triad-tactics-submit-auth-gating');
 });
 
 async function createConnectedSteamCookieHeader() {
 	const { dbOperations } = await loadSubmitApiRoute();
-	const sid = crypto.randomUUID();
-	dbOperations.createSteamSession({ id: sid, redirect_path: '/en/apply' });
-	dbOperations.setSteamSessionIdentity(sid, { steamid64: '76561198000000000', persona_name: 'Test' });
-	return `tt_steam_session=${sid}`;
+	return createSteamCookieHeader(dbOperations, {
+		steamid64: '76561198000000000',
+		redirectPath: '/en/apply',
+		personaName: 'Test'
+	}).cookieHeader;
 }
 
 describe('Apply workflow: submit route (integration: validation + auth gating)', () => {
@@ -75,7 +67,7 @@ describe('Apply workflow: submit route (integration: validation + auth gating)',
 			headers: {
 				'content-type': 'application/json'
 			},
-			body: JSON.stringify(buildApplicationPayload())
+			body: JSON.stringify(buildApplySubmitPayload())
 		});
 
 		const res = await POST(req);
@@ -87,9 +79,11 @@ describe('Apply workflow: submit route (integration: validation + auth gating)',
 	it('accepts missing city/country (validation passes) and still gates on Steam session', async () => {
 		const { POST, NextRequest } = await loadSubmitApiRoute();
 
-		const body: Record<string, unknown> = buildApplicationPayload({
-			city: undefined,
-			country: undefined
+		const body: Record<string, unknown> = buildApplySubmitPayload({
+			overrides: {
+				city: undefined,
+				country: undefined
+			}
 		});
 		delete body.city;
 		delete body.country;

@@ -390,7 +390,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
     <div className="w-full">
       {showSupportEmail && (
         <div className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-          <p className="text-sm text-neutral-300">
+          <p className="text-base leading-relaxed text-neutral-300">
             {t('supportNote')}{' '}
             <a
               href={`mailto:${supportEmail}`}
@@ -461,26 +461,26 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
       <div id="steam-auth" className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
         <div className="flex flex-col gap-4">
           <div>
-            <p className="text-sm font-medium text-neutral-200">{t('steamAuth.title')}</p>
+            <p className="text-base font-medium text-neutral-200">{t('steamAuth.title')}</p>
             {steamAuth?.connected && (
-              <p className="mt-1 text-sm text-neutral-300">
+              <p className="mt-1 text-base text-neutral-300">
                 {steamAuth.personaName
                   ? t('steamAuth.connectedAsName', { name: steamAuth.personaName })
                   : t('steamAuth.connectedAsId', { steamid64: steamAuth.steamid64 })}
               </p>
             )}
-            <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.help')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('steamAuth.help')}</p>
 
             <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
-              <p className="text-xs font-medium text-neutral-200">{t('steamAuth.detect.title')}</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+              <p className="text-sm font-medium text-neutral-200">{t('steamAuth.detect.title')}</p>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-300">
                 <li>{t('steamAuth.detect.profilePublic')}</li>
                 <li>{t('steamAuth.detect.gameDetailsPublic')}</li>
                 <li>{t('steamAuth.detect.gameNotHidden')}</li>
                 <li>{t('steamAuth.detect.delayAfterChange')}</li>
                 <li>{t('steamAuth.detect.canRehideAfterSubmit')}</li>
               </ul>
-              <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.detect.incognitoCheck')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('steamAuth.detect.incognitoCheck')}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -500,7 +500,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               </button>
             ) : (
               <>
-                <span className="text-sm text-neutral-300">{t('steamAuth.clickToConnect')}</span>
+                <span className="text-base text-neutral-300">{t('steamAuth.clickToConnect')}</span>
                 <SteamSignInButton
                   redirectPath={`/${locale}/apply`}
                   ariaLabel={t('steamAuth.connect')}
@@ -519,12 +519,12 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4 shadow-sm shadow-black/20">
           <div className="flex flex-col gap-2">
             <h3 className="text-base font-semibold text-neutral-50">{t('callsignSection.title')}</h3>
-            <p className="text-sm text-neutral-300">{t('callsignSection.intro')}</p>
+            <p className="text-base leading-relaxed text-neutral-300">{t('callsignSection.intro')}</p>
           </div>
 
             <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
-              <p className="text-xs font-medium text-neutral-200">{t('callsignRules.title')}</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+              <p className="text-sm font-medium text-neutral-200">{t('callsignRules.title')}</p>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-300">
                 <li>{t('callsignRules.allowedChars')}</li>
                 <li>{t('callsignRules.uniqueness')}</li>
                 <li>{t('callsignRules.noOffense')}</li>
@@ -534,7 +534,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
                 <li>{t('callsignRules.noEquipment')}</li>
                 <li>{t('callsignRules.keepSimple')}</li>
               </ul>
-              <p className="mt-2 text-xs text-neutral-400">{t('callsignRules.adminNote')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('callsignRules.adminNote')}</p>
             </div>
 
           <div className="mt-4">
@@ -549,7 +549,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-neutral-200">
-              {t('name')} <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
+              {t('name')} <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="name"
@@ -562,9 +562,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               autoComplete="name"
             />
             {errors.name ? (
-              <p className="mt-2 text-xs text-red-400">{errors.name}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.name}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('nameHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('nameHelp')}</p>
             )}
           </div>
 
@@ -583,9 +583,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               className={`mt-2 block w-full rounded-lg border ${errors.age ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.age ? (
-              <p className="mt-2 text-xs text-red-400">{errors.age}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.age}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('ageHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('ageHelp')}</p>
             )}
           </div>
         </div>
@@ -605,9 +605,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
             autoComplete="email"
           />
           {errors.email ? (
-            <p className="mt-2 text-xs text-red-400">{errors.email}</p>
+            <p className="mt-2 text-sm text-red-400">{errors.email}</p>
           ) : (
-            <p className="mt-2 text-xs text-neutral-400">{t('emailHelp')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('emailHelp')}</p>
           )}
         </div>
 
@@ -633,9 +633,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               ))}
             </select>
             {errors.timezone ? (
-              <p className="mt-2 text-xs text-red-400">{errors.timezone}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.timezone}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('timezoneHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('timezoneHelp')}</p>
             )}
           </div>
         </div>
@@ -644,7 +644,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
           <div>
             <label htmlFor="city" className="block text-sm font-medium text-neutral-200">
               {t('city')}{' '}
-              <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
+              <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="city"
@@ -656,16 +656,16 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               className={`mt-2 block w-full rounded-lg border ${errors.city ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.city ? (
-              <p className="mt-2 text-xs text-red-400">{errors.city}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.city}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('cityHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('cityHelp')}</p>
             )}
           </div>
 
           <div>
             <label htmlFor="country" className="block text-sm font-medium text-neutral-200">
               {t('country')}{' '}
-              <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
+              <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="country"
@@ -677,9 +677,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               className={`mt-2 block w-full rounded-lg border ${errors.country ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.country ? (
-              <p className="mt-2 text-xs text-red-400">{errors.country}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.country}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('countryHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('countryHelp')}</p>
             )}
           </div>
         </div>
@@ -700,9 +700,9 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
             className={`mt-2 block w-full rounded-lg border ${errors.availability ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           {errors.availability ? (
-            <p className="mt-2 text-xs text-red-400">{errors.availability}</p>
+            <p className="mt-2 text-sm text-red-400">{errors.availability}</p>
           ) : (
-            <p className="mt-2 text-xs text-neutral-400">{t('availabilityHelp')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('availabilityHelp')}</p>
           )}
         </div>
 
@@ -722,13 +722,13 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
             className={`mt-2 block w-full resize-y rounded-lg border ${errors.experience ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           <div className="mt-2 flex justify-between items-center">
-            <p className="text-xs text-neutral-400">{t('experienceHelp')}</p>
-            <p className={`text-xs ${formData.experience.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
+            <p className="text-sm text-neutral-400">{t('experienceHelp')}</p>
+            <p className={`text-sm ${formData.experience.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
               {formData.experience.trim().length} / 10 min
             </p>
           </div>
           {errors.experience && (
-            <p className="mt-1 text-xs text-red-400">{errors.experience}</p>
+            <p className="mt-1 text-sm text-red-400">{errors.experience}</p>
           )}
         </div>
 
@@ -746,13 +746,13 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
             className={`mt-2 block w-full resize-y rounded-lg border ${errors.motivation ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           <div className="mt-2 flex justify-between items-center">
-            <p className="text-xs text-neutral-400">{t('motivationHelp')}</p>
-            <p className={`text-xs ${formData.motivation.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
+            <p className="text-sm text-neutral-400">{t('motivationHelp')}</p>
+            <p className={`text-sm ${formData.motivation.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
               {formData.motivation.trim().length} / 10 min
             </p>
           </div>
           {errors.motivation && (
-            <p className="mt-1 text-xs text-red-400">{errors.motivation}</p>
+            <p className="mt-1 text-sm text-red-400">{errors.motivation}</p>
           )}
         </div>
 
@@ -768,7 +768,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
             {isSubmitting ? t('submitting') : t('submit')}
           </button>
           {!isSteamConnected && steamRequiredAttempted && (
-            <p className="mt-2 text-xs text-red-400">{t('steamRequiredNote')}</p>
+            <p className="mt-2 text-sm text-red-400">{t('steamRequiredNote')}</p>
           )}
         </div>
         </form>

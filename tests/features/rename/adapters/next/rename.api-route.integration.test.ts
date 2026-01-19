@@ -1,52 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-
-async function setupIsolatedDb(prefix: string) {
-	const os = await import('node:os');
-	const path = await import('node:path');
-	const ts = new Date().toISOString().replace(/[:.]/g, '-');
-	process.env.DB_PATH = path.join(os.tmpdir(), `${prefix}-${ts}-${crypto.randomUUID()}.db`);
-	process.env.DISABLE_RATE_LIMITS = 'true';
-
-	const { dbOperations } = await import('@/platform/db');
-	dbOperations.clearAll();
-	return { dbOperations };
-}
-
+import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
+import { buildTestApplicationRecord } from '../../../../fixtures/application';
+import { createSteamSession } from '../../../../fixtures/steamSession';
 async function loadRenameApiHarness() {
 	const { dbOperations } = await import('@/platform/db');
 	const { POST } = await import('@/app/api/rename/route');
 	const { NextRequest } = await import('next/server');
 	return { dbOperations, POST, NextRequest };
 }
-
-function buildMinimalApplication(opts: { email: string; steamid64: string; callsign: string }) {
-	return {
-		email: opts.email,
-		steamid64: opts.steamid64,
-		persona_name: 'Applicant',
-		answers: {
-			callsign: opts.callsign,
-			age: '25',
-			city: 'Test City',
-			country: 'Test Country',
-			availability: 'Weekends',
-			timezone: 'UTC+00:00',
-			experience: 'Test experience',
-			motivation: 'Test motivation'
-		},
-		ip_address: '203.0.113.10',
-		locale: 'en'
-	};
-}
-
-async function createSteamSession(steamid64: string) {
-	const { dbOperations } = await import('@/platform/db');
-	const sid = crypto.randomUUID();
-	dbOperations.createSteamSession({ id: sid, redirect_path: '/en' });
-	dbOperations.setSteamSessionIdentity(sid, { steamid64, persona_name: 'Test Persona' });
-	return sid;
-}
-
 describe('Rename workflow: POST /api/rename (integration)', () => {
 	beforeAll(async () => {
 		await setupIsolatedDb('triad-tactics-rename-route-test');
@@ -66,14 +27,13 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 	});
 
 	it('returns 400 for invalid payload', async () => {
-		const { POST, NextRequest } = await loadRenameApiHarness();
+		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
 		const steamid64 = '76561198000000001';
-		const sid = await createSteamSession(steamid64);
+		const sid = createSteamSession(dbOperations, { steamid64, redirectPath: '/en' });
 
 		// /api/rename is gated by apply-required; seed an application so the handler runs.
-		const { dbOperations } = await import('@/platform/db');
 		dbOperations.insertApplication(
-			buildMinimalApplication({
+			buildTestApplicationRecord({
 				email: `rename-invalid-${crypto.randomUUID()}@example.com`,
 				steamid64,
 				callsign: 'Existing_User'
@@ -96,14 +56,13 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 	});
 
 	it('returns 400 when rename is not required', async () => {
-		const { POST, NextRequest } = await loadRenameApiHarness();
+		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
 		const steamid64 = '76561198000000002';
-		const sid = await createSteamSession(steamid64);
+		const sid = createSteamSession(dbOperations, { steamid64, redirectPath: '/en' });
 
 		// /api/rename is gated by apply-required; seed an application so the handler runs.
-		const { dbOperations } = await import('@/platform/db');
 		dbOperations.insertApplication(
-			buildMinimalApplication({
+			buildTestApplicationRecord({
 				email: `rename-not-required-${crypto.randomUUID()}@example.com`,
 				steamid64,
 				callsign: 'Existing_User_2'
@@ -128,11 +87,11 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 	it('creates a request when rename is required', async () => {
 		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
 		const steamid64 = '76561198000000003';
-		const sid = await createSteamSession(steamid64);
+		const sid = createSteamSession(dbOperations, { steamid64, redirectPath: '/en' });
 
 		// Seed an application so apply-required doesn't block /api/rename.
 		dbOperations.insertApplication(
-			buildMinimalApplication({
+			buildTestApplicationRecord({
 				email: `rename-required-${crypto.randomUUID()}@example.com`,
 				steamid64,
 				callsign: 'Existing_User_3'
@@ -166,11 +125,11 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 	it('returns ok already_pending when a pending request exists', async () => {
 		const { dbOperations, POST, NextRequest } = await loadRenameApiHarness();
 		const steamid64 = '76561198000000004';
-		const sid = await createSteamSession(steamid64);
+		const sid = createSteamSession(dbOperations, { steamid64, redirectPath: '/en' });
 
 		// Seed an application so apply-required doesn't block /api/rename.
 		dbOperations.insertApplication(
-			buildMinimalApplication({
+			buildTestApplicationRecord({
 				email: `rename-pending-${crypto.randomUUID()}@example.com`,
 				steamid64,
 				callsign: 'Existing_User_4'

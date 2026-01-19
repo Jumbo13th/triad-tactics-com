@@ -1,19 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-
-async function setupIsolatedDb(prefix: string) {
-	const os = await import('node:os');
-	const path = await import('node:path');
-	const ts = new Date().toISOString().replace(/[:.]/g, '-');
-	process.env.DB_PATH = path.join(os.tmpdir(), `${prefix}-${ts}-${crypto.randomUUID()}.db`);
-	process.env.DISABLE_RATE_LIMITS = 'true';
-
-	const { dbOperations } = await import('@/platform/db');
-	dbOperations.clearAll();
-	return { dbOperations };
-}
+import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
+import { createSteamSession } from '../../../../fixtures/steamSession';
 
 async function loadAdminRenameHarness() {
-	process.env.ADMIN_STEAM_IDS = '76561198012345678';
 	const { dbOperations } = await import('@/platform/db');
 	const { GET } = await import('@/app/api/admin/rename-requests/route');
 	const { POST: POST_DECIDE } = await import('@/app/api/admin/rename-requests/decide/route');
@@ -22,17 +11,12 @@ async function loadAdminRenameHarness() {
 	return { dbOperations, GET, POST_DECIDE, POST_RENAME_REQUIRED, NextRequest };
 }
 
-async function createSteamSession(steamid64: string, redirectPath = '/en/admin') {
-	const { dbOperations } = await import('@/platform/db');
-	const sid = crypto.randomUUID();
-	dbOperations.createSteamSession({ id: sid, redirect_path: redirectPath });
-	dbOperations.setSteamSessionIdentity(sid, { steamid64, persona_name: 'Test Persona' });
-	return sid;
-}
-
 describe('Admin rename endpoints (integration)', () => {
 	beforeAll(async () => {
-		await setupIsolatedDb('triad-tactics-admin-rename-test');
+		await setupIsolatedDb({
+			prefix: 'triad-tactics-admin-rename-test',
+			adminSteamIds: '76561198012345678'
+		});
 	});
 
 	it('requires admin config + authenticated admin', async () => {
@@ -47,7 +31,10 @@ describe('Admin rename endpoints (integration)', () => {
 	it('can require rename for a Steam user, then list pending requests after user submits', async () => {
 		const { GET, POST_RENAME_REQUIRED, dbOperations, NextRequest } = await loadAdminRenameHarness();
 
-		const adminSid = await createSteamSession('76561198012345678');
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: '76561198012345678',
+			redirectPath: '/en/admin'
+		});
 		const targetSteamId = '76561198000000020';
 
 		// Require rename.
@@ -97,7 +84,10 @@ describe('Admin rename endpoints (integration)', () => {
 
 	it('decide endpoint validates payload and can decline a pending request', async () => {
 		const { POST_DECIDE, dbOperations, NextRequest } = await loadAdminRenameHarness();
-		const adminSid = await createSteamSession('76561198012345678');
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: '76561198012345678',
+			redirectPath: '/en/admin'
+		});
 		const targetSteamId = '76561198000000021';
 
 		const ensured = dbOperations.getOrCreateUserBySteamId64({ steamid64: targetSteamId });

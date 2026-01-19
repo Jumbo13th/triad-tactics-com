@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { setupIsolatedDb } from '../../fixtures/isolatedDb';
+import { buildTestApplicationRecord } from '../../fixtures/application';
+import { createSteamSession } from '../../fixtures/steamSession';
 
 async function loadAdminApiHarness() {
-	process.env.DISABLE_RATE_LIMITS = 'true';
-	process.env.ADMIN_STEAM_IDS = '76561198012345678';
-
 	const { dbOperations } = await import('@/platform/db');
 	const { GET: GET_ADMIN } = await import('@/app/api/admin/route');
 	const { GET: GET_STATUS } = await import('@/app/api/admin/status/route');
@@ -13,14 +13,10 @@ async function loadAdminApiHarness() {
 
 describe('Admin API: Steam allowlist auth', () => {
 	beforeAll(async () => {
-		// Use an isolated DB for tests.
-		const os = await import('node:os');
-		const path = await import('node:path');
-		const ts = new Date().toISOString().replace(/[:.]/g, '-');
-		process.env.DB_PATH = path.join(os.tmpdir(), `triad-tactics-admin-test-${ts}-${crypto.randomUUID()}.db`);
-
-		const { dbOperations } = await import('@/platform/db');
-		dbOperations.clearAll();
+		await setupIsolatedDb({
+			prefix: 'triad-tactics-admin-test',
+			adminSteamIds: '76561198012345678'
+		});
 	});
 
 	it('returns connected=false for status without session', async () => {
@@ -43,10 +39,11 @@ describe('Admin API: Steam allowlist auth', () => {
 
 	it('rejects /api/admin for non-admin Steam session', async () => {
 		const { dbOperations, GET_ADMIN, NextRequest } = await loadAdminApiHarness();
-
-		const sid = crypto.randomUUID();
-		dbOperations.createSteamSession({ id: sid, redirect_path: '/en' });
-		dbOperations.setSteamSessionIdentity(sid, { steamid64: '76561198000000000', persona_name: 'Not Admin' });
+		const sid = createSteamSession(dbOperations, {
+			steamid64: '76561198000000000',
+			redirectPath: '/en',
+			personaName: 'Not Admin'
+		});
 
 		const req = new NextRequest('http://localhost/api/admin', {
 			method: 'GET',
@@ -65,28 +62,20 @@ describe('Admin API: Steam allowlist auth', () => {
 		const { dbOperations, GET_ADMIN, NextRequest } = await loadAdminApiHarness();
 
 		// Seed a single application.
-		dbOperations.insertApplication({
-			email: 'admin-test@example.com',
-			steamid64: '76561198011111111',
-			persona_name: 'Applicant',
-			answers: {
+		dbOperations.insertApplication(
+			buildTestApplicationRecord({
+				email: 'admin-test@example.com',
+				steamid64: '76561198011111111',
 				callsign: 'Applicant',
-				name: 'Applicant Name',
-				age: '25',
-				city: 'Test City',
-				country: 'Test Country',
-				availability: 'Weekends',
-				timezone: 'UTC+00:00',
-				experience: 'Test experience',
-				motivation: 'Test motivation'
-			},
-			ip_address: '203.0.113.10',
-			locale: 'en'
-		});
+				overrides: { answers: { name: 'Applicant Name' } }
+			})
+		);
 
-		const sid = crypto.randomUUID();
-		dbOperations.createSteamSession({ id: sid, redirect_path: '/en/admin' });
-		dbOperations.setSteamSessionIdentity(sid, { steamid64: '76561198012345678', persona_name: 'Admin' });
+		const sid = createSteamSession(dbOperations, {
+			steamid64: '76561198012345678',
+			redirectPath: '/en/admin',
+			personaName: 'Admin'
+		});
 
 		const req = new NextRequest('http://localhost/api/admin', {
 			method: 'GET',
