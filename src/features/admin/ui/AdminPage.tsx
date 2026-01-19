@@ -6,7 +6,6 @@ import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
 import type { Application } from '@/platform/db';
 import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
-import AdminNav from '@/features/admin/ui/AdminNav';
 
 type AdminStatus =
 	| { connected: false; isAdmin: false }
@@ -172,7 +171,6 @@ export default function AdminPage() {
 						</div>
 					) : (
 						<div className="grid gap-4">
-							<AdminNav />
 							<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex flex-wrap items-baseline justify-between gap-2">
 									<h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">

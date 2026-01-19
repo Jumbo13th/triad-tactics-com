@@ -5,14 +5,18 @@ import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import LanguageSwitcher from '@/features/language/ui/LanguageSwitcher';
 import { useAdminStatus } from '@/features/steamAuth/ui/useAdminStatus';
+import { DropdownMenuPanel } from '@/features/appShell/ui/DropdownMenuPanel';
 
 function isActivePath(currentPathname: string, href: string) {
 	if (href === '/') return currentPathname === '/';
 	return currentPathname === href || currentPathname.startsWith(`${href}/`);
 }
 
-function isActiveExact(currentPathname: string, href: string) {
-	return currentPathname === href;
+function getActiveAdminHref(pathname: string) {
+	// pathname comes without locale prefix
+	if (pathname.startsWith('/admin/users')) return '/admin/users';
+	if (pathname.startsWith('/admin/rename-requests')) return '/admin/rename-requests';
+	return '/admin';
 }
 
 export default function SiteNavBar() {
@@ -81,26 +85,34 @@ export default function SiteNavBar() {
 								</svg>
 							</summary>
 
-							<div
-								role="menu"
-								className="absolute left-0 z-20 mt-2 min-w-52 rounded-2xl border border-neutral-800 bg-neutral-950 p-1 shadow-lg shadow-black/30"
-							>
-								<Link
-									href="/admin"
-									role="menuitem"
-									onClick={() => {
-										if (adminMenuRef.current) adminMenuRef.current.open = false;
-									}}
-									className={
-										'flex items-center rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 ' +
-										(isActiveExact(pathname, '/admin')
-											? 'bg-white/10 text-neutral-50'
-											: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
-									}
-								>
-									{ta('applicationsTitle')}
-								</Link>
-							</div>
+							<DropdownMenuPanel>
+								{(() => {
+									const items = [
+										{ href: '/admin', label: ta('navApplications') },
+										{ href: '/admin/users', label: ta('navUsers') },
+										{ href: '/admin/rename-requests', label: ta('navRenameRequests') }
+									] as const;
+									const activeHref = getActiveAdminHref(pathname);
+									return items.map((item) => (
+										<Link
+											key={item.href}
+											href={item.href}
+											role="menuitem"
+											onClick={() => {
+												if (adminMenuRef.current) adminMenuRef.current.open = false;
+											}}
+											className={
+												'flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 ' +
+												(activeHref === item.href
+													? 'bg-white/10 text-neutral-50'
+													: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
+											}
+										>
+											{item.label}
+										</Link>
+									));
+								})()}
+							</DropdownMenuPanel>
 						</details>
 					) : null}
 				</nav>
