@@ -121,14 +121,20 @@ const migrations: Migration[] = [
 				player_confirmed_at DATETIME,
 				confirmed_application_id INTEGER,
 				current_callsign TEXT,
-				rename_required_at DATETIME,
-				rename_required_reason TEXT,
-				rename_required_by_steamid64 TEXT,
 				FOREIGN KEY (confirmed_application_id) REFERENCES applications(id)
 			);
 			CREATE INDEX IF NOT EXISTS idx_users_player_confirmed_at ON users(player_confirmed_at);
-			CREATE INDEX IF NOT EXISTS idx_users_rename_required_at ON users(rename_required_at);
 			CREATE INDEX IF NOT EXISTS idx_users_current_callsign ON users(current_callsign);
+
+			-- Active rename requirements live in a dedicated table.
+			CREATE TABLE IF NOT EXISTS rename_requirements (
+				user_id INTEGER PRIMARY KEY,
+				required_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				required_by_steamid64 TEXT,
+				reason TEXT,
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+			CREATE INDEX IF NOT EXISTS idx_rename_requirements_required_at ON rename_requirements(required_at);
 
 			CREATE TABLE IF NOT EXISTS user_identities (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -448,9 +454,13 @@ export const dbOperations = {
 		const fallbackCallsign = `Steam_${steamid64}`;
 		const select = db.prepare(`
 			SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-				u.current_callsign, u.rename_required_at, u.rename_required_reason, u.rename_required_by_steamid64
+				u.current_callsign,
+				rr.required_at as rename_required_at,
+				rr.reason as rename_required_reason,
+				rr.required_by_steamid64 as rename_required_by_steamid64
 			FROM user_identities ui
 			JOIN users u ON u.id = ui.user_id
+			LEFT JOIN rename_requirements rr ON rr.user_id = u.id
 			WHERE ui.provider = 'steam' AND ui.provider_user_id = ?
 		`);
 		const insertUser = db.prepare(`
@@ -753,9 +763,13 @@ export const dbOperations = {
 		const db = getDb();
 		const stmt = db.prepare(`
 			SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-				u.current_callsign, u.rename_required_at, u.rename_required_reason, u.rename_required_by_steamid64
+				u.current_callsign,
+				rr.required_at as rename_required_at,
+				rr.reason as rename_required_reason,
+				rr.required_by_steamid64 as rename_required_by_steamid64
 			FROM user_identities ui
 			JOIN users u ON u.id = ui.user_id
+			LEFT JOIN rename_requirements rr ON rr.user_id = u.id
 			WHERE ui.provider = 'steam' AND ui.provider_user_id = ?
 		`);
 
@@ -792,17 +806,15 @@ export const dbOperations = {
 					setCallsign.run(`Steam_${input.steamid64.trim()}`, app.answers.callsign, ensured.user.id);
 				}
 
-				const update = db.prepare(`
-					UPDATE users
-					SET rename_required_at = COALESCE(rename_required_at, CURRENT_TIMESTAMP),
-						rename_required_reason = COALESCE(?, rename_required_reason),
-						rename_required_by_steamid64 = COALESCE(?, rename_required_by_steamid64)
-					WHERE id = ?
+				const insert = db.prepare(`
+					INSERT INTO rename_requirements (user_id, required_by_steamid64, reason)
+					VALUES (?, ?, ?)
+					ON CONFLICT(user_id) DO NOTHING
 				`);
-				const info = update.run(
-					input.reason ?? null,
+				const info = insert.run(
+					ensured.user.id,
 					input.requestedBySteamId64,
-					ensured.user.id
+					input.reason ?? null
 				);
 				return { success: info.changes > 0 };
 			});
@@ -815,11 +827,8 @@ export const dbOperations = {
 	clearUserRenameRequiredByUserId: (userId: number) => {
 		const db = getDb();
 		const stmt = db.prepare(`
-			UPDATE users
-			SET rename_required_at = NULL,
-				rename_required_reason = NULL,
-				rename_required_by_steamid64 = NULL
-			WHERE id = ?
+			DELETE FROM rename_requirements
+			WHERE user_id = ?
 		`);
 
 		try {
@@ -847,6 +856,23 @@ export const dbOperations = {
 		return !!stmt.get(userId);
 	},
 
+	getLatestDeclineReasonByUserId: (userId: number) => {
+		const db = getDb();
+		const stmt = db.prepare(`
+			SELECT decline_reason
+			FROM rename_requests
+			WHERE user_id = ?
+				AND status = 'declined'
+				AND decline_reason IS NOT NULL
+				AND TRIM(decline_reason) != ''
+			ORDER BY decided_at DESC, created_at DESC
+			LIMIT 1
+		`);
+		const row = stmt.get(userId) as { decline_reason?: string | null } | undefined;
+		const reason = row?.decline_reason ?? null;
+		return reason && reason.trim() ? reason : null;
+	},
+
 	createRenameRequest: (input: { userId: number; newCallsign: string }) => {
 		const db = getDb();
 		const isOldCallsignNullable = () => {
@@ -863,9 +889,10 @@ export const dbOperations = {
 			}
 		};
 		const selectUser = db.prepare(`
-			SELECT id, current_callsign, rename_required_at
-			FROM users
-			WHERE id = ?
+			SELECT u.id, u.current_callsign, rrq.required_at as rename_required_at
+			FROM users u
+			LEFT JOIN rename_requirements rrq ON rrq.user_id = u.id
+			WHERE u.id = ?
 		`);
 		const insert = db.prepare(`
 			INSERT INTO rename_requests (user_id, old_callsign, new_callsign, status)
@@ -909,13 +936,16 @@ export const dbOperations = {
 		const db = getDb();
 		const where =
 			status === 'rename_required'
-				? 'WHERE u.rename_required_at IS NOT NULL'
+				? 'WHERE rrq.user_id IS NOT NULL'
 				: status === 'confirmed'
 					? 'WHERE u.player_confirmed_at IS NOT NULL'
 					: '';
 		const stmt = db.prepare(`
 			SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-				u.current_callsign, u.rename_required_at, u.rename_required_reason, u.rename_required_by_steamid64,
+				u.current_callsign,
+				rrq.required_at as rename_required_at,
+				rrq.reason as rename_required_reason,
+				rrq.required_by_steamid64 as rename_required_by_steamid64,
 				EXISTS(
 					SELECT 1
 					FROM rename_requests rr
@@ -925,6 +955,7 @@ export const dbOperations = {
 			FROM users u
 			LEFT JOIN user_identities ui
 				ON ui.user_id = u.id AND ui.provider = 'steam'
+			LEFT JOIN rename_requirements rrq ON rrq.user_id = u.id
 			${where}
 			ORDER BY u.created_at DESC
 		`);
@@ -935,7 +966,9 @@ export const dbOperations = {
 		const db = getDb();
 		const where =
 			status === 'rename_required'
-				? 'WHERE rename_required_at IS NOT NULL'
+				? `WHERE EXISTS (
+					SELECT 1 FROM rename_requirements rrq WHERE rrq.user_id = users.id
+				)`
 				: status === 'confirmed'
 					? 'WHERE player_confirmed_at IS NOT NULL'
 					: '';
@@ -954,12 +987,13 @@ export const dbOperations = {
 		const stmt = db.prepare(`
 			SELECT rr.id, rr.user_id, rr.old_callsign, rr.new_callsign, rr.status,
 				rr.created_at, rr.decided_at, rr.decided_by_steamid64, rr.decline_reason,
-				u.current_callsign, u.rename_required_at,
+				u.current_callsign, rrq.required_at as rename_required_at,
 				ui.provider_user_id as steamid64
 			FROM rename_requests rr
 			JOIN users u ON u.id = rr.user_id
 			LEFT JOIN user_identities ui
 				ON ui.user_id = u.id AND ui.provider = 'steam'
+			LEFT JOIN rename_requirements rrq ON rrq.user_id = u.id
 			${where}
 			ORDER BY rr.created_at DESC
 		`);
@@ -996,17 +1030,13 @@ export const dbOperations = {
 			WHERE id = ?
 		`);
 		const clearRenameRequired = db.prepare(`
-			UPDATE users
-			SET rename_required_at = NULL,
-				rename_required_reason = NULL,
-				rename_required_by_steamid64 = NULL
-			WHERE id = ?
+			DELETE FROM rename_requirements
+			WHERE user_id = ?
 		`);
 		const ensureBlocked = db.prepare(`
-			UPDATE users
-			SET rename_required_at = COALESCE(rename_required_at, CURRENT_TIMESTAMP),
-				rename_required_by_steamid64 = COALESCE(rename_required_by_steamid64, ?)
-			WHERE id = ?
+			INSERT INTO rename_requirements (user_id, required_by_steamid64)
+			VALUES (?, ?)
+			ON CONFLICT(user_id) DO NOTHING
 		`);
 
 		try {
@@ -1025,7 +1055,7 @@ export const dbOperations = {
 				}
 
 				mark.run('declined', input.decidedBySteamId64, input.declineReason ?? null, row.id);
-				ensureBlocked.run(input.decidedBySteamId64, row.user_id);
+				ensureBlocked.run(row.user_id, input.decidedBySteamId64);
 				return { success: true as const };
 			});
 			return run();

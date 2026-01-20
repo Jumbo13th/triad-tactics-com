@@ -48,6 +48,8 @@ export default function AdminPage() {
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
 	const [confirmingId, setConfirmingId] = useState<number | null>(null);
 	const [confirmError, setConfirmError] = useState<string | null>(null);
+	const [confirmRenameId, setConfirmRenameId] = useState<number | null>(null);
+	const [confirmRenameError, setConfirmRenameError] = useState<string | null>(null);
 
 	const [debouncedQuery, setDebouncedQuery] = useState('');
 	useEffect(() => {
@@ -100,6 +102,7 @@ export default function AdminPage() {
 	const handleConfirm = async (applicationId: number) => {
 		try {
 			setConfirmError(null);
+			setConfirmingId(applicationId);
 			const res = await fetch('/api/admin/confirm', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
@@ -117,6 +120,32 @@ export default function AdminPage() {
 			setConfirmError('confirm_failed');
 		} finally {
 			setConfirmingId(null);
+		}
+	};
+
+	const handleConfirmWithRename = async (applicationId: number, steamid64: string) => {
+		try {
+			setConfirmRenameError(null);
+			setConfirmRenameId(applicationId);
+			const reasonRaw = window.prompt(ta('renameReasonPrompt'));
+			const reason = typeof reasonRaw === 'string' ? reasonRaw.trim() : '';
+			const res = await fetch('/api/admin/rename-required', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ steamid64, applicationId, reason: reason || null })
+			});
+			if (!res.ok) {
+				setConfirmRenameError('confirm_rename_failed');
+				return;
+			}
+
+			// Refresh current view.
+			const json = await loadApps({ status: appsStatus, q: debouncedQuery });
+			setApps(json);
+		} catch {
+			setConfirmRenameError('confirm_rename_failed');
+		} finally {
+			setConfirmRenameId(null);
 		}
 	};
 
@@ -156,7 +185,7 @@ export default function AdminPage() {
 						}
 					/>
 
-					{apps === null ? (
+						{apps === null ? (
 						<p className="text-sm text-neutral-300">{ta('loading')}</p>
 					) : 'error' in apps ? (
 						<p className="text-sm text-neutral-300">{ta('loadError')}</p>
@@ -167,6 +196,9 @@ export default function AdminPage() {
 					) : (
 						<div className="grid gap-3">
 							{confirmError ? <p className="text-sm text-neutral-300">{ta('confirmError')}</p> : null}
+								{confirmRenameError ? (
+									<p className="text-sm text-neutral-300">{ta('confirmRenameError')}</p>
+								) : null}
 							{apps.applications.map((row, idx) => {
 								const key = row.id ?? idx;
 								const isConfirmed = !!row.confirmed_at;
@@ -191,22 +223,36 @@ export default function AdminPage() {
 												</p>
 											</>
 										}
-										summaryRight={
-											isConfirmed ? (
-												<AdminBadge>{ta('confirmed')}</AdminBadge>
-											) : appsStatus === 'archived' ? null : (
-												<AdminButton
-													variant="primary"
-													onClick={(e) => {
-													e.preventDefault();
-													if (row.id) void handleConfirm(row.id);
-												}}
-													disabled={!row.id || confirmingId === row.id}
-												>
-													{confirmingId === row.id ? ta('confirming') : ta('confirm')}
-												</AdminButton>
-											)
-										}
+											summaryRight={
+												isConfirmed ? (
+													<AdminBadge>{ta('confirmed')}</AdminBadge>
+												) : appsStatus === 'archived' ? null : (
+													<>
+														<AdminButton
+															variant="primary"
+															className="h-9 whitespace-nowrap"
+															onClick={(e) => {
+																e.preventDefault();
+																if (row.id) void handleConfirm(row.id);
+															}}
+															disabled={!row.id || confirmingId === row.id}
+														>
+															{confirmingId === row.id ? ta('confirming') : ta('confirm')}
+														</AdminButton>
+														<AdminButton
+															variant="secondary"
+															className="h-9 whitespace-nowrap"
+															onClick={(e) => {
+																e.preventDefault();
+																if (row.id && row.steamid64) void handleConfirmWithRename(row.id, row.steamid64);
+															}}
+															disabled={!row.id || !row.steamid64 || confirmRenameId === row.id}
+														>
+															{confirmRenameId === row.id ? ta('confirmingRename') : ta('confirmAndRename')}
+														</AdminButton>
+													</>
+												)
+											}
 									>
 										<div className="grid gap-3 text-sm">
 											<AdminField label={ta('colSteam')}>

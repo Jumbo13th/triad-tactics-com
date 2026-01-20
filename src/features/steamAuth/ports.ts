@@ -40,6 +40,7 @@ export type SteamAuthUsersRepo = {
 
 export type SteamAuthRenameRequestsRepo = {
 	hasPendingByUserId: (userId: number) => boolean;
+	getLatestDeclineReasonByUserId: (userId: number) => string | null;
 };
 
 export type SteamAuthAdminAccess = {

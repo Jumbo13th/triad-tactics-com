@@ -20,7 +20,8 @@ export const steamAuthDeps: SteamAuthDeps = {
 		getUserBySteamId64: dbOperations.getUserBySteamId64
 	},
 	renameRequests: {
-		hasPendingByUserId: dbOperations.hasPendingRenameRequestByUserId
+		hasPendingByUserId: dbOperations.hasPendingRenameRequestByUserId,
+		getLatestDeclineReasonByUserId: dbOperations.getLatestDeclineReasonByUserId
 	},
 	admin: {
 		isAdminSteamId

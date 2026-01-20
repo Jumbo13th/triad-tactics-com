@@ -80,10 +80,13 @@
     "colCreated": "Created",
     "confirm": "Confirm",
     "confirming": "Confirming...",
+    "confirmAndRename": "Confirm + require rename",
+    "confirmingRename": "Confirming + requiring...",
     "confirmed": "Confirmed",
     "confirmedAt": "Confirmed",
     "confirmedBy": "Confirmed by {steamid64}",
     "confirmError": "Couldn't confirm the application. Please try again.",
+    "confirmRenameError": "Couldn't confirm and require rename. Please try again.",
     "requestRename": "Request rename",
     "requestingRename": "Requesting...",
     "renameError": "Couldn't request a rename. Please try again."
@@ -153,7 +156,7 @@
       "conflict": "Potential conflict with existing callsigns.",
       "exact": "Exact match: {example}",
       "sound": "Similar sound/look: {example}",
-      "note": "This is a helper check - admins make the final decision.",
+      "note": "This is a helper hint. The final decision is made by an admin.",
       "error": "Couldn't check availability right now."
     },
     "callsignSearch": {

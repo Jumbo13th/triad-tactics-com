@@ -27,7 +27,8 @@ function makeDeps(overrides: DeepPartial<SteamAuthDeps> = {}): SteamAuthDeps {
 			getUserBySteamId64: vi.fn(() => null)
 		},
 		renameRequests: {
-			hasPendingByUserId: vi.fn(() => false)
+			hasPendingByUserId: vi.fn(() => false),
+			getLatestDeclineReasonByUserId: vi.fn(() => null)
 		},
 		admin: {
 			isAdminSteamId: vi.fn(() => false)
@@ -88,7 +89,8 @@ describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
 				}))
 			},
 			renameRequests: {
-				hasPendingByUserId: vi.fn(() => true)
+				hasPendingByUserId: vi.fn(() => true),
+				getLatestDeclineReasonByUserId: vi.fn(() => null)
 			}
 		});
 
@@ -99,5 +101,39 @@ describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
 		expect(status.hasPendingRenameRequest).toBe(true);
 		expect(status.renameRequiredReason).toBe('Policy');
 		expect(status.renameRequiredBySteamId64).toBe('76561198012345678');
+	});
+
+	it('prefers latest declined reason over rename_required_reason', () => {
+		const deps = makeDeps({
+			sessions: {
+				getSteamSession: vi.fn(() => ({
+					id: 'sid',
+					created_at: new Date().toISOString(),
+					redirect_path: '/en',
+					steamid64: '76561198000000123',
+					persona_name: 'Persona'
+				}))
+			},
+			users: {
+				upsertUser: vi.fn(),
+				getUserBySteamId64: vi.fn(() => ({
+					id: 456,
+					current_callsign: 'Steam_76561198000000123',
+					player_confirmed_at: null,
+					rename_required_at: new Date().toISOString(),
+					rename_required_reason: 'Old reason',
+					rename_required_by_steamid64: '76561198012345678'
+				}))
+			},
+			renameRequests: {
+				hasPendingByUserId: vi.fn(() => false),
+				getLatestDeclineReasonByUserId: vi.fn(() => 'Latest declined reason')
+			}
+		});
+
+		const status = getSteamStatus(deps, 'sid');
+		expect(status.connected).toBe(true);
+		if (!status.connected) throw new Error('unreachable');
+		expect(status.renameRequiredReason).toBe('Latest declined reason');
 	});
 });
