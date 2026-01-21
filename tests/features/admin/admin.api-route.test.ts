@@ -4,7 +4,7 @@ import { buildTestApplicationRecord } from '../../fixtures/application';
 import { createSteamSession } from '../../fixtures/steamSession';
 
 async function loadAdminApiHarness() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../fixtures/dbOperations');
 	const { GET: GET_ADMIN } = await import('@/app/api/admin/route');
 	const { GET: GET_STATUS } = await import('@/app/api/admin/status/route');
 	const { NextRequest } = await import('next/server');

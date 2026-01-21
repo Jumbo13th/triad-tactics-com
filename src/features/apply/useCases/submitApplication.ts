@@ -5,10 +5,6 @@ const ARMA_REFORGER_APPID = 1874880;
 
 const SUPPORTED_LOCALES = new Set(['en', 'ru', 'uk', 'ar']);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function normalizeLocale(value: unknown): string {
   if (typeof value === 'string') {
     const lc = value.trim().toLowerCase();
@@ -79,8 +75,7 @@ export async function submitApplication(
     return { ok: false, status: 500, json: { error: 'steam_api_unavailable' } };
   }
 
-  const bodyLocale = isRecord(input.body) ? input.body.locale : undefined;
-  const locale = normalizeLocale(bodyLocale ?? input.localeHint);
+  const locale = normalizeLocale(input.localeHint);
 
   const verification = await deps.steam.verifySteamOwnsGameOrReject(
     steamApiKey,

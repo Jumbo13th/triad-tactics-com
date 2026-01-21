@@ -4,7 +4,7 @@ import { buildApplySubmitPayload } from '../../../../fixtures/applyPayload';
 import { createSteamCookieHeader } from '../../../../fixtures/steamSession';
 
 async function loadSubmitApiRoute() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { POST } = await import('@/app/api/submit/route');
 	const { NextRequest } = await import('next/server');
 	return { dbOperations, POST, NextRequest };

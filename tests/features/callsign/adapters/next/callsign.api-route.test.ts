@@ -4,7 +4,7 @@ import { buildTestApplicationRecord } from '../../../../fixtures/application';
 import { createSteamCookieHeader, type DbOperationsForSteamSession } from '../../../../fixtures/steamSession';
 
 async function loadCallsignApiHarness() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { GET: GET_CHECK } = await import('@/app/api/callsign/check/route');
 	const { GET: GET_SEARCH } = await import('@/app/api/callsign/search/route');
 	const { STEAM_SESSION_COOKIE } = await import('@/features/steamAuth/sessionCookie');

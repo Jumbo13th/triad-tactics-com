@@ -2,10 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-
-type CallsignSearchResponse =
-	| { ok: true; query: string; results: string[]; total: number }
-	| { ok: false; error: 'invalid_request' | 'server_error' };
+import { parseCallsignSearchResponse } from '@/features/callsign/domain/api';
 
 export default function CallsignSearch() {
 	const t = useTranslations('form');
@@ -39,15 +36,13 @@ export default function CallsignSearch() {
 				setStatus({ state: 'error' });
 				return;
 			}
-			const json = (await res.json()) as CallsignSearchResponse;
-			if (!json || typeof json !== 'object' || !('ok' in json) || json.ok !== true) {
+			const json = parseCallsignSearchResponse(await res.json());
+			if (!json || json.ok !== true) {
 				setStatus({ state: 'error' });
 				return;
 			}
 
-			const results = Array.isArray(json.results) ? json.results.filter((x) => typeof x === 'string') : [];
-			const total = typeof json.total === 'number' ? json.total : results.length;
-			setStatus({ state: 'ok', results, total });
+			setStatus({ state: 'ok', results: json.results, total: json.total });
 		} catch {
 			if (controller.signal.aborted) return;
 			setStatus({ state: 'error' });

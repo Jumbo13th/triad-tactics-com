@@ -1,7 +1,6 @@
 import os from 'node:os';
 import path from 'node:path';
-
-export type DbOperations = typeof import('@/platform/db').dbOperations;
+import { dbOperations, type DbOperations } from './dbOperations';
 
 export type SetupIsolatedDbOptions = {
 	prefix: string;
@@ -27,7 +26,6 @@ export async function setupIsolatedDb(
 		process.env.ADMIN_STEAM_IDS = opts.adminSteamIds;
 	}
 
-	const { dbOperations } = await import('@/platform/db');
 	dbOperations.clearAll();
 
 	return { dbPath, dbOperations };

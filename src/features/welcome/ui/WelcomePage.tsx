@@ -1,5 +1,5 @@
 import { useTranslations } from 'next-intl';
-import ScreenshotStrip from '@/features/welcome/ui/ScreenshotStrip';
+import { ScreenshotStrip } from '@/features/welcome/ui/root';
 
 export default function WelcomePage() {
   const tw = useTranslations('welcome');

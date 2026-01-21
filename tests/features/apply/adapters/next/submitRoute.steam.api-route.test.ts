@@ -12,7 +12,7 @@ function requireEnv(name: string): string {
 }
 
 async function loadSubmitApiHarness() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { POST } = await import('@/app/api/submit/route');
 	const { NextRequest } = await import('next/server');
 	return { dbOperations, POST, NextRequest };
@@ -58,7 +58,7 @@ describeSteam('Apply workflow: submit route (live Steam via API route)', () => {
 	it('accepts a profile that owns Arma Reforger', async () => {
 		process.env.STEAM_WEB_API_KEY = requireEnv('STEAM_WEB_API_KEY');
 		const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
-		const { dbOperations } = await import('@/platform/db');
+		const { dbOperations } = await import('../../../../fixtures/dbOperations');
 		dbOperations.deleteBySteamId64(steamid64);
 
 		const res = await postSubmitWithSteamSession({
@@ -86,7 +86,7 @@ describeSteam('Apply workflow: submit route (live Steam via API route)', () => {
 	it('enforces uniqueness per user (second submit is duplicate)', async () => {
 		process.env.STEAM_WEB_API_KEY = requireEnv('STEAM_WEB_API_KEY');
 		const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
-		const { dbOperations } = await import('@/platform/db');
+		const { dbOperations } = await import('../../../../fixtures/dbOperations');
 		dbOperations.deleteBySteamId64(steamid64);
 
 		const res1 = await postSubmitWithSteamSession({
@@ -110,7 +110,7 @@ describeSteam('Apply workflow: submit route (live Steam via API route)', () => {
 		process.env.STEAM_WEB_API_KEY = requireEnv('STEAM_WEB_API_KEY');
 		const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
 
-		const { dbOperations } = await import('@/platform/db');
+		const { dbOperations } = await import('../../../../fixtures/dbOperations');
 		dbOperations.deleteBySteamId64(steamid64);
 
 		const res = await postSubmitWithSteamSession({

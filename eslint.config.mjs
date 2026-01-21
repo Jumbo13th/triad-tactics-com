@@ -30,6 +30,10 @@ const eslintConfig = defineConfig([
               group: ["@/components/*"],
               message: "Do not create a generic components layer; place UI in feature modules.",
             },
+            {
+              group: ["tests/**", "@/tests/**", "**/tests/**"],
+              message: "Do not import test code into application code.",
+            },
           ],
         },
       ],
@@ -68,9 +72,35 @@ const eslintConfig = defineConfig([
               group: ["@/lib/*"],
               message: "Import from feature or platform modules instead of '@/lib/*'.",
             },
+            {
+              group: ["tests/**", "@/tests/**", "**/tests/**"],
+              message: "Do not import test code into application code.",
+            },
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["tests/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/platform/db", "@/platform/db/*"],
+              message: "Tests should import db helpers from tests/fixtures instead of platform/db.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["tests/fixtures/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
 ]);

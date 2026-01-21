@@ -5,7 +5,7 @@ export type DecideRenameRequestResult =
 	| { ok: false; error: 'not_found' | 'not_pending' | 'database_error' };
 
 export function decideRenameRequest(
-	deps: ListRenameRequestsDeps<unknown>,
+	deps: ListRenameRequestsDeps,
 	input: {
 		requestId: number;
 		decision: 'approve' | 'decline';

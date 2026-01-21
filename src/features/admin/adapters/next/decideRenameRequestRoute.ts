@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decideRenameRequest } from '@/features/admin/useCases/decideRenameRequest';
 import { renameRequestsDeps } from '@/features/admin/deps';
+import { decideRenameRequestSchema } from '@/features/admin/domain/requests';
 import { requireAdmin } from './adminAuth';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null;
-}
 
 export async function postDecideRenameRequestRoute(request: NextRequest): Promise<NextResponse> {
 	try {
@@ -14,26 +11,16 @@ export async function postDecideRenameRequestRoute(request: NextRequest): Promis
 		const { identity } = admin;
 
 		const body: unknown = await request.json();
-		const requestIdRaw = isRecord(body) ? body.requestId : undefined;
-		const requestId = typeof requestIdRaw === 'number' ? requestIdRaw : Number(requestIdRaw);
-		if (!Number.isFinite(requestId) || requestId <= 0) {
+		const parsed = decideRenameRequestSchema.safeParse(body);
+		if (!parsed.success) {
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
-
-		const decisionRaw = isRecord(body) ? body.decision : undefined;
-		const decision = typeof decisionRaw === 'string' ? decisionRaw.trim().toLowerCase() : '';
-		if (decision !== 'approve' && decision !== 'decline') {
-			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
-		}
-
-		const declineReasonRaw = isRecord(body) ? body.declineReason : undefined;
-		const declineReason = typeof declineReasonRaw === 'string' ? declineReasonRaw.trim() : null;
 
 		const result = decideRenameRequest(renameRequestsDeps, {
-			requestId,
-			decision: decision as 'approve' | 'decline',
+			requestId: parsed.data.requestId,
+			decision: parsed.data.decision,
 			decidedBySteamId64: identity.steamid64,
-			declineReason
+			declineReason: parsed.data.declineReason ?? null
 		});
 
 		if (!result.ok) {

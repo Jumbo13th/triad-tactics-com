@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
+import { parseSubmitApplicationResponse } from '@/features/apply/domain/api';
+import { parseSteamMeStatus, type SteamMeStatus } from '@/features/steamAuth/domain/api';
 import { applicationSchema, type ApplicationFormData } from '../schema';
 import type { ZodIssue } from 'zod';
-import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
-import CallsignField from '@/features/callsign/ui/CallsignField';
-import CallsignSearch from '@/features/callsign/ui/CallsignSearch';
+import { SteamSignInButton } from '@/features/steamAuth/ui/root';
+import { CallsignField, CallsignSearch } from '@/features/callsign/ui/root';
 
 const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset => {
   const sign = offset >= 0 ? '+' : '-';
@@ -38,19 +39,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
     motivation: ''
   });
 
-  const [steamAuth, setSteamAuth] = useState<
-    | { connected: false }
-    | {
-        connected: true;
-        steamid64: string;
-        personaName: string | null;
-        hasExisting?: boolean;
-        submittedAt?: string | null;
-        renameRequired?: boolean;
-        hasPendingRenameRequest?: boolean;
-      }
-    | null
-  >(null);
+  const [steamAuth, setSteamAuth] = useState<SteamMeStatus | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,21 +78,8 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
       }
 
       const json: unknown = (await res.json()) as unknown;
-      const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-
-      if (isRecord(json) && json.connected === true && typeof json.steamid64 === 'string') {
-        setSteamAuth({
-          connected: true,
-          steamid64: json.steamid64,
-          personaName: typeof json.personaName === 'string' ? json.personaName : null,
-          hasExisting: json.hasExisting === true,
-          submittedAt: typeof json.submittedAt === 'string' ? json.submittedAt : null,
-          renameRequired: json.renameRequired === true,
-          hasPendingRenameRequest: json.hasPendingRenameRequest === true
-        });
-      } else {
-        setSteamAuth({ connected: false });
-      }
+      const parsed = parseSteamMeStatus(json);
+      setSteamAuth(parsed ?? { connected: false });
     } catch {
       setSteamAuth({ connected: false });
     }
@@ -288,15 +264,15 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
         })
       });
 
-      const data: unknown = await response.json();
-      const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-      const payload = isRecord(data) ? data : {};
-      const errorCode = typeof payload.error === 'string' ? payload.error : undefined;
+      const parsed = parseSubmitApplicationResponse(await response.json());
+      const errorCode = parsed?.kind === 'error' ? parsed.error : undefined;
 
       if (!response.ok) {
         switch (errorCode) {
           case 'rate_limited': {
-            const seconds = typeof payload.retryAfterSeconds === 'number' ? payload.retryAfterSeconds : 120;
+            const seconds = parsed?.kind === 'error' && typeof parsed.retryAfterSeconds === 'number'
+              ? parsed.retryAfterSeconds
+              : 120;
             setRateLimitSecondsLeft(Math.max(0, Math.floor(seconds)));
             break;
           }

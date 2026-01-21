@@ -1,4 +1,4 @@
-import type { SteamSession } from '@/platform/db';
+import type { SteamSession } from '@/features/steamAuth/domain/types';
 
 export type SteamOpenIdVerifier = {
 	verifyAssertion: (params: URLSearchParams) => Promise<boolean>;

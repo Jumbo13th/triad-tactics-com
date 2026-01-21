@@ -1,8 +1,8 @@
-import { dbOperations } from '@/platform/db';
+import { listCallsigns } from '@/features/callsign/infra/sqliteCallsigns';
 import type { CallsignDeps } from './ports';
 
 export const callsignDeps: CallsignDeps = {
 	repo: {
-		listCallsigns: (scope) => dbOperations.listCallsigns(scope)
+		listCallsigns: (scope) => listCallsigns(scope)
 	}
 };

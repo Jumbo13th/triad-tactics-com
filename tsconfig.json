@@ -39,7 +39,8 @@
     ".next-e2e/**/types/**/*.ts",
     ".next-e2e/**/dev/types/**/*.ts",
     "./.next-e2e/apply-submit-full-cycle-steam/types/**/*.ts",
-    "./.next-e2e/apply-submit-full-cycle-steam/dev/types/**/*.ts"
+    "./.next-e2e/apply-submit-full-cycle-steam/dev/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

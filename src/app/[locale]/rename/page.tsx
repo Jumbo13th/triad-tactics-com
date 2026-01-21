@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';
-import RenamePage from '@/features/rename/ui/RenamePage';
+import { RenamePage } from '@/features/rename/ui/root';
 
 export default async function RenameRoutePage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;

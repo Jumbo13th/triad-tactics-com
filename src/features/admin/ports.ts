@@ -1,5 +1,8 @@
-export type AdminApplicationsRepo<TApp> = {
-	getApplicationsByStatus: (status: 'active' | 'archived' | 'all') => TApp[];
+import type { Application } from '@/features/apply/domain/types';
+import type { AdminRenameRequestRow, AdminUserRow } from '@/features/admin/domain/types';
+
+export type AdminApplicationsRepo = {
+	getApplicationsByStatus: (status: 'active' | 'archived' | 'all') => Application[];
 	countApplicationsByStatus: (status: 'active' | 'archived' | 'all') => number;
 };
 
@@ -10,8 +13,8 @@ export type AdminConfirmRepo = {
 	) => { success: true } | { success: false; error: 'not_found' | 'database_error' };
 };
 
-export type ListApplicationsDeps<TApp> = {
-	repo: AdminApplicationsRepo<TApp>;
+export type ListApplicationsDeps = {
+	repo: AdminApplicationsRepo;
 };
 
 export type ConfirmApplicationDeps = {
@@ -41,17 +44,17 @@ export type RenameRequiredDeps = {
 	repo: AdminUserRenameRepo;
 };
 
-export type AdminUsersRepo<TUser> = {
-	listUsers: (status: 'all' | 'rename_required' | 'confirmed') => TUser[];
+export type AdminUsersRepo = {
+	listUsers: (status: 'all' | 'rename_required' | 'confirmed') => AdminUserRow[];
 	countUsersByStatus: (status: 'all' | 'rename_required' | 'confirmed') => number;
 };
 
-export type ListUsersDeps<TUser> = {
-	repo: AdminUsersRepo<TUser>;
+export type ListUsersDeps = {
+	repo: AdminUsersRepo;
 };
 
-export type AdminRenameRequestsRepo<TRow> = {
-	listRenameRequests: (status: 'pending' | 'approved' | 'declined' | 'all') => TRow[];
+export type AdminRenameRequestsRepo = {
+	listRenameRequests: (status: 'pending' | 'approved' | 'declined' | 'all') => AdminRenameRequestRow[];
 	decideRenameRequest: (input: {
 		requestId: number;
 		decision: 'approve' | 'decline';
@@ -60,6 +63,6 @@ export type AdminRenameRequestsRepo<TRow> = {
 	}) => { success: true } | { success: false; error: 'not_found' | 'not_pending' | 'database_error' };
 };
 
-export type ListRenameRequestsDeps<TRow> = {
-	repo: AdminRenameRequestsRepo<TRow>;
+export type ListRenameRequestsDeps = {
+	repo: AdminRenameRequestsRepo;
 };

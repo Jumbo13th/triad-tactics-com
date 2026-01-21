@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
-import type { Application } from '@/platform/db';
+import {
+	parseAdminApplicationsResponse,
+	parseAdminStatusResponse,
+	type AdminApplicationsView
+} from '@/features/admin/domain/api';
 import {
 	AdminBadge,
 	AdminButton,
@@ -17,15 +21,6 @@ import {
 	AdminToolbar,
 	type AdminStatus
 } from './root';
-
-type AdminApplicationsResponse =
-	| {
-			success: true;
-			count: number;
-			counts: { active: number; archived: number; total: number };
-			applications: Application[];
-		}
-	| { error: string };
 
 function buildLocalizedPath(locale: string, pathname: string) {
 	const suffix = pathname === '/' ? '' : pathname;
@@ -42,7 +37,7 @@ export default function AdminPage() {
 	const redirectPath = useMemo(() => buildLocalizedPath(locale, pathname), [locale, pathname]);
 
 	const [status, setStatus] = useState<AdminStatus | null>(null);
-	const [apps, setApps] = useState<AdminApplicationsResponse | null>(null);
+	const [apps, setApps] = useState<AdminApplicationsView | null>(null);
 	const [appsStatus, setAppsStatus] = useState<'active' | 'archived'>('active');
 	const [query, setQuery] = useState('');
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -62,8 +57,9 @@ export default function AdminPage() {
 		(async () => {
 			try {
 				const res = await fetch('/api/admin/status', { cache: 'no-store' });
-				const json = (await res.json()) as AdminStatus;
-				if (!cancelled) setStatus(json);
+				const json: unknown = (await res.json()) as unknown;
+				const parsed = parseAdminStatusResponse(json);
+				if (!cancelled) setStatus(parsed ?? { connected: false, isAdmin: false });
 			} catch {
 				if (!cancelled) setStatus({ connected: false, isAdmin: false });
 			}
@@ -79,7 +75,8 @@ export default function AdminPage() {
 			params.set('status', opts.status);
 			if (opts.q.trim()) params.set('q', opts.q.trim());
 			const res = await fetch(`/api/admin?${params.toString()}`, { cache: 'no-store' });
-			return (await res.json()) as AdminApplicationsResponse;
+			const json: unknown = (await res.json()) as unknown;
+			return parseAdminApplicationsResponse(json) ?? { error: 'server_error' };
 		};
 	}, []);
 

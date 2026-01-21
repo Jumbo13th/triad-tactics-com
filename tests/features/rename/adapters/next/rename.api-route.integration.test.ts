@@ -3,7 +3,7 @@ import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
 import { buildTestApplicationRecord } from '../../../../fixtures/application';
 import { createSteamSession } from '../../../../fixtures/steamSession';
 async function loadRenameApiHarness() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { POST } = await import('@/app/api/rename/route');
 	const { NextRequest } = await import('next/server');
 	return { dbOperations, POST, NextRequest };

@@ -4,7 +4,7 @@ import { createSteamSession } from '../../../../fixtures/steamSession';
 import { buildTestApplicationRecord } from '../../../../fixtures/application';
 
 async function loadAdminRenameHarness() {
-	const { dbOperations } = await import('@/platform/db');
+	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { GET } = await import('@/app/api/admin/rename-requests/route');
 	const { POST: POST_DECIDE } = await import('@/app/api/admin/rename-requests/decide/route');
 	const { POST: POST_RENAME_REQUIRED } = await import('@/app/api/admin/rename-required/route');

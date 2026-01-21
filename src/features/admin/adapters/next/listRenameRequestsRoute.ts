@@ -13,26 +13,6 @@ function normalizeStatus(value: string | null): 'pending' | 'approved' | 'declin
 	return 'pending';
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null;
-}
-
-function matchesQuery(row: Record<string, unknown>, q: string) {
-	const needle = q.trim().toLowerCase();
-	if (!needle) return true;
-	const fields = [
-		row.steamid64,
-		row.old_callsign,
-		row.new_callsign,
-		row.status,
-		row.id,
-		row.user_id
-	];
-	return fields
-		.map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : ''))
-		.some((h) => h.toLowerCase().includes(needle));
-}
-
 export async function getAdminRenameRequestsRoute(request: NextRequest): Promise<NextResponse> {
 	try {
 		const admin = requireAdmin(request);
@@ -41,10 +21,7 @@ export async function getAdminRenameRequestsRoute(request: NextRequest): Promise
 		const status = normalizeStatus(request.nextUrl.searchParams.get('status'));
 		const q = request.nextUrl.searchParams.get('q') ?? '';
 
-		const { renameRequests: raw } = listRenameRequests(renameRequestsDeps, { status });
-		const renameRequests = q.trim()
-			? raw.filter((r) => (isRecord(r) ? matchesQuery(r, q) : true))
-			: raw;
+		const { renameRequests } = listRenameRequests(renameRequestsDeps, { status, query: q });
 
 		return NextResponse.json({
 			success: true,

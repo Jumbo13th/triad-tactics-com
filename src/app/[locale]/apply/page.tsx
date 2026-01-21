@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import ApplyPage from '@/features/apply/ui/ApplyPage';
+import { ApplyPage } from '@/features/apply/ui/root';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';

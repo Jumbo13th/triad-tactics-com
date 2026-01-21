@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
+import { parseAdminStatusResponse } from '@/features/admin/domain/api';
+import { parseAdminUsersResponse, type AdminUsersView } from '@/features/admin/domain/api';
 import {
 	AdminBadge,
 	AdminButton,
@@ -17,39 +19,9 @@ import {
 	type AdminStatus
 } from './root';
 
-type AdminUsersResponse =
-	| {
-			success: true;
-			count: number;
-			counts: { all: number; renameRequired: number; confirmed: number };
-			users: Array<Record<string, unknown>>;
-	  }
-	| { error: string };
-
 function buildLocalizedPath(locale: string, pathname: string) {
 	const suffix = pathname === '/' ? '' : pathname;
 	return `/${locale}${suffix}`;
-}
-
-function asString(v: unknown) {
-	return typeof v === 'string' ? v : null;
-}
-
-function asNumber(v: unknown) {
-	return typeof v === 'number' ? v : Number.isFinite(Number(v)) ? Number(v) : null;
-}
-
-function asBool(v: unknown) {
-	if (v === true) return true;
-	if (v === false) return false;
-	if (v === 1 || v === '1') return true;
-	if (v === 0 || v === '0') return false;
-	if (typeof v === 'string') {
-		const s = v.trim().toLowerCase();
-		if (s === 'true') return true;
-		if (s === 'false') return false;
-	}
-	return false;
 }
 
 export default function AdminUsersPage() {
@@ -60,7 +32,7 @@ export default function AdminUsersPage() {
 	const redirectPath = useMemo(() => buildLocalizedPath(locale, pathname), [locale, pathname]);
 
 	const [status, setStatus] = useState<AdminStatus | null>(null);
-	const [users, setUsers] = useState<AdminUsersResponse | null>(null);
+	const [users, setUsers] = useState<AdminUsersView | null>(null);
 	const [usersStatus, setUsersStatus] = useState<'all' | 'rename_required' | 'confirmed'>('all');
 	const [query, setQuery] = useState('');
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -78,8 +50,9 @@ export default function AdminUsersPage() {
 		(async () => {
 			try {
 				const res = await fetch('/api/admin/status', { cache: 'no-store' });
-				const json = (await res.json()) as AdminStatus;
-				if (!cancelled) setStatus(json);
+				const json: unknown = (await res.json()) as unknown;
+				const parsed = parseAdminStatusResponse(json);
+				if (!cancelled) setStatus(parsed ?? { connected: false, isAdmin: false });
 			} catch {
 				if (!cancelled) setStatus({ connected: false, isAdmin: false });
 			}
@@ -95,7 +68,8 @@ export default function AdminUsersPage() {
 			sp.set('status', opts.status);
 			if (opts.q.trim()) sp.set('q', opts.q.trim());
 			const res = await fetch(`/api/admin/users?${sp.toString()}`, { cache: 'no-store' });
-			return (await res.json()) as AdminUsersResponse;
+			const json: unknown = (await res.json()) as unknown;
+			return parseAdminUsersResponse(json) ?? { error: 'server_error' };
 		};
 	}, []);
 
@@ -192,15 +166,15 @@ export default function AdminUsersPage() {
 						<div className="grid gap-3">
 							{renameError ? <p className="text-sm text-neutral-300">{ta('renameError')}</p> : null}
 							{users.users.map((row, idx) => {
-								const key = (asNumber(row.id) ?? idx).toString();
-								const steamid64 = asString(row.steamid64);
-								const callsign = asString(row.current_callsign);
-								const createdAt = asString(row.created_at) ?? '';
-								const renameRequiredAt = asString(row.rename_required_at);
-								const renameRequiredReason = asString(row.rename_required_reason);
-								const renameRequiredBy = asString(row.rename_required_by_steamid64);
-								const confirmedAt = asString(row.player_confirmed_at);
-								const hasPendingRename = asBool((row as Record<string, unknown>).has_pending_rename_request);
+								const key = (row.id ?? idx).toString();
+								const steamid64 = row.steamid64 ?? null;
+								const callsign = row.current_callsign ?? null;
+								const createdAt = row.created_at ?? '';
+								const renameRequiredAt = row.rename_required_at ?? null;
+								const renameRequiredReason = row.rename_required_reason ?? null;
+								const renameRequiredBy = row.rename_required_by_steamid64 ?? null;
+								const confirmedAt = row.player_confirmed_at ?? null;
+								const hasPendingRename = row.has_pending_rename_request;
 								const canRequestRename = !!steamid64 && !!confirmedAt && !renameRequiredAt && !hasPendingRename;
 								return (
 									<AdminDisclosure
@@ -208,7 +182,7 @@ export default function AdminUsersPage() {
 										summaryLeft={
 											<>
 												<p className="truncate text-base font-semibold text-neutral-50">
-													{callsign ?? steamid64 ?? `User #${asNumber(row.id) ?? idx}`}
+													{callsign ?? steamid64 ?? `User #${row.id ?? idx}`}
 												</p>
 												<p className="mt-1 truncate text-sm text-neutral-400">
 													<span>{steamid64 ?? ''}</span>

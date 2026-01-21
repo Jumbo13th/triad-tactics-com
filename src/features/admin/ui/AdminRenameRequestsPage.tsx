@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { useParams } from 'next/navigation';
+import { parseAdminStatusResponse } from '@/features/admin/domain/api';
+import { parseAdminRenameRequestsResponse, type AdminRenameRequestsView } from '@/features/admin/domain/api';
 import {
 	AdminBadge,
 	AdminButton,
@@ -17,21 +19,9 @@ import {
 	type AdminStatus
 } from './root';
 
-type AdminRenameRequestsResponse =
-	| { success: true; count: number; renameRequests: Array<Record<string, unknown>> }
-	| { error: string };
-
 function buildLocalizedPath(locale: string, pathname: string) {
 	const suffix = pathname === '/' ? '' : pathname;
 	return `/${locale}${suffix}`;
-}
-
-function asString(v: unknown) {
-	return typeof v === 'string' ? v : null;
-}
-
-function asNumber(v: unknown) {
-	return typeof v === 'number' ? v : Number.isFinite(Number(v)) ? Number(v) : null;
 }
 
 export default function AdminRenameRequestsPage() {
@@ -42,7 +32,7 @@ export default function AdminRenameRequestsPage() {
 	const redirectPath = useMemo(() => buildLocalizedPath(locale, pathname), [locale, pathname]);
 
 	const [status, setStatus] = useState<AdminStatus | null>(null);
-	const [rows, setRows] = useState<AdminRenameRequestsResponse | null>(null);
+	const [rows, setRows] = useState<AdminRenameRequestsView | null>(null);
 	const [tab, setTab] = useState<'pending' | 'approved' | 'declined' | 'all'>('pending');
 	const [query, setQuery] = useState('');
 	const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -60,8 +50,9 @@ export default function AdminRenameRequestsPage() {
 		(async () => {
 			try {
 				const res = await fetch('/api/admin/status', { cache: 'no-store' });
-				const json = (await res.json()) as AdminStatus;
-				if (!cancelled) setStatus(json);
+				const json: unknown = (await res.json()) as unknown;
+				const parsed = parseAdminStatusResponse(json);
+				if (!cancelled) setStatus(parsed ?? { connected: false, isAdmin: false });
 			} catch {
 				if (!cancelled) setStatus({ connected: false, isAdmin: false });
 			}
@@ -77,7 +68,8 @@ export default function AdminRenameRequestsPage() {
 			sp.set('status', opts.status);
 			if (opts.q.trim()) sp.set('q', opts.q.trim());
 			const res = await fetch(`/api/admin/rename-requests?${sp.toString()}`, { cache: 'no-store' });
-			return (await res.json()) as AdminRenameRequestsResponse;
+			const json: unknown = (await res.json()) as unknown;
+			return parseAdminRenameRequestsResponse(json) ?? { error: 'server_error' };
 		};
 	}, []);
 
@@ -175,13 +167,13 @@ export default function AdminRenameRequestsPage() {
 					) : (
 						<div className="grid gap-3">
 							{rows.renameRequests.map((row, idx) => {
-								const key = (asNumber(row.id) ?? idx).toString();
-								const steamid64 = asString(row.steamid64);
-								const oldCallsign = asString(row.old_callsign) ?? '';
-								const newCallsign = asString(row.new_callsign) ?? '';
-								const createdAt = asString(row.created_at) ?? '';
-								const status = (asString(row.status) ?? 'pending') as 'pending' | 'approved' | 'declined';
-								const requestId = asNumber(row.id) ?? 0;
+								const key = (row.id ?? idx).toString();
+								const steamid64 = row.steamid64 ?? null;
+								const oldCallsign = row.old_callsign ?? '';
+								const newCallsign = row.new_callsign ?? '';
+								const createdAt = row.created_at ?? '';
+								const status = row.status;
+								const requestId = row.id ?? 0;
 								const statusLabel =
 									status === 'pending'
 										? ta('badgePending')
@@ -250,9 +242,9 @@ export default function AdminRenameRequestsPage() {
 													{oldCallsign} → {newCallsign}
 												</p>
 											</AdminField>
-											{asString(row.decline_reason) ? (
+											{row.decline_reason ? (
 												<AdminField label={ta('colDeclineReason')}>
-													<p>{asString(row.decline_reason)}</p>
+													<p>{row.decline_reason}</p>
 												</AdminField>
 											) : null}
 										</div>

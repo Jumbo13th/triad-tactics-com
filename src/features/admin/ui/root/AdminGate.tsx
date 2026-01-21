@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import SteamSignInButton from '@/features/steamAuth/ui/SteamSignInButton';
+import { SteamSignInButton } from '@/features/steamAuth/ui/root';
 import type { AdminStatus } from './types';
 
 type TFn = (key: string, values?: Record<string, string | number | Date>) => string;

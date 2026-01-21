@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import AdminRenameRequestsPage from '@/features/admin/ui/AdminRenameRequestsPage';
+import { AdminRenameRequestsPage } from '@/features/admin/ui/root';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';

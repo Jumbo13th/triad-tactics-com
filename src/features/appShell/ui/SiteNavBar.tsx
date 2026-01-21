@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
-import LanguageSwitcher from '@/features/language/ui/LanguageSwitcher';
-import { useAdminStatus } from '@/features/steamAuth/ui/useAdminStatus';
-import { DropdownMenuPanel } from '@/features/appShell/ui/DropdownMenuPanel';
+import { LanguageSwitcher } from '@/features/language/ui/root';
+import { useAdminStatus } from '@/features/steamAuth/ui/root';
+import { DropdownMenuPanel } from '@/features/appShell/ui/root';
 
 function isActivePath(currentPathname: string, href: string) {
 	if (href === '/') return currentPathname === '/';

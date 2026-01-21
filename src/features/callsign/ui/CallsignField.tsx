@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-
-type CallsignCheckResponse =
-	| { ok: true; normalized: string; exactMatches: string[]; soundMatches: string[] }
-	| { ok: false; error: 'invalid_request' | 'server_error' };
+import { parseCallsignCheckResponse } from '@/features/callsign/domain/api';
 
 export type CallsignAvailabilityStatus =
 	| { state: 'idle' }
@@ -86,8 +83,8 @@ export default function CallsignField(props: {
 					setStatus({ state: 'error' });
 					return;
 				}
-				const json = (await res.json()) as CallsignCheckResponse;
-				if (!json || typeof json !== 'object' || !('ok' in json) || json.ok !== true) {
+				const json = parseCallsignCheckResponse(await res.json());
+				if (!json || json.ok !== true) {
 					setStatus({ state: 'error' });
 					return;
 				}

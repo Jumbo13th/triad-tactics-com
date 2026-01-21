@@ -1,4 +1,4 @@
-import SocialLinks from '@/features/social/ui/SocialLinks';
+import { SocialLinks } from '@/features/social/ui/root';
 
 export default function SiteFooter() {
   return (

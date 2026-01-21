@@ -12,24 +12,6 @@ function normalizeStatus(value: string | null): 'all' | 'rename_required' | 'con
 	return 'all';
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null;
-}
-
-function matchesQuery(row: Record<string, unknown>, q: string) {
-	const needle = q.trim().toLowerCase();
-	if (!needle) return true;
-	const fields = [
-		row.steamid64,
-		row.current_callsign,
-		row.id,
-		row.confirmed_application_id
-	];
-	return fields
-		.map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v) : ''))
-		.some((h) => h.toLowerCase().includes(needle));
-}
-
 export async function getAdminUsersRoute(request: NextRequest): Promise<NextResponse> {
 	try {
 		const admin = requireAdmin(request);
@@ -38,10 +20,7 @@ export async function getAdminUsersRoute(request: NextRequest): Promise<NextResp
 		const status = normalizeStatus(request.nextUrl.searchParams.get('status'));
 		const q = request.nextUrl.searchParams.get('q') ?? '';
 
-		const { users: raw, counts } = listUsers(listUsersDeps, { status });
-		const users = q.trim()
-			? raw.filter((u) => (isRecord(u) ? matchesQuery(u, q) : true))
-			: raw;
+		const { users, counts } = listUsers(listUsersDeps, { status, query: q });
 
 		return NextResponse.json({
 			success: true,

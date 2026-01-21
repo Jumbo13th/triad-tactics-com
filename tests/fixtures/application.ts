@@ -4,7 +4,7 @@ export type TestApplicationRecord = {
 	persona_name: string;
 	answers: {
 		callsign: string;
-		name?: string;
+		name: string;
 		age: string;
 		city: string;
 		country: string;
@@ -21,7 +21,9 @@ export function buildTestApplicationRecord(opts: {
 	email: string;
 	steamid64: string;
 	callsign: string;
-	overrides?: Partial<TestApplicationRecord>;
+	overrides?: Omit<Partial<TestApplicationRecord>, 'answers'> & {
+		answers?: Partial<TestApplicationRecord['answers']>;
+	};
 }): TestApplicationRecord {
 	const base: TestApplicationRecord = {
 		email: opts.email,

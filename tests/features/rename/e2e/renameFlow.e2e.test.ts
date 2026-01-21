@@ -22,7 +22,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 	it('blocks APIs until rename request is submitted; admin can approve and clear the rename block', async () => {
 		const { POST_RENAME, POST_RENAME_REQUIRED, POST_CONFIRM, POST_DECIDE, POST_SUBMIT, NextRequest } =
 			await loadHandlers();
-		const { dbOperations } = await import('@/platform/db');
+		const { dbOperations } = await import('../../../fixtures/dbOperations');
 
 		const adminSid = createSteamSession(dbOperations, {
 			steamid64: '76561198012345678',

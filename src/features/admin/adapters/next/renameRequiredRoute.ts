@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { confirmApplicationDeps, renameRequiredDeps } from '@/features/admin/deps';
 import { confirmApplication } from '@/features/admin/useCases/confirmApplication';
 import { clearRenameRequired, setRenameRequired } from '@/features/admin/useCases/renameRequired';
+import { renameRequiredRequestSchema } from '@/features/admin/domain/requests';
 import { requireAdmin } from './adminAuth';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null;
-}
 
 export async function postRenameRequiredRoute(request: NextRequest): Promise<NextResponse> {
 	try {
@@ -15,24 +12,12 @@ export async function postRenameRequiredRoute(request: NextRequest): Promise<Nex
 		const { identity } = admin;
 
 		const body: unknown = await request.json();
-		const steamid64Raw = isRecord(body) ? body.steamid64 : undefined;
-		const steamid64 = typeof steamid64Raw === 'string' ? steamid64Raw.trim() : '';
-		if (!steamid64) {
+		const parsed = renameRequiredRequestSchema.safeParse(body);
+		if (!parsed.success) {
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
 
-		const actionRaw = isRecord(body) ? body.action : undefined;
-		const action = typeof actionRaw === 'string' ? actionRaw.trim().toLowerCase() : 'require';
-		const reasonRaw = isRecord(body) ? body.reason : undefined;
-		const reason = typeof reasonRaw === 'string' ? reasonRaw.trim() : null;
-
-		const applicationIdRaw = isRecord(body) ? body.applicationId : undefined;
-		const applicationId =
-			typeof applicationIdRaw === 'number'
-				? applicationIdRaw
-				: Number.isFinite(Number(applicationIdRaw))
-					? Number(applicationIdRaw)
-					: null;
+		const { action, steamid64, reason, applicationId } = parsed.data;
 
 		if (action === 'clear') {
 			const result = clearRenameRequired(renameRequiredDeps, { steamid64 });
@@ -42,11 +27,7 @@ export async function postRenameRequiredRoute(request: NextRequest): Promise<Nex
 
 		// Optional: confirm the application before requiring rename.
 		// This models the admin flow: user is approved but must rename callsign.
-		if (applicationId !== null) {
-			if (!Number.isFinite(applicationId) || applicationId <= 0) {
-				return NextResponse.json({ error: 'validation_error' }, { status: 400 });
-			}
-
+		if (applicationId != null) {
 			const confirmed = confirmApplication(confirmApplicationDeps, {
 				applicationId,
 				confirmedBySteamId64: identity.steamid64

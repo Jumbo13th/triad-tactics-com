@@ -1,16 +1,22 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ZodIssue } from 'zod';
 import { z } from 'zod';
-import { applicationSchema } from '@/features/apply/schema';
-import CallsignField, { type CallsignAvailabilityStatus } from '@/features/callsign/ui/CallsignField';
-import CallsignSearch from '@/features/callsign/ui/CallsignSearch';
+import { callsignSchema } from '@/features/callsign/domain/callsignSchema';
+import { parseRenameSubmitResponse } from '@/features/rename/domain/api';
+import { CallsignField, CallsignSearch, type CallsignAvailabilityStatus } from '@/features/callsign/ui/root';
+import {
+	RenameHeader,
+	RenamePendingPanel,
+	RenameReasonPanel,
+	RenameRulesPanel,
+	RenameSurface
+} from '@/features/rename/ui/root';
 
 const renameRequestSchema = z.object({
-	callsign: applicationSchema.shape.callsign
+	callsign: callsignSchema
 });
 
 type Props = {
@@ -92,21 +98,20 @@ export default function RenamePage(props: Props) {
 				body: JSON.stringify({ callsign: validation.data.callsign })
 			});
 
-			const json: unknown = await res.json().catch(() => null);
-			const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+			const parsed = parseRenameSubmitResponse(await res.json().catch(() => null));
 
 			if (res.status === 401) {
 				setErrors(prev => ({ ...prev, general: t('errorNotSignedIn') }));
 				return;
 			}
 
-			if (res.ok && isRecord(json) && json.ok === true) {
+			if (res.ok && parsed?.kind === 'success') {
 				setPending(true);
 				setIsSubmitted(true);
 				return;
 			}
 
-			const code = isRecord(json) && typeof json.error === 'string' ? json.error : '';
+			const code = parsed?.kind === 'error' ? parsed.error : '';
 			if (code === 'rename_not_required') {
 				setErrors(prev => ({ ...prev, general: t('errorRenameNotRequired') }));
 				return;
@@ -130,45 +135,34 @@ export default function RenamePage(props: Props) {
 	};
 
 	return (
-		<section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">{t('title')}</h2>
-					<p className="mt-2 text-sm text-neutral-300">{t('subtitle')}</p>
-				</div>
-				<Link
-					href={`/${props.locale}`}
-					className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
-				>
-					{t('backHome')}
-				</Link>
-			</div>
-
-			{(() => {
-				const name = props.callsign || props.personaName || props.steamid64;
-				return name ? (
-					<p className="mt-2 text-xs text-neutral-500">{t('signedInAs', { name })}</p>
-				) : null;
-			})()}
+		<RenameSurface>
+			<RenameHeader
+				title={t('title')}
+				subtitle={t('subtitle')}
+				backHref={`/${props.locale}`}
+				backLabel={t('backHome')}
+				signedInAs={(() => {
+					const name = props.callsign || props.personaName || props.steamid64;
+					return name ? t('signedInAs', { name }) : null;
+				})()}
+			/>
 
 			{props.renameRequiredReason ? (
-				<div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-					<p className="text-sm font-medium text-neutral-100">{t('reasonLabel')}</p>
-					<p className="mt-1 text-sm text-neutral-300">{props.renameRequiredReason}</p>
-					{props.renameRequiredBySteamId64 ? (
-						<p className="mt-2 text-xs text-neutral-500">
-							{t('requestedByLabel')}: {props.renameRequiredByCallsign ?? props.renameRequiredBySteamId64}
-						</p>
-					) : null}
-				</div>
+				<RenameReasonPanel
+					reasonLabel={t('reasonLabel')}
+					reason={props.renameRequiredReason}
+					requestedByLabel={t('requestedByLabel')}
+					requestedBy={props.renameRequiredByCallsign ?? props.renameRequiredBySteamId64 ?? null}
+				/>
 			) : null}
 
 			{pending ? (
-				<div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-					<h3 className="text-sm font-semibold text-neutral-50">{t('pendingTitle')}</h3>
-					<p className="mt-1 text-sm text-neutral-300">{t('pendingText')}</p>
-					{isSubmitted ? <p className="mt-3 text-sm text-emerald-300">{t('successText')}</p> : null}
-				</div>
+				<RenamePendingPanel
+					title={t('pendingTitle')}
+					text={t('pendingText')}
+					successText={t('successText')}
+					showSuccess={isSubmitted}
+				/>
 			) : (
 				<form
 					className="mt-6 grid gap-5"
@@ -184,15 +178,11 @@ export default function RenamePage(props: Props) {
 
 					{errors.general ? <p className="text-sm text-red-400">{errors.general}</p> : null}
 
-					<div className="rounded-xl border border-neutral-800 bg-neutral-900/20 p-4">
-						<p className="text-sm font-medium text-neutral-100">{tForm('callsignSection.title')}</p>
-						<p className="mt-1 text-sm text-neutral-300">{tForm('callsignSection.intro')}</p>
-						<ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-neutral-300">
-							{rules.map((line) => (
-								<li key={line}>{line}</li>
-							))}
-						</ul>
-					</div>
+					<RenameRulesPanel
+						title={tForm('callsignSection.title')}
+						intro={tForm('callsignSection.intro')}
+						rules={rules}
+					/>
 
 					<div className="grid gap-3">
 						<CallsignField
@@ -228,6 +218,6 @@ export default function RenamePage(props: Props) {
 
 				</form>
 			)}
-		</section>
+		</RenameSurface>
 	);
 }

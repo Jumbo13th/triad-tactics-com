@@ -1,16 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-export type AdminStatus =
-	| { connected: false; isAdmin: false }
-	| {
-			connected: true;
-			isAdmin: boolean;
-			steamid64: string;
-			personaName: string | null;
-			callsign: string | null;
-	  };
+import { parseAdminStatusResponse, type AdminStatus } from '@/features/admin/domain/api';
 
 export function useAdminStatus() {
 	const [status, setStatus] = useState<AdminStatus | null>(null);
@@ -20,8 +11,9 @@ export function useAdminStatus() {
 		(async () => {
 			try {
 				const res = await fetch('/api/admin/status', { cache: 'no-store' });
-				const json = (await res.json()) as AdminStatus;
-				if (!cancelled) setStatus(json);
+				const json: unknown = (await res.json()) as unknown;
+				const parsed = parseAdminStatusResponse(json);
+				if (!cancelled) setStatus(parsed ?? { connected: false, isAdmin: false });
 			} catch {
 				if (!cancelled) setStatus({ connected: false, isAdmin: false });
 			}

@@ -1,4 +1,4 @@
-import type { Application } from '@/platform/db';
+import type { Application } from '@/features/apply/domain/types';
 import type { SteamVerificationResult } from './steam/verifyGameOwnership';
 
 export type ApplyApplicationRepo = {

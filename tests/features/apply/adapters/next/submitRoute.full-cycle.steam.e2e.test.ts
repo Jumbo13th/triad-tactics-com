@@ -105,7 +105,7 @@ describeSteam('Apply workflow: submit route (e2e over HTTP)', () => {
 		'accepts an owned Steam profile end-to-end (HTTP + cookies + DB + Steam verification)',
 		async () => {
 			const steamid64 = requireEnv('TEST_STEAMID64_OWNED');
-			const { dbOperations } = await import('@/platform/db');
+			const { dbOperations } = await import('../../../../fixtures/dbOperations');
 			const sessionId = createSteamSession(dbOperations, {
 				steamid64,
 				redirectPath: '/en/apply',

@@ -3,8 +3,7 @@ import { getMessages } from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { isAppLocale, routing } from '@/i18n/routing';
-import SiteHeader from '@/features/appShell/ui/SiteHeader';
-import SiteFooter from '@/features/appShell/ui/SiteFooter';
+import { SiteFooter, SiteHeader } from '@/features/appShell/ui/root';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
