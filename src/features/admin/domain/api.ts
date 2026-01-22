@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Application } from '@/features/apply/domain/types';
 import type { AdminRenameRequestRow, AdminUserRow } from './types';
+import { sqliteBoolean } from '@/platform/validation/zod';
 
 const adminDisconnectedSchema = z.object({
 	connected: z.literal(false),
@@ -39,6 +40,7 @@ export function parseAdminStatusResponse(input: unknown): AdminStatus | null {
 	return null;
 }
 
+
 const applicationAnswersSchema = z.object({
 	callsign: z.string(),
 	name: z.string(),
@@ -49,7 +51,7 @@ const applicationAnswersSchema = z.object({
 	timezone: z.string(),
 	experience: z.string(),
 	motivation: z.string(),
-	verified_game_access: z.boolean().optional()
+	verified_game_access: sqliteBoolean.optional()
 });
 
 const applicationSchema = z.object({
@@ -75,7 +77,7 @@ const adminUserRowSchema = z.object({
 	rename_required_at: z.string().nullable().optional(),
 	rename_required_reason: z.string().nullable().optional(),
 	rename_required_by_steamid64: z.string().nullable().optional(),
-	has_pending_rename_request: z.boolean(),
+	has_pending_rename_request: sqliteBoolean,
 	steamid64: z.string().nullable().optional()
 });
 

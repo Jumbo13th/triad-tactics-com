@@ -30,7 +30,11 @@ export function listUsers(status: 'all' | 'rename_required' | 'confirmed'): Admi
 		${where}
 		ORDER BY u.created_at DESC
 	`);
-	return stmt.all() as AdminUserRow[];
+	const rows = stmt.all() as (AdminUserRow & { has_pending_rename_request: number | boolean })[];
+	return rows.map((row) => ({
+		...row,
+		has_pending_rename_request: !!row.has_pending_rename_request
+	}));
 }
 
 export function countUsersByStatus(status: 'all' | 'rename_required' | 'confirmed') {

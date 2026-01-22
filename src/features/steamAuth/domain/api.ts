@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { sqliteBoolean } from '@/platform/validation/zod';
 
 const steamMeDisconnectedSchema = z.object({
 	connected: z.literal(false)
@@ -9,10 +10,10 @@ const steamMeConnectedSchema = z.object({
 	steamid64: z.string(),
 	personaName: z.string().nullable(),
 	currentCallsign: z.string().nullable(),
-	hasExisting: z.boolean(),
+	hasExisting: sqliteBoolean,
 	submittedAt: z.string().nullable(),
-	renameRequired: z.boolean(),
-	hasPendingRenameRequest: z.boolean(),
+	renameRequired: sqliteBoolean,
+	hasPendingRenameRequest: sqliteBoolean,
 	renameRequiredReason: z.string().nullable(),
 	renameRequiredBySteamId64: z.string().nullable(),
 	renameRequiredByCallsign: z.string().nullable(),
