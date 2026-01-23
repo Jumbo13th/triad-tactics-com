@@ -1,15 +1,14 @@
 import { defineRouting } from 'next-intl/routing';
 import { createNavigation } from 'next-intl/navigation';
+import { appLocales, defaultLocale, isAppLocale } from './locales';
 
 export const routing = defineRouting({
-  locales: ['en', 'ru', 'uk', 'ar'],
-  defaultLocale: 'en'
+  locales: appLocales,
+  defaultLocale
 });
 
 export type AppLocale = (typeof routing.locales)[number];
 
-export function isAppLocale(value: string): value is AppLocale {
-  return (routing.locales as readonly string[]).includes(value);
-}
+export { isAppLocale };
 
 export const { Link, redirect, usePathname, useRouter } = createNavigation(routing);

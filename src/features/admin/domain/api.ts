@@ -40,7 +40,6 @@ export function parseAdminStatusResponse(input: unknown): AdminStatus | null {
 	return null;
 }
 
-
 const applicationAnswersSchema = z.object({
 	callsign: z.string(),
 	name: z.string(),
@@ -65,7 +64,8 @@ const applicationSchema = z.object({
 	locale: z.string().optional(),
 	created_at: z.string().optional(),
 	confirmed_at: z.string().nullable().optional(),
-	confirmed_by_steamid64: z.string().nullable().optional()
+	confirmed_by_steamid64: z.string().nullable().optional(),
+	approval_email_sent_at: z.string().nullable().optional()
 });
 
 const adminUserRowSchema = z.object({

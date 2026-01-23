@@ -5,7 +5,11 @@ import { useParams } from 'next/navigation';
 import { usePathname, Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
-type AdminNavItem = { key: 'applications' | 'users' | 'renameRequests'; href: string; label: string };
+type AdminNavItem = {
+	key: 'applications' | 'users' | 'renameRequests' | 'mailing';
+	href: string;
+	label: string;
+};
 
 export default function AdminNav() {
 	const ta = useTranslations('admin');
@@ -17,7 +21,8 @@ export default function AdminNav() {
 		() => [
 			{ key: 'applications', href: '/admin', label: ta('navApplications') },
 			{ key: 'users', href: '/admin/users', label: ta('navUsers') },
-			{ key: 'renameRequests', href: '/admin/rename-requests', label: ta('navRenameRequests') }
+			{ key: 'renameRequests', href: '/admin/rename-requests', label: ta('navRenameRequests') },
+			{ key: 'mailing', href: '/admin/mailing', label: ta('navMailing') }
 		],
 		[ta]
 	);
@@ -26,6 +31,7 @@ export default function AdminNav() {
 		// pathname comes without locale prefix
 		if (pathname.startsWith('/admin/users')) return '/admin/users';
 		if (pathname.startsWith('/admin/rename-requests')) return '/admin/rename-requests';
+		if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
 		return '/admin';
 	}, [pathname]);
 

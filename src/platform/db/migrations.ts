@@ -83,15 +83,18 @@ export const migrations: Migration[] = [
 	},
 	{
 		id: 4,
-		name: 'users_identities_rename_requests_and_application_confirmation',
+		name: 'users_identities_rename_requests_application_confirmation_and_outbox',
 		up: `
 			-- Add application confirmation metadata.
 			ALTER TABLE applications ADD COLUMN confirmed_at DATETIME;
 			ALTER TABLE applications ADD COLUMN confirmed_by_steamid64 TEXT;
+			ALTER TABLE applications ADD COLUMN approval_email_sent_at DATETIME;
 			-- Link applications to stable users (internal integer id).
 			ALTER TABLE applications ADD COLUMN user_id INTEGER;
 			CREATE INDEX IF NOT EXISTS idx_applications_confirmed_at ON applications(confirmed_at);
 			CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
+			CREATE INDEX IF NOT EXISTS idx_applications_approval_email_sent_at
+				ON applications(approval_email_sent_at);
 
 			-- Users represent people in our system (stable user_id).
 			-- Identities link external providers (Steam now, others later) to a user.
@@ -234,6 +237,29 @@ export const migrations: Migration[] = [
 			CREATE UNIQUE INDEX IF NOT EXISTS idx_users_current_callsign_unique
 				ON users(LOWER(current_callsign))
 				WHERE current_callsign IS NOT NULL AND TRIM(current_callsign) != '';
+
+			CREATE TABLE IF NOT EXISTS email_outbox (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				type TEXT NOT NULL,
+				application_id INTEGER,
+				payload TEXT NOT NULL,
+				status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'sent', 'failed')),
+				attempts INTEGER NOT NULL DEFAULT 0,
+				last_error TEXT,
+				last_error_details TEXT,
+				next_attempt_at DATETIME,
+				processing_at DATETIME,
+				sent_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);
+			CREATE INDEX IF NOT EXISTS idx_email_outbox_status
+				ON email_outbox(status, next_attempt_at);
+			CREATE INDEX IF NOT EXISTS idx_email_outbox_type
+				ON email_outbox(type);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_email_outbox_pending_unique
+				ON email_outbox(type, application_id)
+				WHERE status IN ('pending', 'processing');
 		`
 	}
 ];

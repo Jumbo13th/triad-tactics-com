@@ -1,6 +1,7 @@
 import {
 	countApplicationsByStatus,
-	getApplicationsByStatus
+	getApplicationsByStatus,
+	getById as getApplicationById
 } from '@/features/apply/infra/sqliteApplications';
 import {
 	clearUserRenameRequiredBySteamId64,
@@ -14,12 +15,13 @@ import {
 import { getUserBySteamId64 } from '@/features/users/infra/sqliteUsers';
 import { hasPendingRenameRequestByUserId } from '@/features/rename/infra/sqliteRenameRequests';
 import type {
-	ConfirmApplicationDeps,
+	ConfirmApplicationAndNotifyDeps,
 	ListApplicationsDeps,
 	ListRenameRequestsDeps,
 	ListUsersDeps,
 	RenameRequiredDeps
 } from './ports';
+import { enqueueApplicationApprovedEmail } from '@/platform/outbox/emailOutbox';
 
 export const listApplicationsDeps: ListApplicationsDeps = {
 	repo: {
@@ -28,9 +30,15 @@ export const listApplicationsDeps: ListApplicationsDeps = {
 	}
 };
 
-export const confirmApplicationDeps: ConfirmApplicationDeps = {
+export const confirmApplicationAndNotifyDeps: ConfirmApplicationAndNotifyDeps = {
 	repo: {
 		confirmApplication
+	},
+	applications: {
+		getApplicationById
+	},
+	outbox: {
+		enqueueApplicationApproved: enqueueApplicationApprovedEmail
 	}
 };
 

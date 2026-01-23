@@ -24,4 +24,5 @@ export interface Application {
 	created_at?: string;
 	confirmed_at?: string | null;
 	confirmed_by_steamid64?: string | null;
+	approval_email_sent_at?: string | null;
 }

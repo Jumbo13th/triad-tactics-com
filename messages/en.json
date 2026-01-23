@@ -21,8 +21,10 @@
     "navApplications": "Applications",
     "navUsers": "Users",
     "navRenameRequests": "Rename requests",
+    "navMailing": "Mailing",
     "title": "Admin",
     "subtitle": "Admin dashboard",
+    "mailingTitle": "Mailing",
     "loading": "Loading...",
     "loginTitle": "Admin access",
     "loginText": "Sign in with Steam to continue.",
@@ -89,7 +91,11 @@
     "confirmRenameError": "Couldn't confirm and require rename. Please try again.",
     "requestRename": "Request rename",
     "requestingRename": "Requesting...",
-    "renameError": "Couldn't request a rename. Please try again."
+    "renameError": "Couldn't request a rename. Please try again.",
+    "outboxRun": "Run outbox",
+    "outboxRunning": "Running outbox…",
+    "outboxRunSuccess": "Outbox processed.",
+    "outboxRunError": "Couldn't run outbox. Please try again."
   },
   "rename": {
     "title": "Rename required",
@@ -253,8 +259,17 @@
       "steamNoGame": "This Steam account does not appear to own Arma Reforger",
       "steamInvalidProfile": "We couldn't resolve this Steam profile link. Please paste a valid steamcommunity.com profile URL."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "Your Triad Tactics application is approved",
+      "greeting": "Hi {name},",
+      "line1": "Good news — your application has been approved.",
+      "line2": "We'll be in touch with next steps soon.",
+      "line3": "If you have any questions, just reply to this email.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "Join Games",
     "applyButtonShort": "Join Games",

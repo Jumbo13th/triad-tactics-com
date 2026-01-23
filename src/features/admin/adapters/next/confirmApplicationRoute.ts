@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { confirmApplication } from '@/features/admin/useCases/confirmApplication';
-import { confirmApplicationDeps } from '@/features/admin/deps';
+import { confirmApplicationAndNotify } from '@/features/admin/useCases/confirmApplicationAndNotify';
+import { confirmApplicationAndNotifyDeps } from '@/features/admin/deps';
 import { confirmApplicationRequestSchema } from '@/features/admin/domain/requests';
 import { requireAdmin } from './adminAuth';
 
@@ -16,7 +16,7 @@ export async function postConfirmApplicationRoute(request: NextRequest): Promise
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
 
-		const result = confirmApplication(confirmApplicationDeps, {
+		const result = await confirmApplicationAndNotify(confirmApplicationAndNotifyDeps, {
 			applicationId: parsed.data.applicationId,
 			confirmedBySteamId64: identity.steamid64
 		});

@@ -5,6 +5,14 @@
   - `ADMIN_STEAM_IDS` must be set (comma/space separated SteamID64 allowlist)
   - `STEAM_WEB_API_KEY` must be set (Steam checks + submit depend on it)
   - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` must be set (stable Server Actions across deploys/instances)
+- Required email notifications (Brevo):
+  - `BREVO_API_KEY` (Brevo API key)
+  - `BREVO_SENDER_EMAIL` (verified sender in Brevo)
+  - `BREVO_SENDER_NAME` (sender name)
+  - `BREVO_REPLY_TO_EMAIL` (optional reply-to address)
+- Outbox cron trigger:
+  - `OUTBOX_CRON_SECRET` (shared secret used by cron container to call `/api/cron/outbox`)
+  - `CRON_INTERVAL_SECONDS` (optional, defaults to 60)
 - Production behavior:
   - `DISABLE_RATE_LIMITS=false`
 - TLS:
@@ -14,7 +22,7 @@
 
 ## Files already in this repo
 - `Dockerfile` (builds and runs Next.js)
-- `docker-compose.yml` (app + nginx)
+- `docker-compose.yml` (app + nginx + cron)
 - `nginx/default.conf` (TLS termination + proxy headers for Steam)
 - `.env.example` (copy to `.env`)
 
@@ -24,6 +32,7 @@
   - `STEAM_WEB_API_KEY=...`
   - `ADMIN_STEAM_IDS=...`
   - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=...`
+  - `OUTBOX_CRON_SECRET=...`
 3. Place TLS files:
   - `certs/server.crt`
   - `certs/server.key`
@@ -34,6 +43,7 @@
 - Nginx listens on `80` and `443`; the Next.js app runs internally on `3000`.
 - Steam sign-in uses `x-forwarded-host`/`x-forwarded-proto` from Nginx; keep the proxy config as-is.
 - Admin is now protected by Steam login + allowlisted SteamID64s. Configure `ADMIN_STEAM_IDS` and visit `/<locale>/admin`.
+- Outbox processing runs via the `/api/cron/outbox` endpoint, triggered by the `cron` container in `docker-compose.yml`.
 
 ### Server Actions key stability
 

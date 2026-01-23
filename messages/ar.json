@@ -21,8 +21,10 @@
     "navApplications": "الطلبات",
     "navUsers": "المستخدمون",
     "navRenameRequests": "طلبات تغيير اسم النداء",
+    "navMailing": "المراسلات",
     "title": "الإدارة",
     "subtitle": "لوحة الإدارة",
+    "mailingTitle": "المراسلات",
     "loading": "جاري التحميل...",
     "loginTitle": "دخول الإدارة",
     "loginText": "سجّل الدخول عبر Steam للمتابعة.",
@@ -89,7 +91,11 @@
     "confirmRenameError": "تعذر التأكيد وطلب تغيير الاسم. حاول مرة أخرى.",
     "requestRename": "طلب تغيير اسم النداء",
     "requestingRename": "جارٍ الإرسال...",
-    "renameError": "تعذر طلب التغيير. حاول مرة أخرى."
+    "renameError": "تعذر طلب التغيير. حاول مرة أخرى.",
+    "outboxRun": "تشغيل outbox",
+    "outboxRunning": "جارٍ تشغيل outbox…",
+    "outboxRunSuccess": "تمت معالجة outbox.",
+    "outboxRunError": "تعذر تشغيل outbox. حاول مرة أخرى."
   },
   "rename": {
     "title": "مطلوب تغيير اسم النداء",
@@ -253,8 +259,17 @@
       "steamNoGame": "بحسب بيانات Steam هذا الحساب لا يمتلك Arma Reforger",
       "steamInvalidProfile": "تعذر علينا تحديد ملف Steam من هذا الرابط. يرجى لصق رابط صحيح لملف steamcommunity.com الشخصي."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "تمت الموافقة على طلبك في Triad Tactics",
+      "greeting": "مرحباً {name}،",
+      "line1": "خبر سار — تمت الموافقة على طلبك.",
+      "line2": "سنتواصل معك قريباً بالخطوات التالية.",
+      "line3": "إذا كان لديك أي أسئلة، فقط قم بالرد على هذا البريد.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "انضم للألعاب",
     "applyButtonShort": "انضم للألعاب",

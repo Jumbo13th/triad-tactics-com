@@ -21,8 +21,10 @@
     "navApplications": "Заявки",
     "navUsers": "Пользователи",
     "navRenameRequests": "Запросы на переименование",
+    "navMailing": "Рассылка",
     "title": "Админ",
     "subtitle": "Панель администратора",
+    "mailingTitle": "Рассылка",
     "loading": "Загрузка...",
     "loginTitle": "Доступ администратора",
     "loginText": "Войдите через Steam, чтобы продолжить.",
@@ -89,7 +91,11 @@
     "confirmRenameError": "Не удалось подтвердить и потребовать смену. Попробуйте ещё раз.",
     "requestRename": "Запросить смену позывного",
     "requestingRename": "Отправляем...",
-    "renameError": "Не удалось запросить смену. Попробуйте ещё раз."
+    "renameError": "Не удалось запросить смену. Попробуйте ещё раз.",
+    "outboxRun": "Запустить outbox",
+    "outboxRunning": "Запускаем outbox…",
+    "outboxRunSuccess": "Outbox обработан.",
+    "outboxRunError": "Не удалось запустить outbox. Попробуйте ещё раз."
   },
   "rename": {
     "title": "Требуется переименование",
@@ -253,8 +259,17 @@
       "steamNoGame": "По данным Steam этот аккаунт не владеет Arma Reforger",
       "steamInvalidProfile": "Не удалось определить профиль по этой ссылке. Пожалуйста, вставьте корректную ссылку на профиль steamcommunity.com."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "Ваша заявка в Triad Tactics одобрена",
+      "greeting": "Здравствуйте, {name},",
+      "line1": "Отличные новости — ваша заявка одобрена.",
+      "line2": "Мы скоро свяжемся с вами и расскажем о следующих шагах.",
+      "line3": "Если у вас есть вопросы, просто ответьте на это письмо.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "Присоединиться",
     "applyButtonShort": "Присоединиться",

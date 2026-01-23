@@ -17,8 +17,22 @@ export type ListApplicationsDeps = {
 	repo: AdminApplicationsRepo;
 };
 
-export type ConfirmApplicationDeps = {
+export type EmailOutboxPort = {
+	enqueueApplicationApproved: (input: {
+		applicationId: number;
+		toEmail: string;
+		toName?: string | null;
+		callsign?: string | null;
+		locale?: string | null;
+	}) => { success: true } | { success: false; error: 'duplicate' | 'database_error' };
+};
+
+export type ConfirmApplicationAndNotifyDeps = {
 	repo: AdminConfirmRepo;
+	applications: {
+		getApplicationById: (applicationId: number) => Application | null;
+	};
+	outbox: EmailOutboxPort;
 };
 
 export type AdminUserRenameRepo = {

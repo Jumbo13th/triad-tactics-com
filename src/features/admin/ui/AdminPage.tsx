@@ -146,6 +146,7 @@ export default function AdminPage() {
 		}
 	};
 
+
 	return (
 		<AdminSurface>
 			<AdminGate status={status} redirectPath={redirectPath} t={ta}>

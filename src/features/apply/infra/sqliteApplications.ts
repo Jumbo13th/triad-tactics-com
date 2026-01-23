@@ -18,6 +18,7 @@ type ApplicationRow = {
 	created_at: string;
 	confirmed_at: string | null;
 	confirmed_by_steamid64: string | null;
+	approval_email_sent_at: string | null;
 };
 
 export function normalizeApplicationAnswers(raw: string): Application['answers'] {
@@ -110,7 +111,7 @@ export function insertApplication(
 export function getAllApplications() {
 	const db = getDb();
 	const stmt = db.prepare(`
-		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
 		FROM applications
 		ORDER BY created_at DESC
 	`);
@@ -122,6 +123,7 @@ export function getAllApplications() {
 		locale: row.locale ?? undefined,
 		confirmed_at: row.confirmed_at ?? null,
 		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
 		answers: normalizeApplicationAnswers(row.answers)
 	}));
 }
@@ -136,7 +138,7 @@ export function getApplicationsByStatus(status: 'active' | 'archived' | 'all') {
 				: '';
 	const orderBy = status === 'archived' ? 'ORDER BY confirmed_at DESC' : 'ORDER BY created_at DESC';
 	const stmt = db.prepare(`
-		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
 		FROM applications
 		${where}
 		${orderBy}
@@ -148,6 +150,7 @@ export function getApplicationsByStatus(status: 'active' | 'archived' | 'all') {
 		locale: row.locale ?? undefined,
 		confirmed_at: row.confirmed_at ?? null,
 		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
 		answers: normalizeApplicationAnswers(row.answers)
 	}));
 }
@@ -172,7 +175,7 @@ export function countApplicationsByStatus(status: 'active' | 'archived' | 'all')
 export function getByEmail(email: string) {
 	const db = getDb();
 	const stmt = db.prepare(`
-		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
 		FROM applications
 		WHERE email = ?
 	`);
@@ -185,6 +188,28 @@ export function getByEmail(email: string) {
 		locale: row.locale ?? undefined,
 		confirmed_at: row.confirmed_at ?? null,
 		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
+		answers: normalizeApplicationAnswers(row.answers)
+	};
+}
+
+export function getById(id: number) {
+	const db = getDb();
+	const stmt = db.prepare(`
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
+		FROM applications
+		WHERE id = ?
+	`);
+
+	const row = stmt.get(id) as ApplicationRow | undefined;
+	if (!row) return null;
+	return {
+		...row,
+		ip_address: row.ip_address ?? undefined,
+		locale: row.locale ?? undefined,
+		confirmed_at: row.confirmed_at ?? null,
+		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
 		answers: normalizeApplicationAnswers(row.answers)
 	};
 }
@@ -192,7 +217,7 @@ export function getByEmail(email: string) {
 export function getBySteamId64(steamid64: string) {
 	const db = getDb();
 	const stmt = db.prepare(`
-		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
 		FROM applications
 		WHERE steamid64 = ?
 	`);
@@ -205,6 +230,7 @@ export function getBySteamId64(steamid64: string) {
 		locale: row.locale ?? undefined,
 		confirmed_at: row.confirmed_at ?? null,
 		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
 		answers: normalizeApplicationAnswers(row.answers)
 	};
 }
@@ -212,7 +238,7 @@ export function getBySteamId64(steamid64: string) {
 export function getByUserId(userId: number) {
 	const db = getDb();
 	const stmt = db.prepare(`
-		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64
+		SELECT id, user_id, email, steamid64, persona_name, answers, ip_address, locale, created_at, confirmed_at, confirmed_by_steamid64, approval_email_sent_at
 		FROM applications
 		WHERE user_id = ?
 		ORDER BY id ASC
@@ -227,6 +253,7 @@ export function getByUserId(userId: number) {
 		locale: row.locale ?? undefined,
 		confirmed_at: row.confirmed_at ?? null,
 		confirmed_by_steamid64: row.confirmed_by_steamid64 ?? null,
+		approval_email_sent_at: row.approval_email_sent_at ?? null,
 		answers: normalizeApplicationAnswers(row.answers)
 	};
 }
@@ -243,5 +270,21 @@ export function deleteBySteamId64(steamid64: string) {
 		return { success: true, changes: info.changes };
 	} catch {
 		return { success: false, error: 'database_error' };
+	}
+}
+
+export function markApprovalEmailSent(applicationId: number) {
+	const db = getDb();
+	const stmt = db.prepare(`
+		UPDATE applications
+		SET approval_email_sent_at = COALESCE(approval_email_sent_at, CURRENT_TIMESTAMP)
+		WHERE id = ?
+	`);
+
+	try {
+		const info = stmt.run(applicationId);
+		return { success: true as const, changes: info.changes };
+	} catch {
+		return { success: false as const, error: 'database_error' as const };
 	}
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { confirmApplicationDeps, renameRequiredDeps } from '@/features/admin/deps';
-import { confirmApplication } from '@/features/admin/useCases/confirmApplication';
+import { confirmApplicationAndNotifyDeps, renameRequiredDeps } from '@/features/admin/deps';
+import { confirmApplicationAndNotify } from '@/features/admin/useCases/confirmApplicationAndNotify';
 import { clearRenameRequired, setRenameRequired } from '@/features/admin/useCases/renameRequired';
 import { renameRequiredRequestSchema } from '@/features/admin/domain/requests';
 import { requireAdmin } from './adminAuth';
@@ -28,7 +28,7 @@ export async function postRenameRequiredRoute(request: NextRequest): Promise<Nex
 		// Optional: confirm the application before requiring rename.
 		// This models the admin flow: user is approved but must rename callsign.
 		if (applicationId != null) {
-			const confirmed = confirmApplication(confirmApplicationDeps, {
+			const confirmed = await confirmApplicationAndNotify(confirmApplicationAndNotifyDeps, {
 				applicationId,
 				confirmedBySteamId64: identity.steamid64
 			});

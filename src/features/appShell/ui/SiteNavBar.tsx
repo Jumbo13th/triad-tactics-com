@@ -16,6 +16,7 @@ function getActiveAdminHref(pathname: string) {
 	// pathname comes without locale prefix
 	if (pathname.startsWith('/admin/users')) return '/admin/users';
 	if (pathname.startsWith('/admin/rename-requests')) return '/admin/rename-requests';
+	if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
 	return '/admin';
 }
 
@@ -90,7 +91,8 @@ export default function SiteNavBar() {
 									const items = [
 										{ href: '/admin', label: ta('navApplications') },
 										{ href: '/admin/users', label: ta('navUsers') },
-										{ href: '/admin/rename-requests', label: ta('navRenameRequests') }
+										{ href: '/admin/rename-requests', label: ta('navRenameRequests') },
+										{ href: '/admin/mailing', label: ta('navMailing') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);
 									return items.map((item) => (
