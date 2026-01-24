@@ -121,6 +121,7 @@ export default function CallsignField(props: {
 				id="callsign"
 				type="text"
 				value={value}
+				maxLength={12}
 				onChange={(e) => {
 					const next = e.target.value;
 					onChange(next);

@@ -502,6 +502,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
               <p className="text-sm font-medium text-neutral-200">{t('callsignRules.title')}</p>
               <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-300">
                 <li>{t('callsignRules.allowedChars')}</li>
+                <li>{t('callsignRules.maxLength')}</li>
                 <li>{t('callsignRules.uniqueness')}</li>
                 <li>{t('callsignRules.noOffense')}</li>
                 <li>{t('callsignRules.neutral')}</li>

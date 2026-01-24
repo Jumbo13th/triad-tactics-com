@@ -11,7 +11,7 @@ export function checkCallsign(deps: CallsignDeps, input: { callsign: unknown }):
 		return { ok: false, error: 'invalid_request' };
 	}
 	const callsign = input.callsign.trim();
-	if (callsign.length < 3 || callsign.length > 100) {
+	if (callsign.length < 3 || callsign.length > 12) {
 		return { ok: false, error: 'invalid_request' };
 	}
 	if (!/^[A-Za-z0-9_]+$/.test(callsign)) {

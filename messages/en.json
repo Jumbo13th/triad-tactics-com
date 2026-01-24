@@ -224,6 +224,7 @@
     "callsignRules": {
       "title": "Callsign rules",
       "allowedChars": "Allowed characters: A-Z, a-z, 0-9 and underscore (_). No spaces.",
+      "maxLength": "Maximum length: 12 characters.",
       "uniqueness": "Must be unique and not confusingly similar to existing callsigns (exact match and sound/look match). Examples: Ghost vs G0st; Nikolai vs Nikolay; Alexey vs Aleksei.",
       "noOffense": "Must not be offensive, hateful.",
       "neutral": "Must not be political, religious, or advertising/brand-related.",

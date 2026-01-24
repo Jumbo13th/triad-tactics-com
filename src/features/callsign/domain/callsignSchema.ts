@@ -5,5 +5,5 @@ export const callsignSchema = z
 	.trim()
 	.min(1, 'required')
 	.min(3, 'minLength')
-	.max(100, 'maxLength')
+	.max(12, 'maxLength')
 	.refine((v) => /^[A-Za-z0-9_]+$/.test(v), 'callsignInvalidChars');

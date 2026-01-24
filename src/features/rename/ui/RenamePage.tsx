@@ -58,6 +58,7 @@ export default function RenamePage(props: Props) {
 	const rules = useMemo(() => {
 		return [
 			tForm('callsignRules.allowedChars'),
+			tForm('callsignRules.maxLength'),
 			tForm('callsignRules.uniqueness'),
 			tForm('callsignRules.noOffense'),
 			tForm('callsignRules.neutral'),
