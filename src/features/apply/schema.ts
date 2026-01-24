@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { callsignSchema } from '@/features/callsign/domain/callsignSchema';
 
 export const applicationSchema = z.object({
-  name: z.string().trim().min(2, 'required').max(100, 'maxLength'),
+  callsign: callsignSchema,
+  name: z.string().trim().max(100, 'maxLength').optional().default(''),
   age: z
     .string()
     .trim()

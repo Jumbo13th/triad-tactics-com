@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
+import { parseSubmitApplicationResponse } from '@/features/apply/domain/api';
+import { parseSteamMeStatus, type SteamMeStatus } from '@/features/steamAuth/domain/api';
 import { applicationSchema, type ApplicationFormData } from '../schema';
 import type { ZodIssue } from 'zod';
+import { SteamSignInButton } from '@/features/steamAuth/ui/root';
+import { CallsignField, CallsignSearch } from '@/features/callsign/ui/root';
 
 const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset => {
   const sign = offset >= 0 ? '+' : '-';
@@ -15,13 +19,15 @@ const TIMEZONE_OPTIONS = Array.from({ length: 27 }, (_, i) => i - 12).map(offset
   };
 });
 
-export default function ApplicationForm() {
+export default function ApplicationForm(props: { initialSteamConnected?: boolean } = {}) {
   const t = useTranslations('form');
   const params = useParams();
   const locale = (params?.locale as string | undefined) ?? 'en';
+  const initialSteamConnected = props.initialSteamConnected === true;
   const supportEmail = t('supportEmail');
   const showSupportEmail = typeof supportEmail === 'string' && supportEmail.includes('@');
   const [formData, setFormData] = useState<ApplicationFormData>({
+    callsign: '',
     name: '',
     age: '',
     email: '',
@@ -33,11 +39,7 @@ export default function ApplicationForm() {
     motivation: ''
   });
 
-  const [steamAuth, setSteamAuth] = useState<
-    | { connected: false }
-    | { connected: true; steamid64: string; personaName: string | null; hasExisting?: boolean; submittedAt?: string | null }
-    | null
-  >(null);
+  const [steamAuth, setSteamAuth] = useState<SteamMeStatus | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,8 @@ export default function ApplicationForm() {
   const isSteamConnected = steamAuth?.connected === true;
   const hasExistingApplication = steamAuth?.connected === true && steamAuth?.hasExisting === true;
   const canSubmit = !isSubmitting;
+
+  const isSteamReadyConnected = isSteamConnected || (steamAuth === null && initialSteamConnected);
 
   useEffect(() => {
     if (isSteamConnected) {
@@ -74,19 +78,8 @@ export default function ApplicationForm() {
       }
 
       const json: unknown = (await res.json()) as unknown;
-      const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-
-      if (isRecord(json) && json.connected === true && typeof json.steamid64 === 'string') {
-        setSteamAuth({
-          connected: true,
-          steamid64: json.steamid64,
-          personaName: typeof json.personaName === 'string' ? json.personaName : null,
-          hasExisting: json.hasExisting === true,
-          submittedAt: typeof json.submittedAt === 'string' ? json.submittedAt : null
-        });
-      } else {
-        setSteamAuth({ connected: false });
-      }
+      const parsed = parseSteamMeStatus(json);
+      setSteamAuth(parsed ?? { connected: false });
     } catch {
       setSteamAuth({ connected: false });
     }
@@ -187,11 +180,31 @@ export default function ApplicationForm() {
       [field]: value
     }));
 
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[field];
-      return newErrors;
+  // Callsign availability checks are async; make syntax errors immediate to avoid confusing
+  // "couldn't check" messages for obviously invalid inputs like "[TT]".
+  if (field === 'callsign') {
+    const trimmed = value.trim();
+    const hasValue = trimmed.length > 0;
+    const charsAllowed = /^[A-Za-z0-9_]*$/.test(trimmed);
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      // Clear prior field errors by default.
+      delete next[field];
+
+      if (hasValue && !charsAllowed) {
+        next[field] = t('errors.callsignInvalidChars');
+      }
+      return next;
     });
+    return;
+  }
+
+  setErrors(prev => {
+    const newErrors = { ...prev };
+    delete newErrors[field];
+    return newErrors;
+  });
   };
 
   const handleBlur = (field: keyof ApplicationFormData) => {
@@ -231,7 +244,7 @@ export default function ApplicationForm() {
       return;
     }
 
-    if (steamAuth?.connected !== true) {
+    if (!isSteamReadyConnected) {
       setSteamRequiredAttempted(true);
       setTimeout(() => scrollToSteamAuth(), 0);
       return;
@@ -251,37 +264,52 @@ export default function ApplicationForm() {
         })
       });
 
-      const data: unknown = await response.json();
-      const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-      const errorCode = isRecord(data) ? data.error : undefined;
+      const parsed = parseSubmitApplicationResponse(await response.json());
+      const errorCode = parsed?.kind === 'error' ? parsed.error : undefined;
 
       if (!response.ok) {
-        if (errorCode === 'rate_limited') {
-          const seconds = isRecord(data) && typeof data.retryAfterSeconds === 'number' ? data.retryAfterSeconds : 120;
-          setRateLimitSecondsLeft(Math.max(0, Math.floor(seconds)));
-        } else if (errorCode === 'duplicate') {
-          setPopup({ title: t('duplicate.title'), message: t('duplicate.message') });
-        } else if (errorCode === 'steam_not_connected') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamNotConnected') });
-          refreshSteamAuth();
-        } else if (errorCode === 'steam_api_unavailable') {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
-        } else if (errorCode === 'steam_game_not_detected') {
-          setPopup({
-            title: t('popup.errorTitle'),
-            message: t('errors.steamGameNotDetected'),
-            lines: [
-              t('steamAuth.detect.title'),
-              `• ${t('steamAuth.detect.profilePublic')}`,
-              `• ${t('steamAuth.detect.gameDetailsPublic')}`,
-              `• ${t('steamAuth.detect.gameNotHidden')}`,
-              `• ${t('steamAuth.detect.delayAfterChange')}`,
-              `• ${t('steamAuth.detect.canRehideAfterSubmit')}`,
-              t('steamAuth.detect.incognitoCheck')
-            ]
-          });
-        } else {
-          setPopup({ title: t('popup.errorTitle'), message: t('errors.serverError') });
+        switch (errorCode) {
+          case 'rate_limited': {
+            const seconds = parsed?.kind === 'error' && typeof parsed.retryAfterSeconds === 'number'
+              ? parsed.retryAfterSeconds
+              : 120;
+            setRateLimitSecondsLeft(Math.max(0, Math.floor(seconds)));
+            break;
+          }
+          case 'duplicate': {
+            setPopup({ title: t('duplicate.title'), message: t('duplicate.message') });
+            break;
+          }
+          case 'steam_not_connected':
+          case 'steam_required': {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.steamNotConnected') });
+            refreshSteamAuth();
+            break;
+          }
+          case 'steam_api_unavailable': {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.steamApiUnavailable') });
+            break;
+          }
+          case 'steam_game_not_detected': {
+            setPopup({
+              title: t('popup.errorTitle'),
+              message: t('errors.steamGameNotDetected'),
+              lines: [
+                t('steamAuth.detect.title'),
+                `• ${t('steamAuth.detect.profilePublic')}`,
+                `• ${t('steamAuth.detect.gameDetailsPublic')}`,
+                `• ${t('steamAuth.detect.gameNotHidden')}`,
+                `• ${t('steamAuth.detect.delayAfterChange')}`,
+                `• ${t('steamAuth.detect.canRehideAfterSubmit')}`,
+                t('steamAuth.detect.incognitoCheck')
+              ]
+            });
+            break;
+          }
+          default: {
+            setPopup({ title: t('popup.errorTitle'), message: t('errors.serverError') });
+            break;
+          }
         }
         setIsSubmitting(false);
         return;
@@ -338,7 +366,7 @@ export default function ApplicationForm() {
     <div className="w-full">
       {showSupportEmail && (
         <div className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-          <p className="text-sm text-neutral-300">
+          <p className="text-base leading-relaxed text-neutral-300">
             {t('supportNote')}{' '}
             <a
               href={`mailto:${supportEmail}`}
@@ -409,26 +437,26 @@ export default function ApplicationForm() {
       <div id="steam-auth" className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
         <div className="flex flex-col gap-4">
           <div>
-            <p className="text-sm font-medium text-neutral-200">{t('steamAuth.title')}</p>
+            <p className="text-base font-medium text-neutral-200">{t('steamAuth.title')}</p>
             {steamAuth?.connected && (
-              <p className="mt-1 text-sm text-neutral-300">
+              <p className="mt-1 text-base text-neutral-300">
                 {steamAuth.personaName
                   ? t('steamAuth.connectedAsName', { name: steamAuth.personaName })
                   : t('steamAuth.connectedAsId', { steamid64: steamAuth.steamid64 })}
               </p>
             )}
-            <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.help')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('steamAuth.help')}</p>
 
             <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
-              <p className="text-xs font-medium text-neutral-200">{t('steamAuth.detect.title')}</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-300">
+              <p className="text-sm font-medium text-neutral-200">{t('steamAuth.detect.title')}</p>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-300">
                 <li>{t('steamAuth.detect.profilePublic')}</li>
                 <li>{t('steamAuth.detect.gameDetailsPublic')}</li>
                 <li>{t('steamAuth.detect.gameNotHidden')}</li>
                 <li>{t('steamAuth.detect.delayAfterChange')}</li>
                 <li>{t('steamAuth.detect.canRehideAfterSubmit')}</li>
               </ul>
-              <p className="mt-2 text-xs text-neutral-400">{t('steamAuth.detect.incognitoCheck')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('steamAuth.detect.incognitoCheck')}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -448,31 +476,57 @@ export default function ApplicationForm() {
               </button>
             ) : (
               <>
-                <span className="text-sm text-neutral-300">{t('steamAuth.clickToConnect')}</span>
-                <a
-                  href={`/api/auth/steam/start?redirect=${encodeURIComponent(`/${locale}/apply`)}`}
-                  aria-label={t('steamAuth.connect')}
-                  className="inline-flex items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
-                >
-                  <span className="sr-only">{t('steamAuth.connect')}</span>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="https://community.fastly.steamstatic.com/public/images/signinthroughsteam/sits_02.png"
-                    alt={t('steamAuth.connect')}
-                    className="h-11 w-auto"
-                  />
-                </a>
+                <span className="text-base text-neutral-300">{t('steamAuth.clickToConnect')}</span>
+                <SteamSignInButton
+                  redirectPath={`/${locale}/apply`}
+                  ariaLabel={t('steamAuth.connect')}
+                  size="large"
+                  imageClassName="h-11 w-auto"
+                />
               </>
             )}
           </div>
+
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {isSteamReadyConnected ? (
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4 shadow-sm shadow-black/20">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-base font-semibold text-neutral-50">{t('callsignSection.title')}</h3>
+            <p className="text-base leading-relaxed text-neutral-300">{t('callsignSection.intro')}</p>
+          </div>
+
+            <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+              <p className="text-sm font-medium text-neutral-200">{t('callsignRules.title')}</p>
+              <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-neutral-300">
+                <li>{t('callsignRules.allowedChars')}</li>
+                <li>{t('callsignRules.maxLength')}</li>
+                <li>{t('callsignRules.uniqueness')}</li>
+                <li>{t('callsignRules.noOffense')}</li>
+                <li>{t('callsignRules.neutral')}</li>
+                <li>{t('callsignRules.noProjectSquads')}</li>
+                <li>{t('callsignRules.noRealUnits')}</li>
+                <li>{t('callsignRules.noEquipment')}</li>
+                <li>{t('callsignRules.keepSimple')}</li>
+              </ul>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('callsignRules.adminNote')}</p>
+            </div>
+
+          <div className="mt-4">
+            <CallsignField value={formData.callsign} onChange={(v) => handleChange('callsign', v)} onBlur={() => handleBlur('callsign')} error={errors.callsign} />
+          </div>
+
+          <div className="mt-4">
+            <CallsignSearch />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-neutral-200">
-              {t('name')}
+              {t('name')} <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="name"
@@ -485,9 +539,9 @@ export default function ApplicationForm() {
               autoComplete="name"
             />
             {errors.name ? (
-              <p className="mt-2 text-xs text-red-400">{errors.name}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.name}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('nameHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('nameHelp')}</p>
             )}
           </div>
 
@@ -506,9 +560,9 @@ export default function ApplicationForm() {
               className={`mt-2 block w-full rounded-lg border ${errors.age ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.age ? (
-              <p className="mt-2 text-xs text-red-400">{errors.age}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.age}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('ageHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('ageHelp')}</p>
             )}
           </div>
         </div>
@@ -528,9 +582,9 @@ export default function ApplicationForm() {
             autoComplete="email"
           />
           {errors.email ? (
-            <p className="mt-2 text-xs text-red-400">{errors.email}</p>
+            <p className="mt-2 text-sm text-red-400">{errors.email}</p>
           ) : (
-            <p className="mt-2 text-xs text-neutral-400">{t('emailHelp')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('emailHelp')}</p>
           )}
         </div>
 
@@ -556,9 +610,9 @@ export default function ApplicationForm() {
               ))}
             </select>
             {errors.timezone ? (
-              <p className="mt-2 text-xs text-red-400">{errors.timezone}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.timezone}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('timezoneHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('timezoneHelp')}</p>
             )}
           </div>
         </div>
@@ -567,7 +621,7 @@ export default function ApplicationForm() {
           <div>
             <label htmlFor="city" className="block text-sm font-medium text-neutral-200">
               {t('city')}{' '}
-              <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
+              <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="city"
@@ -579,16 +633,16 @@ export default function ApplicationForm() {
               className={`mt-2 block w-full rounded-lg border ${errors.city ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.city ? (
-              <p className="mt-2 text-xs text-red-400">{errors.city}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.city}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('cityHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('cityHelp')}</p>
             )}
           </div>
 
           <div>
             <label htmlFor="country" className="block text-sm font-medium text-neutral-200">
               {t('country')}{' '}
-              <span className="text-xs font-normal text-neutral-400">({t('optional')})</span>
+              <span className="text-sm font-normal text-neutral-400">({t('optional')})</span>
             </label>
             <input
               id="country"
@@ -600,9 +654,9 @@ export default function ApplicationForm() {
               className={`mt-2 block w-full rounded-lg border ${errors.country ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
             />
             {errors.country ? (
-              <p className="mt-2 text-xs text-red-400">{errors.country}</p>
+              <p className="mt-2 text-sm text-red-400">{errors.country}</p>
             ) : (
-              <p className="mt-2 text-xs text-neutral-400">{t('countryHelp')}</p>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('countryHelp')}</p>
             )}
           </div>
         </div>
@@ -623,9 +677,9 @@ export default function ApplicationForm() {
             className={`mt-2 block w-full rounded-lg border ${errors.availability ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           {errors.availability ? (
-            <p className="mt-2 text-xs text-red-400">{errors.availability}</p>
+            <p className="mt-2 text-sm text-red-400">{errors.availability}</p>
           ) : (
-            <p className="mt-2 text-xs text-neutral-400">{t('availabilityHelp')}</p>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-400">{t('availabilityHelp')}</p>
           )}
         </div>
 
@@ -645,13 +699,13 @@ export default function ApplicationForm() {
             className={`mt-2 block w-full resize-y rounded-lg border ${errors.experience ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           <div className="mt-2 flex justify-between items-center">
-            <p className="text-xs text-neutral-400">{t('experienceHelp')}</p>
-            <p className={`text-xs ${formData.experience.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
+            <p className="text-sm text-neutral-400">{t('experienceHelp')}</p>
+            <p className={`text-sm ${formData.experience.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
               {formData.experience.trim().length} / 10 min
             </p>
           </div>
           {errors.experience && (
-            <p className="mt-1 text-xs text-red-400">{errors.experience}</p>
+            <p className="mt-1 text-sm text-red-400">{errors.experience}</p>
           )}
         </div>
 
@@ -669,13 +723,13 @@ export default function ApplicationForm() {
             className={`mt-2 block w-full resize-y rounded-lg border ${errors.motivation ? 'border-red-500' : 'border-neutral-700'} bg-neutral-950 px-3 py-2 text-neutral-50 placeholder-neutral-500 shadow-sm focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20`}
           />
           <div className="mt-2 flex justify-between items-center">
-            <p className="text-xs text-neutral-400">{t('motivationHelp')}</p>
-            <p className={`text-xs ${formData.motivation.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
+            <p className="text-sm text-neutral-400">{t('motivationHelp')}</p>
+            <p className={`text-sm ${formData.motivation.trim().length < 10 ? 'text-red-400' : 'text-neutral-500'}`}>
               {formData.motivation.trim().length} / 10 min
             </p>
           </div>
           {errors.motivation && (
-            <p className="mt-1 text-xs text-red-400">{errors.motivation}</p>
+            <p className="mt-1 text-sm text-red-400">{errors.motivation}</p>
           )}
         </div>
 
@@ -691,10 +745,15 @@ export default function ApplicationForm() {
             {isSubmitting ? t('submitting') : t('submit')}
           </button>
           {!isSteamConnected && steamRequiredAttempted && (
-            <p className="mt-2 text-xs text-red-400">{t('steamRequiredNote')}</p>
+            <p className="mt-2 text-sm text-red-400">{t('steamRequiredNote')}</p>
           )}
         </div>
-      </form>
+        </form>
+      ) : (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+          <p className="text-sm text-neutral-300">{t('steamAuth.notConnected')}</p>
+        </div>
+      )}
     </div>
   );
 }

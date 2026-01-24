@@ -3,16 +3,208 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "التنقل",
+    "home": "الرئيسية",
+    "joinGames": "انضم إلى اللعب"
+  },
+  "footer": {
+    "termsLink": "شروط الاستخدام"
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updatedAt": "Last updated: January 24, 2026",
+    "intro": {
+      "1": "These Terms of Use (“Terms”) govern access to and use of the Triad Tactics website (the “Site”). By accessing or using the Site, you agree to be bound by these Terms.",
+      "2": "The Site is a non-commercial community website for players of the Arma video game. It exists solely to support participation in the community and is not offered as a source of factual or professional information."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of terms",
+        "body": "If you do not accept these Terms in full, you must not access or use the Site. Continued use of the Site constitutes acceptance of the current version of the Terms."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must be legally able to enter into a binding agreement under applicable law to use the Site. If you use the Site on behalf of an organization, you represent that you have authority to bind that organization to these Terms."
+      },
+      "milsim": {
+        "title": "3. Video game context and non-endorsement",
+        "body": "The Site relates to a video game community centered on Arma. Any references to military themes are part of a fictional or historical gameplay setting. The Site does not endorse, glorify, or promote real-world violence, armed conflict, political extremism, or any real military activity."
+      },
+      "responsibility": {
+        "title": "4. User content and responsibility",
+        "body": "You are solely responsible for any text, images, files, links, or other materials you submit or publish on the Site (“User Content”). The Site administration does not review or pre-approve all User Content and does not assume liability for it.",
+        "list": {
+          "1": "You bear full legal responsibility for your User Content and any consequences arising from it.",
+          "2": "You must ensure your User Content is accurate, lawful, and does not mislead others.",
+          "3": "You must obtain all necessary rights and permissions to publish your User Content.",
+          "4": "You are responsible for understanding how your content may be interpreted and for avoiding harmful, extremist, or unlawful implications."
+        }
+      },
+      "prohibited": {
+        "title": "5. Prohibited content and conduct",
+        "body": "You agree not to upload, publish, or transmit any content or engage in any conduct that is unlawful, harmful, or inconsistent with the nature of the Site. This includes, without limitation:",
+        "list": {
+          "1": "Content that promotes or supports terrorism, extremist ideology, hate groups, or violent organizations.",
+          "2": "Content that incites violence, discrimination, harassment, or threats against any person or group.",
+          "3": "Content that references or depicts real-world conflicts in a way that glorifies, justifies, or advocates participation in such conflicts.",
+          "4": "Illegal content, including instructions for illegal acts, weapons trafficking, or evasion of law enforcement.",
+          "5": "Personal data disclosure, doxxing, or invasions of privacy.",
+          "6": "Impersonation, misrepresentation of identity, or false affiliation claims.",
+          "7": "Malware, phishing, automated scraping, or attempts to disrupt Site security or availability.",
+          "8": "Advertising or commercial solicitation without prior written permission from the Site administration.",
+          "9": "Any content that infringes intellectual property rights or violates applicable law."
+        }
+      },
+      "extremism": {
+        "title": "6. Extremism, propaganda, and reputational risk",
+        "body": "Because the Site relates to military simulation, you must not post content that could reasonably associate the Site, its administrators, or community with extremist ideology, propaganda, or real-world armed conflict. Any such association is strictly prohibited and may result in immediate removal of content and suspension of access."
+      },
+      "moderation": {
+        "title": "7. Moderation and enforcement",
+        "body": "The administration may remove content, limit access, or suspend accounts at its discretion, without prior notice, if it believes content violates these Terms or creates legal, reputational, or safety risks for the community or Site."
+      },
+      "license": {
+        "title": "8. License to user content",
+        "body": "By submitting User Content, you grant the Site a non-exclusive, worldwide, royalty-free license to host, display, reproduce, and distribute that content solely for operating, moderating, and improving the Site. You retain ownership of your User Content."
+      },
+      "ip": {
+        "title": "9. Intellectual property",
+        "body": "All Site design, branding, and original materials are owned by Triad Tactics or its contributors and are protected by applicable intellectual property laws. You may not copy, modify, or distribute Site materials without permission."
+      },
+      "liability": {
+        "title": "10. Disclaimers and limitation of liability",
+        "body": "The Site is provided on an “as is” and “as available” basis. To the maximum extent permitted by law:",
+        "list": {
+          "1": "We disclaim all warranties, express or implied, including fitness for a particular purpose and non-infringement.",
+          "2": "We are not responsible for any loss, damage, or legal exposure arising from User Content or your reliance on Site information."
+        }
+      },
+      "changes": {
+        "title": "11. Changes to the Terms",
+        "body": "We may update these Terms at any time. The updated version becomes effective when published on the Site. Your continued use constitutes acceptance of the updated Terms."
+      }
+    }
+  },
+  "auth": {
+    "signInSteam": "تسجيل الدخول عبر Steam",
+    "signOut": "تسجيل الخروج",
+    "signingOut": "جارٍ تسجيل الخروج...",
+    "signedInAs": "تم تسجيل الدخول باسم {name}",
+    "notAssociatedWithValve": "هذه الخدمة غير مرتبطة بشركة Valve Corp.",
+    "clickSteamButton": "اضغط على الزر أعلاه للمتابعة."
+  },
+  "admin": {
+    "nav": "الإدارة",
+    "navApplications": "الطلبات",
+    "navUsers": "المستخدمون",
+    "navRenameRequests": "طلبات تغيير اسم النداء",
+    "navMailing": "المراسلات",
+    "title": "الإدارة",
+    "subtitle": "لوحة الإدارة",
+    "mailingTitle": "المراسلات",
+    "loading": "جاري التحميل...",
+    "loginTitle": "دخول الإدارة",
+    "loginText": "سجّل الدخول عبر Steam للمتابعة.",
+    "signInSteam": "تسجيل الدخول عبر Steam",
+    "forbiddenTitle": "تم رفض الوصول",
+    "forbiddenText": "حساب Steam هذا لا يملك صلاحيات الإدارة.",
+    "applicationsTitle": "الطلبات",
+    "applicationsCount": "الإجمالي: {count}",
+    "tabActive": "نشطة",
+    "tabArchived": "مؤرشفة",
+    "tabAll": "الكل",
+    "tabRenameRequired": "مطلوب تغيير اسم النداء",
+    "tabConfirmed": "مؤكَّدة",
+    "tabPending": "قيد الانتظار",
+    "tabApproved": "مقبولة",
+    "tabDeclined": "مرفوضة",
+    "searchPlaceholder": "ابحث باسم النداء / البريد / Steam",
+    "searchUsersPlaceholder": "ابحث باسم النداء / Steam / الاسم",
+    "searchRenameRequestsPlaceholder": "ابحث باسم النداء / Steam / الاسم",
+    "noMatches": "لا توجد طلبات مطابقة.",
+    "noApplications": "لا توجد طلبات بعد.",
+    "loadError": "تعذر تحميل الطلبات. حاول مرة أخرى.",
+    "usersTitle": "المستخدمون",
+    "usersCount": "الإجمالي: {count}",
+    "noUsers": "لا يوجد مستخدمون بعد.",
+    "noMatchesUsers": "لا توجد نتائج مطابقة.",
+    "loadErrorUsers": "تعذر تحميل المستخدمين. حاول مرة أخرى.",
+    "renameRequestsTitle": "طلبات تغيير اسم النداء",
+    "renameRequestsCount": "الإجمالي: {count}",
+    "noRenameRequests": "لا توجد طلبات تغيير اسم النداء.",
+    "noMatchesRenameRequests": "لا توجد نتائج مطابقة.",
+    "loadErrorRenameRequests": "تعذر تحميل طلبات تغيير الاسم. حاول مرة أخرى.",
+    "renameDecisionError": "تعذر تحديث هذا الطلب. حاول مرة أخرى.",
+    "declinePrompt": "سبب الرفض (اختياري):",
+    "renameReasonPrompt": "السبب (اختياري):",
+    "deciding": "جارٍ التنفيذ...",
+    "approve": "قبول",
+    "decline": "رفض",
+    "badgeRenameRequired": "مطلوب تغيير اسم النداء",
+    "badgeConfirmed": "مؤكَّد",
+    "badgePending": "قيد الانتظار",
+    "badgeApproved": "مقبول",
+    "badgeDeclined": "مرفوض",
+    "renameRequestRowTitle": "طلب تغيير اسم النداء",
+    "colSteam": "Steam",
+    "colCallsign": "اسم النداء",
+    "colRename": "التغيير",
+    "colDeclineReason": "سبب الرفض",
+    "colRenameRequiredAt": "طلب التغيير",
+    "colRenameReason": "السبب",
+    "colRenameRequestedBy": "تم الطلب بواسطة",
+    "colConfirmedAt": "تاريخ التأكيد",
+    "colEmail": "البريد",
+    "colLocale": "اللغة",
+    "colCreated": "التاريخ",
+    "confirm": "تأكيد",
+    "confirming": "جارٍ التأكيد...",
+    "confirmAndRename": "تأكيد مع طلب تغيير اسم النداء",
+    "confirmingRename": "جارٍ التأكيد وطلب التغيير...",
+    "confirmed": "تم التأكيد",
+    "confirmedAt": "تم التأكيد",
+    "confirmedBy": "تم التأكيد بواسطة {steamid64}",
+    "confirmError": "تعذر تأكيد الطلب. حاول مرة أخرى.",
+    "confirmRenameError": "تعذر التأكيد وطلب تغيير الاسم. حاول مرة أخرى.",
+    "requestRename": "طلب تغيير اسم النداء",
+    "requestingRename": "جارٍ الإرسال...",
+    "renameError": "تعذر طلب التغيير. حاول مرة أخرى.",
+    "outboxRun": "تشغيل outbox",
+    "outboxRunning": "جارٍ تشغيل outbox…",
+    "outboxRunSuccess": "تمت معالجة outbox.",
+    "outboxRunError": "تعذر تشغيل outbox. حاول مرة أخرى."
+  },
+  "rename": {
+    "title": "مطلوب تغيير اسم النداء",
+    "subtitle": "طلب منك أحد المشرفين تغيير اسم النداء.",
+    "backHome": "عودة",
+    "signedInAs": "تم تسجيل الدخول باسم {name}",
+    "reasonLabel": "السبب",
+    "requestedByLabel": "تم الطلب بواسطة",
+    "pendingTitle": "الطلب قيد المراجعة",
+    "pendingText": "طلب تغيير الاسم قيد المراجعة. يمكنك استخدام الموقع باسم النداء الحالي حتى يقرر المشرفون.",
+    "submitTitle": "إرسال اسم نداء جديد",
+    "submitText": "أدخل اسم النداء المطلوب وأرسله للمراجعة.",
+    "submit": "إرسال طلب التغيير",
+    "submitting": "جارٍ الإرسال...",
+    "successText": "تم إرسال الطلب. سيبلغك المشرفون بالقرار بشكل منفصل.",
+    "errorNotSignedIn": "تحتاج لتسجيل الدخول عبر Steam لإرسال الطلب.",
+    "errorRenameNotRequired": "لا يلزم تغيير اسم النداء لهذا الحساب.",
+    "errorDuplicatePending": "لديك بالفعل طلب تغيير اسم نداء قيد الانتظار.",
+    "errorCallsignTaken": "اسم النداء هذا مستخدم بالفعل. الرجاء اختيار اسم آخر.",
+    "errorServer": "حدث خطأ. حاول مرة أخرى."
+  },
   "form": {
-    "title": "نموذج الطلب",
+    "title": "طلب",
     "subtitle": "أكمل النموذج أدناه للتقديم للمشاركة",
     "loading": "جاري التحميل...",
-    "requiredNote": "جميع الحقول إلزامية",
+    "requiredNote": "جميع الحقول مطلوبة ما عدا الاسم",
     "ageNote": "نقبل الطلبات من عمر 18+ فقط",
     "decisionNote": "يرجى الإجابة بتفصيل على آخر سؤالين لأن قرار الدعوة يعتمد عليهما",
     "name": "الاسم",
     "namePlaceholder": "اسمك",
-    "nameHelp": "كيف تفضل أن نناديك",
+    "nameHelp": "كيف تفضل أن نناديك (اختياري)",
     "age": "العمر",
     "agePlaceholder": "18",
     "ageHelp": "18+ فقط",
@@ -21,8 +213,48 @@
     "email": "عنوان البريد الإلكتروني",
     "emailPlaceholder": "your.email@example.com",
     "emailHelp": "سنستخدم هذا البريد للتواصل معك",
-    "nickname": "الاسم داخل اللعبة (اللقب)",
-    "nicknamePlaceholder": "الاسم / النداء",
+    "callsign": "اسم النداء",
+    "callsignPlaceholder": "اسم النداء الخاص بك",
+    "callsignHelp": "المسموح فقط: أحرف لاتينية (A-Z)، أرقام (0-9)، وشرطة سفلية (_).",
+    "callsignSection": {
+      "title": "اسم النداء",
+      "intro": "نستخدم اسم النداء داخل اللعبة وفي المجتمع. يُرجى قراءة القواعد أدناه قبل الإرسال."
+    },
+    "callsignRules": {
+      "title": "قواعد اختيار اسم النداء",
+      "allowedChars": "الرموز المسموح بها: A-Z، a-z، 0-9 وشرطة سفلية (_). بدون مسافات.",
+      "maxLength": "الحد الأقصى للطول: 12 حرفًا.",
+      "uniqueness": "يجب أن يكون فريدًا وألا يكون مشابهًا بشكل مُربك لأسماء نداء موجودة (تطابق مباشر وتطابق في النطق/الشكل). أمثلة: Ghost و G0st؛ Nikolai و Nikolay؛ Alexey و Aleksei.",
+      "noOffense": "يجب ألا يكون مسيئًا أو يحض على الكراهية أو يحتوي على ألفاظ نابية.",
+      "neutral": "يجب ألا يكون سياسيًا أو دينيًا أو متعلقًا بالإعلانات/العلامات التجارية.",
+      "noProjectSquads": "يجب ألا يطابق أسماء الفِرق الموجودة في المشروع.",
+      "noRealUnits": "يجب ألا يرتبط بوحدات عسكرية حقيقية. أمثلة: 101st Airborne, 1st Marines, VDV, Spetsnaz.",
+      "noEquipment": "يجب ألا يكون اسم سلاح/مركبة/طائرة حقيقية. أمثلة: AK-74, M4A1, BMP-2, Apache, Mi-24.",
+      "keepSimple": "اجعله قصيرًا وسهل القراءة (يفضل كلمة أو كلمتين). تجنب العبارات الطويلة متعددة الكلمات.",
+      "adminNote": "حتى لو لم يكن اسم النداء مثاليًا، قد تُقبل الطلبات - لكن قد يطلب منك المشرفون تغييره لاحقًا."
+    },
+    "callsignCheck": {
+      "checking": "جارٍ التحقق من التوفر…",
+      "available": "يبدو متاحًا.",
+      "taken": "اسم النداء هذا مستخدم بالفعل.",
+      "conflict": "قد يكون هناك تعارض مع أسماء نداء موجودة.",
+      "exact": "تطابق مباشر: {example}",
+      "sound": "تشابه في النطق/الشكل: {example}",
+      "note": "هذه إشارة مساعدة. القرار النهائي يتخذه المشرف.",
+      "error": "تعذر التحقق من التوفر الآن."
+    },
+    "callsignSearch": {
+      "show": "ابحث عن أسماء النداء الموجودة",
+      "hide": "إخفاء البحث",
+      "title": "ابحث عن أسماء النداء الموجودة",
+      "help": "اكتب جزءًا من اسم النداء لرؤية الأسماء الموجودة. يساعد ذلك على تجنب التكرار قبل الاختيار.",
+      "placeholder": "بحث…",
+      "idle": "ابدأ بالكتابة للبحث.",
+      "loading": "جارٍ البحث…",
+      "noResults": "لا توجد نتائج.",
+      "results": "عدد النتائج: {count}",
+      "error": "البحث غير متاح الآن."
+    },
     "city": "المدينة",
     "cityPlaceholder": "مدينتك",
     "cityHelp": "لمعرفة منطقتك وتوقيتك تقريباً",
@@ -41,10 +273,10 @@
     "steamIdHelp": "الصق رابط ملفك على Steam (profiles/... أو id/...). إذا كان ملفك عاماً فقد نتحقق تلقائياً من امتلاك Arma Reforger",
     "experience": "خبرتك في الألعاب",
     "experiencePlaceholder": "أخبرنا عن خبرتك في Arma (A3/Reforger) والخوادم التي لعبت عليها، أو عن خبرتك العامة في الألعاب",
-    "experienceHelp": "يرجى الإجابة بتفصيل — هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
+    "experienceHelp": "يرجى الإجابة بتفصيل - هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
     "motivation": "لماذا تريد الانضمام إلى Triad Tactics؟",
     "motivationPlaceholder": "أخبرنا بما تبحث عنه وكيف ترغب في المساهمة",
-    "motivationHelp": "يرجى الإجابة بتفصيل — هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
+    "motivationHelp": "يرجى الإجابة بتفصيل - هذا أحد أهم الأسئلة لاتخاذ قرار الدعوة",
     "submit": "إرسال الطلب",
     "submitting": "جاري الإرسال...",
     "steamRequiredNote": "يرجى تسجيل الدخول عبر Steam قبل الإرسال",
@@ -54,7 +286,7 @@
     "steamAuth": {
       "title": "التحقق من Steam",
       "notConnected": "غير متصل. يرجى تسجيل الدخول عبر Steam للمتابعة",
-      "help": "نطلب تسجيل الدخول عبر Steam حتى نتمكن من التحقق من أن حسابك يمتلك Arma Reforger",
+      "help": "نستخدم فقط معلومات Steam العامة المتاحة للتحقق من أن حسابك يمتلك Arma Reforger.",
       "detect": {
         "title": "كيف يعمل التحقق من امتلاك اللعبة",
         "profilePublic": "يجب أن يكون ملف Steam الشخصي عاماً.",
@@ -84,7 +316,7 @@
     },
     "popup": {
       "validationTitle": "يرجى التحقق من النموذج",
-      "validationMessage": "قم بتصحيح الحقول أدناه ثم حاول مرة أخرى",
+      "message": "قم بتصحيح الحقول أدناه ثم حاول مرة أخرى",
       "errorTitle": "خطأ",
       "close": "حسناً"
     },
@@ -93,6 +325,7 @@
       "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح",
       "invalidAge": "يرجى إدخال عمر صحيح",
       "ageMin": "نقبل الطلبات من عمر 18+ فقط",
+      "callsignInvalidChars": "المسموح فقط: أحرف لاتينية (A-Z)، أرقام (0-9)، وشرطة سفلية (_)",
       "minLength": "يرجى تقديم المزيد من التفاصيل (الحد الأدنى {min} حرفاً)",
       "maxLength": "يرجى تقصير النص (الحد الأقصى {max} حرفاً)",
       "invalidSteamUrl": "يرجى إدخال رابط صحيح لملف Steam الشخصي",
@@ -105,8 +338,28 @@
       "steamNoGame": "بحسب بيانات Steam هذا الحساب لا يمتلك Arma Reforger",
       "steamInvalidProfile": "تعذر علينا تحديد ملف Steam من هذا الرابط. يرجى لصق رابط صحيح لملف steamcommunity.com الشخصي."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "تمت الموافقة على طلبك في Triad Tactics",
+      "greeting": "مرحباً {name}،",
+      "line1": "خبر رائع — تمت الموافقة على طلبك في Triad Tactics.",
+      "line2": "يرجى زيارة {websiteUrl} وتسجيل الدخول عبر Steam للتحقق من الوصول.",
+      "line3": "على الصفحة الرئيسية ستجد روابط Discord و Telegram — يرجى الانضمام لتصلك الإعلانات والجداول.",
+      "line4": "إذا كان لديك أي سؤال، فقط ردّ على هذه الرسالة.",
+      "signature": "— Triad Tactics"
+    },
+    "applicationApprovedRenameRequired": {
+      "subject": "تمت الموافقة على طلبك — يلزم تعديل النداء",
+      "greeting": "مرحباً {name}،",
+      "line1": "خبر رائع — تمت الموافقة على طلبك.",
+      "line2": "قبل الانضمام إلى الجلسات نحتاج منك تعديل النداء (callsign).",
+      "line3": "الرجاء تسجيل الدخول على {websiteUrl} وتغيير النداء.",
+      "line4": "على الصفحة الرئيسية ستجد روابط Discord و Telegram — يرجى الانضمام لتصلك الإعلانات والجداول.",
+      "line5": "إذا احتجت مساعدة، ردّ على هذه الرسالة.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "انضم للألعاب",
     "applyButtonShort": "انضم للألعاب",
@@ -125,9 +378,19 @@
     "gallery": {
       "items": {
         "1": { "alt": "لقطة لعب Triad Tactics 1" },
-        "2": { "alt": "لقطة لعب Triad Tactics 2" },
+        "2": {
+          "alt": "لقطة لعب Triad Tactics 2",
+          "videoAlt": "فيديو لعب خادم Triad Tactics في Arma Reforger"
+        },
         "3": { "alt": "لقطة لعب Triad Tactics 3" }
       }
+    },
+    "community": {
+      "title": "انضم إلى المجتمع",
+      "subtitle": "ابقَ على تواصل بين الجلسات وتلقَّ التحديثات فورًا.",
+      "joinAction": "انضم",
+      "telegramLabel": "قناة تيليجرام",
+      "discordLabel": "خادم ديسكورد"
     },
     "disclaimerTitle": "تنبيه مهم",
     "disclaimerText": "Triad Tactics هو مشروع ألعاب ومحاكاة خيالية ضمن Arma Reforger. نحن لا ندعم أو نروّج أو نبرّر الحروب الواقعية أو العنف أو الكراهية، كما أننا لا نصمّم مهاماً تُجسّد صراعات واقعية جارية."

@@ -1,4 +1,4 @@
-import type { Application } from '@/platform/db';
+import type { Application } from '@/features/apply/domain/types';
 import type { SteamVerificationResult } from './steam/verifyGameOwnership';
 
 export type ApplyApplicationRepo = {
@@ -6,6 +6,7 @@ export type ApplyApplicationRepo = {
 		| { success: true; id: unknown }
 		| { success: false; error: 'duplicate' | 'constraint_error' | 'database_error' };
 	getBySteamId64: (steamid64: string) => Application | null;
+	getByUserId: (userId: number) => Application | null;
 };
 
 export type ApplySteamVerifier = {
@@ -14,5 +15,10 @@ export type ApplySteamVerifier = {
 
 export type SubmitApplicationDeps = {
 	repo: ApplyApplicationRepo;
+	users: {
+		upsertUser: (user: { steamid64: string }) =>
+			| { success: true; userId: number }
+			| { success: false };
+	};
 	steam: ApplySteamVerifier;
 };

@@ -44,24 +44,6 @@ function GitHubIcon() {
   );
 }
 
-function YouTubeIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 15l5-3-5-3z" />
-      <path d="M21.5 7.5a4 4 0 0 0-2.8-2.8C16.6 4 12 4 12 4s-4.6 0-6.7.7A4 4 0 0 0 2.5 7.5 41 41 0 0 0 2 12a41 41 0 0 0 .5 4.5 4 4 0 0 0 2.8 2.8C7.4 20 12 20 12 20s4.6 0 6.7-.7a4 4 0 0 0 2.8-2.8A41 41 0 0 0 22 12a41 41 0 0 0-.5-4.5" />
-    </svg>
-  );
-}
-
 export default function SocialLinks() {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -72,9 +54,6 @@ export default function SocialLinks() {
         tooltip="Website source code (fully open source)"
       >
         <GitHubIcon />
-      </SocialLink>
-      <SocialLink href="https://www.youtube.com/@jumbo2007" label="YouTube">
-        <YouTubeIcon />
       </SocialLink>
     </div>
   );

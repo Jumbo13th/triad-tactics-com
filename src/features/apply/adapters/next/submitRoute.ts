@@ -5,6 +5,7 @@ import { STEAM_WEB_API_KEY } from '@/platform/env';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { submitApplication } from '@/features/apply/useCases/submitApplication';
 import { submitApplicationDeps } from '@/features/apply/deps';
+import { submitApplicationLocaleSchema } from '@/features/apply/domain/requests';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
 import { errorToLogObject, logger } from '@/platform/logger';
@@ -16,16 +17,15 @@ function localeFromAcceptLanguage(header: string | null): string {
 	return first.split('-')[0]?.trim().toLowerCase() || 'en';
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null;
-}
-
 export async function postSubmitApplicationRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		const body: unknown = await request.json();
-
 		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value;
 		const identity = getSteamIdentity(steamAuthDeps, sid ?? null);
+		if (!identity.connected) {
+			return NextResponse.json({ error: 'steam_required' }, { status: 401 });
+		}
+
+		const body: unknown = await request.json();
 		const steamid64 = identity.connected ? identity.steamid64 : null;
 		const personaName = identity.connected ? identity.personaName : null;
 
@@ -43,13 +43,15 @@ export async function postSubmitApplicationRoute(request: NextRequest): Promise<
 			? { allowed: true as const, retryAfterSeconds: 0 }
 			: rateLimitDecisionRaw;
 
+		const localeParsed = submitApplicationLocaleSchema.safeParse(body);
+		const localeHint = localeParsed.success ? localeParsed.data.locale : undefined;
+
 		const result = await submitApplication(submitApplicationDeps, {
 			body,
 			steam: { steamid64, personaName },
 			ipAddress: ip,
 			localeHint:
-				(isRecord(body) ? body.locale : undefined) ??
-				localeFromAcceptLanguage(request.headers.get('accept-language')),
+				localeHint ?? localeFromAcceptLanguage(request.headers.get('accept-language')),
 			steamWebApiKey: STEAM_WEB_API_KEY,
 			bypassRateLimit,
 			rateLimitDecision,

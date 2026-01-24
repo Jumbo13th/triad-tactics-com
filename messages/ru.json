@@ -3,16 +3,208 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "Навигация",
+    "home": "Главная",
+    "joinGames": "Присоединиться"
+  },
+  "footer": {
+    "termsLink": "Условия использования"
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updatedAt": "Last updated: January 24, 2026",
+    "intro": {
+      "1": "These Terms of Use (“Terms”) govern access to and use of the Triad Tactics website (the “Site”). By accessing or using the Site, you agree to be bound by these Terms.",
+      "2": "The Site is a non-commercial community website for players of the Arma video game. It exists solely to support participation in the community and is not offered as a source of factual or professional information."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of terms",
+        "body": "If you do not accept these Terms in full, you must not access or use the Site. Continued use of the Site constitutes acceptance of the current version of the Terms."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must be legally able to enter into a binding agreement under applicable law to use the Site. If you use the Site on behalf of an organization, you represent that you have authority to bind that organization to these Terms."
+      },
+      "milsim": {
+        "title": "3. Video game context and non-endorsement",
+        "body": "The Site relates to a video game community centered on Arma. Any references to military themes are part of a fictional or historical gameplay setting. The Site does not endorse, glorify, or promote real-world violence, armed conflict, political extremism, or any real military activity."
+      },
+      "responsibility": {
+        "title": "4. User content and responsibility",
+        "body": "You are solely responsible for any text, images, files, links, or other materials you submit or publish on the Site (“User Content”). The Site administration does not review or pre-approve all User Content and does not assume liability for it.",
+        "list": {
+          "1": "You bear full legal responsibility for your User Content and any consequences arising from it.",
+          "2": "You must ensure your User Content is accurate, lawful, and does not mislead others.",
+          "3": "You must obtain all necessary rights and permissions to publish your User Content.",
+          "4": "You are responsible for understanding how your content may be interpreted and for avoiding harmful, extremist, or unlawful implications."
+        }
+      },
+      "prohibited": {
+        "title": "5. Prohibited content and conduct",
+        "body": "You agree not to upload, publish, or transmit any content or engage in any conduct that is unlawful, harmful, or inconsistent with the nature of the Site. This includes, without limitation:",
+        "list": {
+          "1": "Content that promotes or supports terrorism, extremist ideology, hate groups, or violent organizations.",
+          "2": "Content that incites violence, discrimination, harassment, or threats against any person or group.",
+          "3": "Content that references or depicts real-world conflicts in a way that glorifies, justifies, or advocates participation in such conflicts.",
+          "4": "Illegal content, including instructions for illegal acts, weapons trafficking, or evasion of law enforcement.",
+          "5": "Personal data disclosure, doxxing, or invasions of privacy.",
+          "6": "Impersonation, misrepresentation of identity, or false affiliation claims.",
+          "7": "Malware, phishing, automated scraping, or attempts to disrupt Site security or availability.",
+          "8": "Advertising or commercial solicitation without prior written permission from the Site administration.",
+          "9": "Any content that infringes intellectual property rights or violates applicable law."
+        }
+      },
+      "extremism": {
+        "title": "6. Extremism, propaganda, and reputational risk",
+        "body": "Because the Site relates to military simulation, you must not post content that could reasonably associate the Site, its administrators, or community with extremist ideology, propaganda, or real-world armed conflict. Any such association is strictly prohibited and may result in immediate removal of content and suspension of access."
+      },
+      "moderation": {
+        "title": "7. Moderation and enforcement",
+        "body": "The administration may remove content, limit access, or suspend accounts at its discretion, without prior notice, if it believes content violates these Terms or creates legal, reputational, or safety risks for the community or Site."
+      },
+      "license": {
+        "title": "8. License to user content",
+        "body": "By submitting User Content, you grant the Site a non-exclusive, worldwide, royalty-free license to host, display, reproduce, and distribute that content solely for operating, moderating, and improving the Site. You retain ownership of your User Content."
+      },
+      "ip": {
+        "title": "9. Intellectual property",
+        "body": "All Site design, branding, and original materials are owned by Triad Tactics or its contributors and are protected by applicable intellectual property laws. You may not copy, modify, or distribute Site materials without permission."
+      },
+      "liability": {
+        "title": "10. Disclaimers and limitation of liability",
+        "body": "The Site is provided on an “as is” and “as available” basis. To the maximum extent permitted by law:",
+        "list": {
+          "1": "We disclaim all warranties, express or implied, including fitness for a particular purpose and non-infringement.",
+          "2": "We are not responsible for any loss, damage, or legal exposure arising from User Content or your reliance on Site information."
+        }
+      },
+      "changes": {
+        "title": "11. Changes to the Terms",
+        "body": "We may update these Terms at any time. The updated version becomes effective when published on the Site. Your continued use constitutes acceptance of the updated Terms."
+      }
+    }
+  },
+  "auth": {
+    "signInSteam": "Войти через Steam",
+    "signOut": "Выйти",
+    "signingOut": "Выходим...",
+    "signedInAs": "Вы вошли как {name}",
+    "notAssociatedWithValve": "Этот сервис не связан с Valve Corp.",
+    "clickSteamButton": "Нажмите кнопку выше, чтобы продолжить."
+  },
+  "admin": {
+    "nav": "Админ",
+    "navApplications": "Заявки",
+    "navUsers": "Пользователи",
+    "navRenameRequests": "Запросы на переименование",
+    "navMailing": "Рассылка",
+    "title": "Админ",
+    "subtitle": "Панель администратора",
+    "mailingTitle": "Рассылка",
+    "loading": "Загрузка...",
+    "loginTitle": "Доступ администратора",
+    "loginText": "Войдите через Steam, чтобы продолжить.",
+    "signInSteam": "Войти через Steam",
+    "forbiddenTitle": "Доступ запрещён",
+    "forbiddenText": "У этого Steam аккаунта нет прав администратора.",
+    "applicationsTitle": "Заявки",
+    "applicationsCount": "Всего: {count}",
+    "tabActive": "Активные",
+    "tabArchived": "Архив",
+    "tabAll": "Все",
+    "tabRenameRequired": "Нужно переименование",
+    "tabConfirmed": "Подтверждено",
+    "tabPending": "Ожидает",
+    "tabApproved": "Одобрено",
+    "tabDeclined": "Отклонено",
+    "searchPlaceholder": "Поиск по позывному / email / Steam",
+    "searchUsersPlaceholder": "Поиск по позывному / Steam / имени",
+    "searchRenameRequestsPlaceholder": "Поиск по позывному / Steam / имени",
+    "noMatches": "Совпадений не найдено.",
+    "noApplications": "Пока нет заявок.",
+    "loadError": "Не удалось загрузить заявки. Попробуйте ещё раз.",
+    "usersTitle": "Пользователи",
+    "usersCount": "Всего: {count}",
+    "noUsers": "Пользователей пока нет.",
+    "noMatchesUsers": "Совпадений не найдено.",
+    "loadErrorUsers": "Не удалось загрузить пользователей. Попробуйте ещё раз.",
+    "renameRequestsTitle": "Запросы на переименование",
+    "renameRequestsCount": "Всего: {count}",
+    "noRenameRequests": "Запросов на переименование нет.",
+    "noMatchesRenameRequests": "Совпадений не найдено.",
+    "loadErrorRenameRequests": "Не удалось загрузить запросы. Попробуйте ещё раз.",
+    "renameDecisionError": "Не удалось обновить запрос. Попробуйте ещё раз.",
+    "declinePrompt": "Причина отклонения (необязательно):",
+    "renameReasonPrompt": "Причина (необязательно):",
+    "deciding": "Обработка...",
+    "approve": "Одобрить",
+    "decline": "Отклонить",
+    "badgeRenameRequired": "Нужно переименование",
+    "badgeConfirmed": "Подтверждено",
+    "badgePending": "Ожидает",
+    "badgeApproved": "Одобрено",
+    "badgeDeclined": "Отклонено",
+    "renameRequestRowTitle": "Запрос на переименование",
+    "colSteam": "Steam",
+    "colCallsign": "Позывной",
+    "colRename": "Переименование",
+    "colDeclineReason": "Причина отклонения",
+    "colRenameRequiredAt": "Нужно переименование",
+    "colRenameReason": "Причина",
+    "colRenameRequestedBy": "Запросил",
+    "colConfirmedAt": "Подтверждено",
+    "colEmail": "Email",
+    "colLocale": "Язык",
+    "colCreated": "Дата",
+    "confirm": "Подтвердить",
+    "confirming": "Подтверждаем...",
+    "confirmAndRename": "Подтвердить и потребовать смену",
+    "confirmingRename": "Подтверждаем и требуем...",
+    "confirmed": "Подтверждено",
+    "confirmedAt": "Подтверждено",
+    "confirmedBy": "Подтвердил {steamid64}",
+    "confirmError": "Не удалось подтвердить заявку. Попробуйте ещё раз.",
+    "confirmRenameError": "Не удалось подтвердить и потребовать смену. Попробуйте ещё раз.",
+    "requestRename": "Запросить смену позывного",
+    "requestingRename": "Отправляем...",
+    "renameError": "Не удалось запросить смену. Попробуйте ещё раз.",
+    "outboxRun": "Запустить outbox",
+    "outboxRunning": "Запускаем outbox…",
+    "outboxRunSuccess": "Outbox обработан.",
+    "outboxRunError": "Не удалось запустить outbox. Попробуйте ещё раз."
+  },
+  "rename": {
+    "title": "Требуется переименование",
+    "subtitle": "Администратор попросил изменить ваш позывной.",
+    "backHome": "Назад",
+    "signedInAs": "Вы вошли как {name}",
+    "reasonLabel": "Причина",
+    "requestedByLabel": "Запросил",
+    "pendingTitle": "Запрос ожидает",
+    "pendingText": "Ваш запрос на переименование на рассмотрении. Вы можете пользоваться сайтом с текущим позывным, пока администраторы не примут решение.",
+    "submitTitle": "Предложить новый позывной",
+    "submitText": "Введите желаемый позывной и отправьте его на рассмотрение администраторам.",
+    "submit": "Отправить запрос",
+    "submitting": "Отправляем...",
+    "successText": "Запрос отправлен. О решении администраторы сообщат отдельно.",
+    "errorNotSignedIn": "Нужно войти через Steam, чтобы отправить запрос на переименование.",
+    "errorRenameNotRequired": "Для вашего аккаунта переименование не требуется.",
+    "errorDuplicatePending": "У вас уже есть ожидающий запрос на переименование.",
+    "errorCallsignTaken": "Этот позывной уже занят. Пожалуйста, выберите другой.",
+    "errorServer": "Что-то пошло не так. Попробуйте ещё раз."
+  },
   "form": {
-    "title": "ФОРМА ЗАЯВКИ",
+    "title": "Заявка",
     "subtitle": "Заполните форму ниже для подачи заявки на участие",
     "loading": "Загрузка...",
-    "requiredNote": "Все поля обязательны",
+    "requiredNote": "Все поля обязательны, кроме имени",
     "ageNote": "Мы принимаем заявки только от игроков 18+",
-    "decisionNote": "Пожалуйста, подробно ответьте на последние два вопроса — по ним мы принимаем решение о приглашении",
+    "decisionNote": "Пожалуйста, подробно ответьте на последние два вопроса - по ним мы принимаем решение о приглашении",
     "name": "Имя",
     "namePlaceholder": "Ваше имя",
-    "nameHelp": "Как к вам обращаться",
+    "nameHelp": "Как к вам обращаться (необязательно)",
     "age": "Возраст",
     "agePlaceholder": "18",
     "ageHelp": "Только 18+",
@@ -21,8 +213,48 @@
     "email": "Электронная почта",
     "emailPlaceholder": "your.email@example.com",
     "emailHelp": "По этому адресу мы свяжемся с вами по результатам",
-    "nickname": "Желаемый никнейм",
-    "nicknamePlaceholder": "Ник / позывной",
+    "callsign": "Позывной",
+    "callsignPlaceholder": "Ваш позывной",
+    "callsignHelp": "Допустимы только латинские буквы (A-Z), цифры (0-9) и подчёркивание (_).",
+    "callsignSection": {
+      "title": "Позывной",
+      "intro": "Мы используем ваш позывной в игре и в сообществе. Перед отправкой прочитайте правила ниже."
+    },
+    "callsignRules": {
+      "title": "Правила выбора позывного",
+      "allowedChars": "Допустимые символы: A-Z, a-z, 0-9 и подчёркивание (_). Без пробелов.",
+      "maxLength": "Максимальная длина: 12 символов.",
+      "uniqueness": "Должен быть уникальным, чтобы не совпадать с существующими позывными (точное совпадение и совпадение по звучанию/похожему написанию). Примеры: Ghost и G0st; Nikolai и Nikolay; Alexey и Aleksei.",
+      "noOffense": "Не должен быть оскорбительным, содержать ненависть.",
+      "neutral": "Не должен быть связан с политикой, религией или рекламой/брендами.",
+      "noProjectSquads": "Не должен совпадать с названиями существующих отрядов на проекте.",
+      "noRealUnits": "Не должен ссылаться на реальные воинские части. Примеры: 101st Airborne, 1st Marines, VDV, Spetsnaz.",
+      "noEquipment": "Не должен быть названием оружия/техники/авиации. Примеры: AK-74, M4A1, BMP-2, Apache, Mi-24.",
+      "keepSimple": "Коротко и читаемо (в идеале 1-2 слова). Избегайте длинных фраз из многих слов.",
+      "adminNote": "Даже если позывной не идеален, заявку могут одобрить - но администрация может попросить сменить его позже."
+    },
+    "callsignCheck": {
+      "checking": "Проверяем доступность…",
+      "available": "Похоже, свободно.",
+      "taken": "Этот позывной уже занят.",
+      "conflict": "Возможен конфликт с существующими позывными.",
+      "exact": "Точное совпадение: {example}",
+      "sound": "Похоже по звучанию/написанию: {example}",
+      "note": "Эта подсказка вспомогательная. Окончательное решение принимает администратор.",
+      "error": "Не удалось проверить доступность сейчас."
+    },
+    "callsignSearch": {
+      "show": "Поиск существующих позывных",
+      "hide": "Скрыть поиск",
+      "title": "Поиск существующих позывных",
+      "help": "Введите часть позывного, чтобы увидеть уже занятые варианты. Это поможет избежать дубликатов до выбора.",
+      "placeholder": "Поиск…",
+      "idle": "Начните ввод, чтобы искать.",
+      "loading": "Ищем…",
+      "noResults": "Совпадений не найдено.",
+      "results": "Совпадений: {count}",
+      "error": "Поиск сейчас недоступен."
+    },
     "city": "Город",
     "cityPlaceholder": "Ваш город",
     "cityHelp": "Чтобы понимать ваш регион и время",
@@ -41,10 +273,10 @@
     "steamIdHelp": "Вставьте ссылку на ваш Steam профиль (profiles/... или id/...). Если профиль публичный, мы можем автоматически проверить наличие Arma Reforger",
     "experience": "Игровой опыт",
     "experiencePlaceholder": "Расскажите об опыте в Arma (A3/Reforger), на каких серверах играли, или об общем игровом опыте",
-    "experienceHelp": "Пожалуйста, подробно ответьте — это один из ключевых вопросов для решения о приглашении",
+    "experienceHelp": "Пожалуйста, подробно ответьте - это один из ключевых вопросов для решения о приглашении",
     "motivation": "Почему вы хотите присоединиться к Triad Tactics?",
     "motivationPlaceholder": "Что вы ищете и чем хотите быть полезны",
-    "motivationHelp": "Пожалуйста, подробно ответьте — это один из ключевых вопросов для решения о приглашении",
+    "motivationHelp": "Пожалуйста, подробно ответьте - это один из ключевых вопросов для решения о приглашении",
     "submit": "ОТПРАВИТЬ ЗАЯВКУ",
     "submitting": "ОТПРАВКА...",
     "steamRequiredNote": "Пожалуйста, войдите через Steam перед отправкой",
@@ -54,7 +286,7 @@
     "steamAuth": {
       "title": "Проверка Steam",
       "notConnected": "Не подключено",
-      "help": "Вход через Steam обязателен — так мы проверяем, что на аккаунте есть Arma Reforger",
+      "help": "Мы используем только публично доступные данные профиля Steam, чтобы проверить, что на аккаунте есть Arma Reforger.",
       "detect": {
         "title": "Как работает проверка наличия игры",
         "profilePublic": "Профиль Steam должен быть публичным.",
@@ -84,7 +316,7 @@
     },
     "popup": {
       "validationTitle": "Проверьте форму",
-      "validationMessage": "Исправьте поля ниже и попробуйте ещё раз",
+      "message": "Исправьте поля ниже и попробуйте ещё раз",
       "errorTitle": "Ошибка",
       "close": "ОК"
     },
@@ -93,6 +325,7 @@
       "invalidEmail": "Пожалуйста, введите корректный email",
       "invalidAge": "Пожалуйста, введите корректный возраст",
       "ageMin": "Мы принимаем заявки только от 18+",
+      "callsignInvalidChars": "Допустимы только латинские буквы (A-Z), цифры (0-9) и подчёркивание (_)",
       "minLength": "Пожалуйста, предоставьте больше информации (минимум {min} символов)",
       "maxLength": "Пожалуйста, сократите текст (максимум {max} символов)",
       "invalidSteamUrl": "Пожалуйста, укажите корректную ссылку на Steam профиль",
@@ -105,8 +338,28 @@
       "steamNoGame": "По данным Steam этот аккаунт не владеет Arma Reforger",
       "steamInvalidProfile": "Не удалось определить профиль по этой ссылке. Пожалуйста, вставьте корректную ссылку на профиль steamcommunity.com."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "Ваша заявка в Triad Tactics одобрена",
+      "greeting": "Здравствуйте, {name},",
+      "line1": "Отличные новости — ваша заявка в Triad Tactics одобрена.",
+      "line2": "Пожалуйста, посетите {websiteUrl} и войдите через Steam, чтобы проверить доступ.",
+      "line3": "На главной странице есть ссылки на наш Discord и Telegram — пожалуйста, вступайте, там расписание и анонсы.",
+      "line4": "Если у вас имеются вопросы, просто ответьте на это письмо, и мы постараемся помочь.",
+      "signature": "— Triad Tactics"
+    },
+    "applicationApprovedRenameRequired": {
+      "subject": "Ваша заявка в Triad Tactics одобрена — нужно сменить позывной",
+      "greeting": "Здравствуйте, {name},",
+      "line1": "Отличные новости — ваша заявка одобрена.",
+      "line2": "Перед участием в сессиях нужно обновить позывной.",
+      "line3": "Пожалуйста, посетите {websiteUrl}, войдите через Steam и измените позывной.",
+      "line4": "На главной странице есть ссылки на наш Discord и Telegram — пожалуйста, вступайте, там расписание и анонсы.",
+      "line5": "Если у вас имеются вопросы, просто ответьте на это письмо, и мы постараемся помочь.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "Присоединиться",
     "applyButtonShort": "Присоединиться",
@@ -125,9 +378,19 @@
     "gallery": {
       "items": {
         "1": { "alt": "Скриншот Triad Tactics 1" },
-        "2": { "alt": "Скриншот Triad Tactics 2" },
+        "2": {
+          "alt": "Скриншот Triad Tactics 2",
+          "videoAlt": "Видео геймплея сервера Triad Tactics в Arma Reforger"
+        },
         "3": { "alt": "Скриншот Triad Tactics 3" }
       }
+    },
+    "community": {
+      "title": "Присоединяйтесь к сообществу",
+      "subtitle": "Оставайтесь на связи между сессиями и получайте обновления в реальном времени.",
+      "joinAction": "Вступить",
+      "telegramLabel": "Телеграм-канал",
+      "discordLabel": "Сервер Discord"
     },
     "disclaimerTitle": "Важно",
     "disclaimerText": "Triad Tactics - исключительно игровой проект в рамках Arma Reforger. Мы не поддерживаем, не пропагандируем и не оправдываем реальные войны, насилие или ненависть, а также не создаём миссии, посвящённые текущим реальным конфликтам."

@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_PASSWORD } from '@/platform/env';
 import { listApplications } from '@/features/admin/useCases/listApplications';
 import { listApplicationsDeps } from '@/features/admin/deps';
 import { errorToLogObject, logger } from '@/platform/logger';
+import { requireAdmin } from './adminAuth';
+function normalizeStatus(value: string | null): 'active' | 'archived' | 'all' {
+	if (!value) return 'active';
+	const v = value.trim().toLowerCase();
+	if (v === 'archived') return 'archived';
+	if (v === 'all') return 'all';
+	return 'active';
+}
 
 export async function getAdminApplicationsRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		if (!ADMIN_PASSWORD) {
-			return NextResponse.json({ error: 'admin_not_configured' }, { status: 500 });
-		}
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
 
-		const password = request.headers.get('x-admin-password');
-		if (password !== ADMIN_PASSWORD) {
-			return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-		}
+		const status = normalizeStatus(request.nextUrl.searchParams.get('status'));
+		const q = request.nextUrl.searchParams.get('q') ?? '';
 
-		const { applications } = listApplications(listApplicationsDeps);
+		const { applications, counts } = listApplications(listApplicationsDeps, { status, query: q });
 		return NextResponse.json({
 			success: true,
 			count: applications.length,
+			counts,
 			applications
 		});
 	} catch (error: unknown) {

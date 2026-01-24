@@ -8,6 +8,10 @@
   --accent: #d2b853;
 }
 
+html {
+  font-size: clamp(16px, 0.35vw + 15px, 18px);
+}
+
 html,
 body {
   height: 100%;

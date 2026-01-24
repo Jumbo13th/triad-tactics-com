@@ -1,6 +1,6 @@
 import { getSteamCallbackRoute } from '@/features/steamAuth/adapters/next/callbackRoute';
-import { withApiLogging } from '@/platform/nextRouteLogging';
+import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const GET = withApiLogging(getSteamCallbackRoute, { name: 'api.auth.steam.callback' });
+export const GET = withApiGuards(getSteamCallbackRoute, { name: 'api.auth.steam.callback' });

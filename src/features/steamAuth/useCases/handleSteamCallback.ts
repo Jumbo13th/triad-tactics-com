@@ -61,5 +61,8 @@ export async function handleSteamCallback(
     persona_name: personaName
   });
 
+  // Persist user identity for access control.
+  deps.users.upsertUser({ steamid64 });
+
   return { redirectPath };
 }

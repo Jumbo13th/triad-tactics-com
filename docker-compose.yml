@@ -7,14 +7,39 @@ services:
       NODE_ENV: production
       # REQUIRED in production
       STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_STEAM_IDS: ${ADMIN_STEAM_IDS}
       NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
+      OUTBOX_CRON_SECRET: ${OUTBOX_CRON_SECRET}
 
       # Optional behavior toggles
       DISABLE_RATE_LIMITS: ${DISABLE_RATE_LIMITS:-false}
       RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-120}
+
+      # Optional Brevo email notifications
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME}
+      BREVO_REPLY_TO_EMAIL: ${BREVO_REPLY_TO_EMAIL}
     volumes:
       - db:/app/database
+    restart: unless-stopped
+
+  cron:
+    image: alpine:3.20
+    depends_on:
+      - app
+    environment:
+      OUTBOX_CRON_SECRET: ${OUTBOX_CRON_SECRET}
+      CRON_INTERVAL_SECONDS: ${CRON_INTERVAL_SECONDS:-60}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl;
+        while true; do
+          curl -fsS -H "Authorization: Bearer $${OUTBOX_CRON_SECRET}" http://app:3000/api/cron/outbox >/dev/null || true;
+          sleep "$${CRON_INTERVAL_SECONDS}";
+        done
     restart: unless-stopped
 
   nginx:

@@ -3,16 +3,209 @@
     "title": "TRIAD TACTICS",
     "subtitle": "ARMA REFORGER SERVER"
   },
+  "nav": {
+    "aria": "Navigation",
+    "home": "Home",
+    "joinGames": "Join Games"
+  },
+  "footer": {
+    "termsLink": "Terms of use"
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updatedAt": "Last updated: January 24, 2026",
+    "intro": {
+      "1": "These Terms of Use (“Terms”) govern access to and use of the Triad Tactics website (the “Site”). By accessing or using the Site, you agree to be bound by these Terms.",
+      "2": "The Site is a non-commercial community website for players of the Arma video game. It exists solely to support participation in the community and is not offered as a source of factual or professional information."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of terms",
+        "body": "If you do not accept these Terms in full, you must not access or use the Site. Continued use of the Site constitutes acceptance of the current version of the Terms."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must be legally able to enter into a binding agreement under applicable law to use the Site. If you use the Site on behalf of an organization, you represent that you have authority to bind that organization to these Terms."
+      },
+      "milsim": {
+        "title": "3. Video game context and non-endorsement",
+        "body": "The Site relates to a video game community centered on Arma. Any references to military themes are part of a fictional or historical gameplay setting. The Site does not endorse, glorify, or promote real-world violence, armed conflict, political extremism, or any real military activity."
+      },
+      "responsibility": {
+        "title": "4. User content and responsibility",
+        "body": "You are solely responsible for any text, images, files, links, or other materials you submit or publish on the Site (“User Content”). The Site administration does not review or pre-approve all User Content and does not assume liability for it.",
+        "list": {
+          "1": "You bear full legal responsibility for your User Content and any consequences arising from it.",
+          "2": "You must ensure your User Content is accurate, lawful, and does not mislead others.",
+          "3": "You must obtain all necessary rights and permissions to publish your User Content.",
+          "4": "You are responsible for understanding how your content may be interpreted and for avoiding harmful, extremist, or unlawful implications."
+        }
+      },
+      "prohibited": {
+        "title": "5. Prohibited content and conduct",
+        "body": "You agree not to upload, publish, or transmit any content or engage in any conduct that is unlawful, harmful, or inconsistent with the nature of the Site. This includes, without limitation:",
+        "list": {
+          "1": "Content that promotes or supports terrorism, extremist ideology, hate groups, or violent organizations.",
+          "2": "Content that incites violence, discrimination, harassment, or threats against any person or group.",
+          "3": "Content that references or depicts real-world conflicts in a way that glorifies, justifies, or advocates participation in such conflicts.",
+          "4": "Illegal content, including instructions for illegal acts, weapons trafficking, or evasion of law enforcement.",
+          "5": "Personal data disclosure, doxxing, or invasions of privacy.",
+          "6": "Impersonation, misrepresentation of identity, or false affiliation claims.",
+          "7": "Malware, phishing, automated scraping, or attempts to disrupt Site security or availability.",
+          "8": "Advertising or commercial solicitation without prior written permission from the Site administration.",
+          "9": "Any content that infringes intellectual property rights or violates applicable law."
+        }
+      },
+      "extremism": {
+        "title": "6. Extremism, propaganda, and reputational risk",
+        "body": "Because the Site relates to military simulation, you must not post content that could reasonably associate the Site, its administrators, or community with extremist ideology, propaganda, or real-world armed conflict. Any such association is strictly prohibited and may result in immediate removal of content and suspension of access."
+      },
+      "moderation": {
+        "title": "7. Moderation and enforcement",
+        "body": "The administration may remove content, limit access, or suspend accounts at its discretion, without prior notice, if it believes content violates these Terms or creates legal, reputational, or safety risks for the community or Site."
+      },
+      "license": {
+        "title": "8. License to user content",
+        "body": "By submitting User Content, you grant the Site a non-exclusive, worldwide, royalty-free license to host, display, reproduce, and distribute that content solely for operating, moderating, and improving the Site. You retain ownership of your User Content."
+      },
+      "ip": {
+        "title": "9. Intellectual property",
+        "body": "All Site design, branding, and original materials are owned by Triad Tactics or its contributors and are protected by applicable intellectual property laws. You may not copy, modify, or distribute Site materials without permission."
+      },
+      "liability": {
+        "title": "10. Disclaimers and limitation of liability",
+        "body": "The Site is provided on an “as is” and “as available” basis. To the maximum extent permitted by law:",
+        "list": {
+          "1": "We disclaim all warranties, express or implied, including fitness for a particular purpose and non-infringement.",
+          "2": "We are not responsible for any loss, damage, or legal exposure arising from User Content or your reliance on Site information."
+        }
+      },
+      "changes": {
+        "title": "11. Changes to the Terms",
+        "body": "We may update these Terms at any time. The updated version becomes effective when published on the Site. Your continued use constitutes acceptance of the updated Terms."
+      }
+    }
+  },
+  "auth": {
+    "signInSteam": "Sign in with Steam",
+    "signOut": "Sign out",
+    "signingOut": "Signing out...",
+    "signedInAs": "Signed in as {name}",
+    "notAssociatedWithValve": "This service is not associated with Valve Corp.",
+    "clickSteamButton": "Click the button above to continue."
+  },
+  "admin": {
+    "nav": "Admin",
+    "navApplications": "Applications",
+    "navUsers": "Users",
+    "navRenameRequests": "Rename requests",
+    "navMailing": "Mailing",
+    "title": "Admin",
+    "subtitle": "Admin dashboard",
+    "mailingTitle": "Mailing",
+    "loading": "Loading...",
+    "loginTitle": "Admin access",
+    "loginText": "Sign in with Steam to continue.",
+    "signInSteam": "Sign in with Steam",
+    "forbiddenTitle": "Access denied",
+    "forbiddenText": "Your Steam account does not have admin access.",
+    "applicationsTitle": "Applications",
+    "applicationsCount": "{count} total",
+    "tabActive": "Active",
+    "tabArchived": "Archived",
+    "tabAll": "All",
+    "tabRenameRequired": "Rename required",
+    "tabConfirmed": "Confirmed",
+    "tabPending": "Pending",
+    "tabApproved": "Approved",
+    "tabDeclined": "Declined",
+    "searchPlaceholder": "Search by callsign / email / Steam",
+    "searchUsersPlaceholder": "Search by callsign / Steam / name",
+    "searchRenameRequestsPlaceholder": "Search by callsign / Steam / name",
+    "noMatches": "No matching applications.",
+    "noApplications": "No applications yet.",
+    "loadError": "Couldn't load applications. Please try again. ",
+    "usersTitle": "Users",
+    "usersCount": "{count} total",
+    "noUsers": "No users yet.",
+    "noMatchesUsers": "No matching users.",
+    "loadErrorUsers": "Couldn't load users. Please try again.",
+    "renameRequestsTitle": "Rename requests",
+    "renameRequestsCount": "{count} total",
+    "noRenameRequests": "No rename requests.",
+    "noMatchesRenameRequests": "No matching rename requests.",
+    "loadErrorRenameRequests": "Couldn't load rename requests. Please try again.",
+    "renameDecisionError": "Couldn't update this request. Please try again.",
+    "declinePrompt": "Decline reason (optional):",
+    "renameReasonPrompt": "Reason (optional):",
+    "deciding": "Working...",
+    "approve": "Approve",
+    "decline": "Decline",
+    "badgeRenameRequired": "Rename required",
+    "badgeConfirmed": "Confirmed",
+    "badgePending": "Pending",
+    "badgeApproved": "Approved",
+    "badgeDeclined": "Declined",
+    "renameRequestRowTitle": "Rename request",
+    "colSteam": "Steam",
+    "colCallsign": "Callsign",
+    "colRename": "Rename",
+    "colDeclineReason": "Decline reason",
+    "colRenameRequiredAt": "Rename required",
+    "colRenameReason": "Reason",
+    "colRenameRequestedBy": "Requested by",
+    "colConfirmedAt": "Confirmed",
+    "colEmail": "Email",
+    "colLocale": "Locale",
+    "colCreated": "Created",
+    "confirm": "Confirm",
+    "confirming": "Confirming...",
+    "confirmAndRename": "Confirm + require rename",
+    "confirmingRename": "Confirming + requiring...",
+    "confirmed": "Confirmed",
+    "confirmedAt": "Confirmed",
+    "confirmedBy": "Confirmed by {steamid64}",
+    "confirmError": "Couldn't confirm the application. Please try again.",
+    "confirmRenameError": "Couldn't confirm and require rename. Please try again.",
+    "requestRename": "Request rename",
+    "requestingRename": "Requesting...",
+    "renameError": "Couldn't request a rename. Please try again.",
+    "outboxRun": "Run outbox",
+    "outboxRunning": "Running outbox…",
+    "outboxRunSuccess": "Outbox processed.",
+    "outboxRunError": "Couldn't run outbox. Please try again."
+  },
+  "rename": {
+    "title": "Rename required",
+    "subtitle": "An administrator requested you change your callsign.",
+    "backHome": "Back",
+    "signedInAs": "Signed in as {name}",
+    "reasonLabel": "Reason",
+    "requestedByLabel": "Requested by",
+    "pendingTitle": "Request pending",
+    "pendingText": "Your rename request is under review. You can keep using the website with your current callsign until admins decide.",
+    "submitTitle": "Submit a new callsign",
+    "submitText": "Enter your desired callsign and submit it for admin review.",
+    "submit": "Submit rename request",
+    "submitting": "Submitting...",
+    "successText": "Request submitted. You'll be notified by admins (out of band) once a decision is made.",
+    "errorNotSignedIn": "You need to sign in with Steam to submit a rename request.",
+    "errorRenameNotRequired": "Rename is not required for your account.",
+    "errorDuplicatePending": "You already have a pending rename request.",
+    "errorCallsignTaken": "That callsign is already taken. Please choose a different one.",
+    "errorServer": "Something went wrong. Please try again."
+  },
   "form": {
-    "title": "APPLICATION FORM",
+    "title": "Application",
     "subtitle": "Complete the form below to apply for participation",
     "loading": "Loading...",
-    "requiredNote": "All fields are required",
+    "requiredNote": "All fields are required except Name",
     "ageNote": "We only accept applications from players 18+",
-    "decisionNote": "Please answer the last two questions in detail — we decide who to invite based on them",
+    "decisionNote": "Please answer the last two questions in detail - we decide who to invite based on them",
+    "optional": "optional",
     "name": "Name",
     "namePlaceholder": "Your name",
-    "nameHelp": "How should we address you",
+    "nameHelp": "How should we address you (optional)",
     "age": "Age",
     "agePlaceholder": "18",
     "ageHelp": "18+ only",
@@ -21,15 +214,54 @@
     "email": "Email Address",
     "emailPlaceholder": "your.email@example.com",
     "emailHelp": "We'll use this to contact you",
-    "nickname": "Desired nickname",
-    "nicknamePlaceholder": "Nickname / callsign",
+    "callsign": "Callsign",
+    "callsignPlaceholder": "Your callsign",
+    "callsignHelp": "Use only letters (A-Z), digits (0-9), and underscore (_).",
+    "callsignSection": {
+      "title": "Callsign",
+      "intro": "We use your callsign in-game and in the community. Please read the rules below before submitting."
+    },
+    "callsignRules": {
+      "title": "Callsign rules",
+      "allowedChars": "Allowed characters: A-Z, a-z, 0-9 and underscore (_). No spaces.",
+      "maxLength": "Maximum length: 12 characters.",
+      "uniqueness": "Must be unique and not confusingly similar to existing callsigns (exact match and sound/look match). Examples: Ghost vs G0st; Nikolai vs Nikolay; Alexey vs Aleksei.",
+      "noOffense": "Must not be offensive, hateful.",
+      "neutral": "Must not be political, religious, or advertising/brand-related.",
+      "noProjectSquads": "Must not match existing squad names on the project.",
+      "noRealUnits": "Must not reference real-world military units. Examples: 101st Airborne, 1st Marines, VDV, Spetsnaz.",
+      "noEquipment": "Must not be real equipment/vehicles/weapons. Examples: AK-74, M4A1, BMP-2, Apache, Mi-24.",
+      "keepSimple": "Keep it short and readable (ideally 1-2 words). Avoid long multi-word phrases.",
+      "adminNote": "Even if the callsign is not perfect, the application may still be approved - but administrators can ask you to change it later."
+    },
+    "callsignCheck": {
+      "checking": "Checking availability…",
+      "available": "Looks available.",
+      "taken": "This callsign is already taken.",
+      "conflict": "Potential conflict with existing callsigns.",
+      "exact": "Exact match: {example}",
+      "sound": "Similar sound/look: {example}",
+      "note": "This is a helper hint. The final decision is made by an admin.",
+      "error": "Couldn't check availability right now."
+    },
+    "callsignSearch": {
+      "show": "Search existing callsigns",
+      "hide": "Hide search",
+      "title": "Search existing callsigns",
+      "help": "Type a part of a callsign to see existing ones. This helps avoid duplicates before you choose.",
+      "placeholder": "Search…",
+      "idle": "Start typing to search.",
+      "loading": "Searching…",
+      "noResults": "No matches found.",
+      "results": "Matches: {count}",
+      "error": "Search is unavailable right now."
+    },
     "city": "City",
     "cityPlaceholder": "Your city",
     "cityHelp": "For approximate region/time coordination",
     "country": "Country",
     "countryPlaceholder": "Your country",
     "countryHelp": "For approximate region/time coordination",
-    "optional": "optional",
     "availability": "Typical availability",
     "availabilityPlaceholder": "Example: weekdays after 18:00, weekends",
     "availabilityHelp": "Include days and time range (your local time)",
@@ -41,10 +273,10 @@
     "steamIdHelp": "Paste your Steam profile link (profiles/... or id/...). If your profile is public, we may verify Arma Reforger ownership automatically",
     "experience": "Gaming experience",
     "experiencePlaceholder": "Tell us about your Arma (A3/Reforger) experience and servers you played on, or your general gaming background",
-    "experienceHelp": "Please answer in detail — this is one of the key questions for the invite decision",
+    "experienceHelp": "Please answer in detail - this is one of the key questions for the invite decision",
     "motivation": "Why do you want to join Triad Tactics?",
     "motivationPlaceholder": "Tell us what you are looking for and what you want to contribute",
-    "motivationHelp": "Please answer in detail — this is one of the key questions for the invite decision",
+    "motivationHelp": "Please answer in detail - this is one of the key questions for the invite decision",
     "submit": "SUBMIT APPLICATION",
     "submitting": "SUBMITTING...",
     "steamRequiredNote": "Please sign in with Steam before submitting",
@@ -54,7 +286,7 @@
     "steamAuth": {
       "title": "Steam verification",
       "notConnected": "Not connected. Please sign in with Steam to continue",
-      "help": "We require Steam sign-in so we can verify that your account owns Arma Reforger",
+      "help": "We only use publicly available Steam profile information to verify that your account owns Arma Reforger.",
       "detect": {
         "title": "How ownership detection works",
         "profilePublic": "Your Steam Profile must be Public.",
@@ -93,6 +325,7 @@
       "invalidEmail": "Please enter a valid email address",
       "invalidAge": "Please enter a valid age",
       "ageMin": "We only accept 18+ applications",
+      "callsignInvalidChars": "Only letters (A-Z), digits (0-9), and underscore (_) are allowed",
       "minLength": "Please provide more details (minimum {min} characters)",
       "maxLength": "Please keep it under {max} characters",
       "invalidSteamUrl": "Please enter a valid Steam profile URL",
@@ -105,8 +338,28 @@
       "steamNoGame": "This Steam account does not appear to own Arma Reforger",
       "steamInvalidProfile": "We couldn't resolve this Steam profile link. Please paste a valid steamcommunity.com profile URL."
     }
-  }
-  ,
+  },
+  "email": {
+    "applicationApproved": {
+      "subject": "Your Triad Tactics application is approved",
+      "greeting": "Hi {name},",
+      "line1": "Good news — your Triad Tactics application has been approved.",
+      "line2": "Please visit {websiteUrl} and sign in with Steam to check your access.",
+      "line3": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
+      "line4": "If you have any questions, reply to this email and we’ll help.",
+      "signature": "— Triad Tactics"
+    },
+    "applicationApprovedRenameRequired": {
+      "subject": "Your Triad Tactics application is approved — callsign update needed",
+      "greeting": "Hi {name},",
+      "line1": "Good news — your application has been approved.",
+      "line2": "Before you can join sessions, we need you to update your callsign.",
+      "line3": "Please visit {websiteUrl} and change your callsign.",
+      "line4": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
+      "line5": "If you have any questions, reply to this email and we’ll help.",
+      "signature": "— Triad Tactics"
+    }
+  },
   "welcome": {
     "applyButton": "Join Games",
     "applyButtonShort": "Join Games",
@@ -125,9 +378,19 @@
     "gallery": {
       "items": {
         "1": { "alt": "Triad Tactics gameplay screenshot 1" },
-        "2": { "alt": "Triad Tactics gameplay screenshot 2" },
+        "2": {
+          "alt": "Triad Tactics gameplay screenshot 2",
+          "videoAlt": "Triad Tactics Arma Reforger server gameplay video"
+        },
         "3": { "alt": "Triad Tactics gameplay screenshot 3" }
       }
+    },
+    "community": {
+      "title": "Join the community",
+      "subtitle": "Stay connected between sessions and get updates in real time.",
+      "joinAction": "Join",
+      "telegramLabel": "Telegram Channel",
+      "discordLabel": "Discord Server"
     },
     "disclaimerTitle": "Important note",
     "disclaimerText": "Triad Tactics is a gaming project within Arma Reforger. We do not support, promote, or justify real-world war, violence, or hatred, and we do not create missions that depict ongoing real-world conflicts."

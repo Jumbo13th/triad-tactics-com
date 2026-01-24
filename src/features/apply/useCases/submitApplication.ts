@@ -5,10 +5,6 @@ const ARMA_REFORGER_APPID = 1874880;
 
 const SUPPORTED_LOCALES = new Set(['en', 'ru', 'uk', 'ar']);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function normalizeLocale(value: unknown): string {
   if (typeof value === 'string') {
     const lc = value.trim().toLowerCase();
@@ -60,6 +56,10 @@ export async function submitApplication(
     return { ok: false, status: 400, json: { error: 'steam_not_connected' } };
   }
 
+	// Ensure the user exists in our DB as soon as they interact with the system.
+  const ensuredUser = deps.users.upsertUser({ steamid64 });
+  const userId = ensuredUser.success ? ensuredUser.userId : null;
+
   if (!input.bypassRateLimit) {
     if (!input.rateLimitDecision.allowed) {
       return {
@@ -75,8 +75,7 @@ export async function submitApplication(
     return { ok: false, status: 500, json: { error: 'steam_api_unavailable' } };
   }
 
-  const bodyLocale = isRecord(input.body) ? input.body.locale : undefined;
-  const locale = normalizeLocale(bodyLocale ?? input.localeHint);
+  const locale = normalizeLocale(input.localeHint);
 
   const verification = await deps.steam.verifySteamOwnsGameOrReject(
     steamApiKey,
@@ -108,11 +107,14 @@ export async function submitApplication(
 
   if (!result.success) {
     if (result.error === 'duplicate') {
-      const existingBySteam = deps.repo.getBySteamId64(steamid64);
+      const existing =
+        userId != null
+          ? deps.repo.getByUserId(userId)
+          : deps.repo.getBySteamId64(steamid64);
       return {
         ok: false,
         status: 409,
-        json: { error: 'duplicate', submittedAt: existingBySteam?.created_at ?? null }
+        json: { error: 'duplicate', submittedAt: existing?.created_at ?? null }
       };
     }
 

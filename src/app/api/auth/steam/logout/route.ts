@@ -1,6 +1,6 @@
 import { postSteamLogoutRoute } from '@/features/steamAuth/adapters/next/logoutRoute';
-import { withApiLogging } from '@/platform/nextRouteLogging';
+import { withApiGuards } from '@/platform/apiGates';
 
 export const runtime = 'nodejs';
 
-export const POST = withApiLogging(postSteamLogoutRoute, { name: 'api.auth.steam.logout' });
+export const POST = withApiGuards(postSteamLogoutRoute, { name: 'api.auth.steam.logout' });

@@ -1,8 +1,14 @@
 const requiredInProduction = [
-  'ADMIN_PASSWORD',
   'STEAM_WEB_API_KEY',
+  'ADMIN_STEAM_IDS',
   // Ensures stable Server Action encryption keys across deploys/instances.
-  'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY'
+  'NEXT_SERVER_ACTIONS_ENCRYPTION_KEY',
+  // Required for Brevo transactional emails
+  'BREVO_API_KEY',
+  'BREVO_SENDER_EMAIL',
+  'BREVO_SENDER_NAME',
+  // Protects cron-triggered outbox endpoint
+  'OUTBOX_CRON_SECRET'
 ];
 
 if (process.env.NODE_ENV !== 'production') {

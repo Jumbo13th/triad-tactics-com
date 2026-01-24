@@ -17,7 +17,6 @@ jobs:
     env:
       NODE_ENV: test
       STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
-
       TEST_STEAMID64_OWNED: ${{ vars.TEST_STEAMID64_OWNED }}
       TEST_STEAMID64_NOT_OWNED: ${{ vars.TEST_STEAMID64_NOT_OWNED }}
       TEST_STEAMID64_PRIVATE: ${{ vars.TEST_STEAMID64_PRIVATE }}
@@ -43,3 +42,13 @@ jobs:
 
     - name: Tests
       run: npm test
+
+    - name: Canary email
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        NODE_ENV: production
+        BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
+        BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
+        CANARY_EMAIL_TO: ${{ secrets.CANARY_EMAIL_TO }}
+      run: npm run canary:email

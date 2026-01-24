@@ -9,6 +9,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-dev/**",
+    ".next-e2e/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
@@ -28,9 +30,26 @@ const eslintConfig = defineConfig([
               group: ["@/components/*"],
               message: "Do not create a generic components layer; place UI in feature modules.",
             },
+            {
+              group: ["tests/**", "@/tests/**", "**/tests/**"],
+              message: "Do not import test code into application code.",
+            },
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}"],
+    rules: {
+      // Formatting hygiene
+      "eol-last": ["error", "always"],
+      "no-trailing-spaces": "error",
+      "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 0 }],
+
+      // Tabbing/indentation safety (allow tabs, prevent accidental mixed indentation)
+      "no-tabs": "off",
+      "no-mixed-spaces-and-tabs": ["error", "smart-tabs"],
     },
   },
   {
@@ -53,9 +72,35 @@ const eslintConfig = defineConfig([
               group: ["@/lib/*"],
               message: "Import from feature or platform modules instead of '@/lib/*'.",
             },
+            {
+              group: ["tests/**", "@/tests/**", "**/tests/**"],
+              message: "Do not import test code into application code.",
+            },
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["tests/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/platform/db", "@/platform/db/*"],
+              message: "Tests should import db helpers from tests/fixtures instead of platform/db.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["tests/fixtures/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
 ]);
