@@ -49,11 +49,11 @@ export default function WelcomePage() {
   return (
     <section className="grid gap-8">
       <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 shadow-sm shadow-black/20 sm:p-6">
-        <div className="flex flex-col gap-2">
+        <div className="space-y-4">
           <h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">{tw('community.title')}</h2>
           <p className="text-sm text-neutral-300 sm:text-base">{tw('community.subtitle')}</p>
         </div>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {communityLinks.map((link) => (
             <a
               key={link.href}

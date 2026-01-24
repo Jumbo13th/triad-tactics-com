@@ -26,10 +26,11 @@ export default async function LocaleLayout({
   const messages = await getMessages({ locale });
   const t = await getTranslations({ locale, namespace: 'app' });
   const tw = await getTranslations({ locale, namespace: 'welcome' });
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <main className="min-h-screen bg-neutral-950">
+      <main className="min-h-screen bg-neutral-950" dir={dir} lang={locale}>
         <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 pt-6 pb-2 sm:pt-8 sm:pb-6">
           <SiteHeader
             homeAriaLabel={t('title')}
