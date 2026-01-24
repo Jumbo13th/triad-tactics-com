@@ -36,7 +36,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 			buildTestApplicationRecord({
 				email: `rename-e2e-${crypto.randomUUID()}@example.com`,
 				steamid64: userSteamId,
-				callsign: 'Existing_E2E_User'
+				callsign: 'Exist_E2E'
 			})
 		);
 		expect(inserted.success).toBe(true);
@@ -94,7 +94,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${userSid}`
 				},
-				body: JSON.stringify({ callsign: 'Renamed_E2E_User' })
+				body: JSON.stringify({ callsign: 'Rename_E2E' })
 			})
 		);
 		expect(resRename.status).toBe(200);
@@ -137,7 +137,7 @@ describe('Rename flow (e2e via API handlers)', () => {
 		// DB: user callsign updated and rename flags cleared.
 		const user = dbOperations.getUserBySteamId64(userSteamId);
 		expect(user).toBeTruthy();
-		expect(user?.current_callsign).toBe('Renamed_E2E_User');
+		expect(user?.current_callsign).toBe('Rename_E2E');
 		expect(user?.rename_required_at).toBeNull();
 		expect(user?.rename_required_reason).toBeNull();
 		expect(user?.rename_required_by_steamid64).toBeNull();

@@ -177,7 +177,7 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 			buildTestApplicationRecord({
 				email: `rename-pending-${crypto.randomUUID()}@example.com`,
 				steamid64,
-				callsign: 'Existing_User_4'
+				callsign: 'Exist_U4'
 			})
 		);
 
@@ -194,7 +194,7 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${sid}`
 				},
-				body: JSON.stringify({ callsign: 'Renamed_User_2' })
+				body: JSON.stringify({ callsign: 'Rename_U2' })
 			})
 		);
 		expect(r1.status).toBe(200);
@@ -206,7 +206,7 @@ describe('Rename workflow: POST /api/rename (integration)', () => {
 					'content-type': 'application/json',
 					cookie: `tt_steam_session=${sid}`
 				},
-				body: JSON.stringify({ callsign: 'Renamed_User_3' })
+				body: JSON.stringify({ callsign: 'Rename_U3' })
 			})
 		);
 		expect(r2.status).toBe(200);
