@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { setupIsolatedDb } from '../../../fixtures/isolatedDb';
 import { buildTestApplicationRecord } from '../../../fixtures/application';
+import { getDb } from '../../../fixtures/dbOperations';
 import { confirmApplicationAndNotify } from '@/features/admin/useCases/confirmApplicationAndNotify';
 import { confirmApplicationAndNotifyDeps } from '@/features/admin/deps';
 import { insertApplication } from '@/features/apply/infra/sqliteApplications';
-import { getDb } from '@/platform/db/connection';
 
 type OutboxRow = {
 	id: number;

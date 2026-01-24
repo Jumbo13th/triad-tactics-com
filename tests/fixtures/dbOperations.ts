@@ -31,3 +31,5 @@ export const dbOperations = {
 };
 
 export type DbOperations = typeof dbOperations;
+
+export { getDb };

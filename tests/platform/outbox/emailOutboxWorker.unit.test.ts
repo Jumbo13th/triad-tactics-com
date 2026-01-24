@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupIsolatedDb } from '../../fixtures/isolatedDb';
 import { buildTestApplicationRecord } from '../../fixtures/application';
+import { getDb } from '../../fixtures/dbOperations';
 import { insertApplication } from '@/features/apply/infra/sqliteApplications';
 import { enqueueApplicationApprovedEmail } from '@/platform/outbox/emailOutbox';
-import { getDb } from '@/platform/db/connection';
 
 vi.mock('@/platform/email/brevo', () => ({
 	sendApplicationApprovedEmail: vi.fn()
