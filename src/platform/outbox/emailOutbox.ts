@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto';
 import { getDb } from '@/platform/db/connection';
+import { errorToLogObject, logger } from '@/platform/logger';
 
 export type ApprovalEmailPayload = {
 	toEmail: string;
@@ -26,8 +28,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null;
 }
 
+function summarizeEmail(email?: string | null) {
+	if (!email) return {};
+	const normalized = email.trim().toLowerCase();
+	const at = normalized.lastIndexOf('@');
+	return {
+		emailHash: createHash('sha1').update(normalized).digest('hex').slice(0, 12),
+		emailDomain: at > 0 ? normalized.slice(at + 1) : undefined
+	};
+}
+
 export function enqueueApplicationApprovedEmail(payload: ApprovalEmailPayload): EnqueueResult {
 	const db = getDb();
+	const log = logger.child({
+		outboxType: 'application_approved',
+		applicationId: payload.applicationId,
+		...summarizeEmail(payload.toEmail)
+	});
 	const stmt = db.prepare(`
 		INSERT INTO email_outbox (type, application_id, payload, status)
 		VALUES (?, ?, ?, 'pending')
@@ -35,12 +52,15 @@ export function enqueueApplicationApprovedEmail(payload: ApprovalEmailPayload): 
 
 	try {
 		stmt.run('application_approved', payload.applicationId, JSON.stringify(payload));
+		log.info('email_outbox_enqueue_success');
 		return { success: true };
 	} catch (error: unknown) {
 		const code = isRecord(error) && typeof error.code === 'string' ? (error.code as string) : '';
 		if (code === 'SQLITE_CONSTRAINT_UNIQUE' || code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+			log.warn({ ...errorToLogObject(error) }, 'email_outbox_enqueue_duplicate');
 			return { success: false, error: 'duplicate' };
 		}
+		log.error({ ...errorToLogObject(error) }, 'email_outbox_enqueue_failed');
 		return { success: false, error: 'database_error' };
 	}
 }

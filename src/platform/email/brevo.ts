@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { defaultLocale, isAppLocale } from '@/i18n/locales';
+import { getRequestContext } from '@/platform/requestContext';
 
 type BrevoConfig = {
 	apiKey: string;
@@ -46,6 +48,24 @@ async function loadMessages(locale: string) {
 
 function formatTemplate(template: string, params: Record<string, string>) {
 	return template.replace(/\{(\w+)\}/g, (_, key: string) => params[key] ?? '');
+}
+
+function hashEmail(email: string): string {
+	return createHash('sha1').update(email.trim().toLowerCase()).digest('hex').slice(0, 12);
+}
+
+function getEmailDomain(email?: string | null): string | undefined {
+	if (!email) return undefined;
+	const at = email.lastIndexOf('@');
+	if (at <= 0) return undefined;
+	return email.slice(at + 1).toLowerCase();
+}
+
+function summarizeRecipient(email: string) {
+	return {
+		emailHash: hashEmail(email),
+		emailDomain: getEmailDomain(email)
+	};
 }
 
 export async function buildApprovalContent(input: ApprovalEmailInput) {
@@ -109,12 +129,26 @@ export async function buildApprovalContent(input: ApprovalEmailInput) {
 export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): Promise<BrevoSendResult> {
 	if (process.env.NODE_ENV === 'test') return { ok: true, skipped: true };
 
+	const startedAt = Date.now();
 	const config = getBrevoConfig();
+	const ctx = getRequestContext();
+	const log = logger.child({
+		requestId: ctx?.requestId,
+		route: ctx?.route,
+		provider: 'brevo',
+		template: 'application_approved',
+		recipient: summarizeRecipient(input.toEmail),
+		senderDomain: getEmailDomain(config.senderEmail),
+		locale: resolveLocale(input.locale ?? undefined),
+		renameRequired: input.renameRequired ?? false
+	});
 
 	const emailApi = new TransactionalEmailsApi();
 	emailApi.authentications.apiKey.apiKey = config.apiKey;
 
 	const { subject, textContent } = await buildApprovalContent(input);
+	log.info({ subjectLength: subject.length, bodyLength: textContent.length }, 'brevo_send_start');
+
 	const message = new SendSmtpEmail();
 	message.subject = subject;
 	message.textContent = textContent;
@@ -126,11 +160,14 @@ export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): P
 	}
 
 	try {
-		await emailApi.sendTransacEmail(message);
+		const response = await emailApi.sendTransacEmail(message);
+		const durationMs = Date.now() - startedAt;
+		log.info({ durationMs, brevoResponse: response?.body ?? undefined }, 'brevo_send_success');
 		return { ok: true };
 	} catch (error: unknown) {
+		const durationMs = Date.now() - startedAt;
 		const details = JSON.stringify(errorToLogObject(error));
-		logger.error({ ...errorToLogObject(error) }, 'brevo_send_failed');
+		log.error({ ...errorToLogObject(error), durationMs }, 'brevo_send_failed');
 		return { ok: false, error: 'send_failed', details };
 	}
 }
