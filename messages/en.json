@@ -264,9 +264,20 @@
     "applicationApproved": {
       "subject": "Your Triad Tactics application is approved",
       "greeting": "Hi {name},",
+      "line1": "Good news — your Triad Tactics application has been approved.",
+      "line2": "Please visit {websiteUrl} and sign in with Steam to check your access.",
+      "line3": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
+      "line4": "If you have any questions, reply to this email and we’ll help.",
+      "signature": "— Triad Tactics"
+    },
+    "applicationApprovedRenameRequired": {
+      "subject": "Your Triad Tactics application is approved — callsign update needed",
+      "greeting": "Hi {name},",
       "line1": "Good news — your application has been approved.",
-      "line2": "We'll be in touch with next steps soon.",
-      "line3": "If you have any questions, just reply to this email.",
+      "line2": "Before you can join sessions, we need you to update your callsign.",
+      "line3": "Please visit {websiteUrl} and change your callsign.",
+      "line4": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
+      "line5": "If you have any questions, reply to this email and we’ll help.",
       "signature": "— Triad Tactics"
     }
   },
@@ -288,9 +299,19 @@
     "gallery": {
       "items": {
         "1": { "alt": "Triad Tactics gameplay screenshot 1" },
-        "2": { "alt": "Triad Tactics gameplay screenshot 2" },
+        "2": {
+          "alt": "Triad Tactics gameplay screenshot 2",
+          "videoAlt": "Triad Tactics Arma Reforger server gameplay video"
+        },
         "3": { "alt": "Triad Tactics gameplay screenshot 3" }
       }
+    },
+    "community": {
+      "title": "Join the community",
+      "subtitle": "Stay connected between sessions and get updates in real time.",
+      "joinAction": "Join",
+      "telegramLabel": "Telegram Channel",
+      "discordLabel": "Discord Server"
     },
     "disclaimerTitle": "Important note",
     "disclaimerText": "Triad Tactics is a gaming project within Arma Reforger. We do not support, promote, or justify real-world war, violence, or hatred, and we do not create missions that depict ongoing real-world conflicts."

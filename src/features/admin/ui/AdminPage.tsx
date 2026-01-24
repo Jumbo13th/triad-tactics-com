@@ -146,7 +146,6 @@ export default function AdminPage() {
 		}
 	};
 
-
 	return (
 		<AdminSurface>
 			<AdminGate status={status} redirectPath={redirectPath} t={ta}>
@@ -194,9 +193,9 @@ export default function AdminPage() {
 					) : (
 						<div className="grid gap-3">
 							{confirmError ? <p className="text-sm text-neutral-300">{ta('confirmError')}</p> : null}
-								{confirmRenameError ? (
-									<p className="text-sm text-neutral-300">{ta('confirmRenameError')}</p>
-								) : null}
+							{confirmRenameError ? (
+								<p className="text-sm text-neutral-300">{ta('confirmRenameError')}</p>
+							) : null}
 							{apps.applications.map((row, idx) => {
 								const key = row.id ?? idx;
 								const isConfirmed = !!row.confirmed_at;
@@ -242,7 +241,9 @@ export default function AdminPage() {
 															className="h-9 whitespace-nowrap"
 															onClick={(e) => {
 																e.preventDefault();
-																if (row.id && row.steamid64) void handleConfirmWithRename(row.id, row.steamid64);
+																if (row.id && row.steamid64) {
+																	void handleConfirmWithRename(row.id, row.steamid64);
+																}
 															}}
 															disabled={!row.id || !row.steamid64 || confirmRenameId === row.id}
 														>

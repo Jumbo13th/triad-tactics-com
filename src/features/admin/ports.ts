@@ -24,6 +24,7 @@ export type EmailOutboxPort = {
 		toName?: string | null;
 		callsign?: string | null;
 		locale?: string | null;
+		renameRequired?: boolean;
 	}) => { success: true } | { success: false; error: 'duplicate' | 'database_error' };
 };
 

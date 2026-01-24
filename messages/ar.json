@@ -264,9 +264,20 @@
     "applicationApproved": {
       "subject": "تمت الموافقة على طلبك في Triad Tactics",
       "greeting": "مرحباً {name}،",
-      "line1": "خبر سار — تمت الموافقة على طلبك.",
-      "line2": "سنتواصل معك قريباً بالخطوات التالية.",
-      "line3": "إذا كان لديك أي أسئلة، فقط قم بالرد على هذا البريد.",
+      "line1": "خبر رائع — تمت الموافقة على طلبك في Triad Tactics.",
+      "line2": "يرجى زيارة {websiteUrl} وتسجيل الدخول عبر Steam للتحقق من الوصول.",
+      "line3": "على الصفحة الرئيسية ستجد روابط Discord و Telegram — يرجى الانضمام لتصلك الإعلانات والجداول.",
+      "line4": "إذا كان لديك أي سؤال، فقط ردّ على هذه الرسالة.",
+      "signature": "— Triad Tactics"
+    },
+    "applicationApprovedRenameRequired": {
+      "subject": "تمت الموافقة على طلبك — يلزم تعديل النداء",
+      "greeting": "مرحباً {name}،",
+      "line1": "خبر رائع — تمت الموافقة على طلبك.",
+      "line2": "قبل الانضمام إلى الجلسات نحتاج منك تعديل النداء (callsign).",
+      "line3": "الرجاء تسجيل الدخول على {websiteUrl} وتغيير النداء.",
+      "line4": "على الصفحة الرئيسية ستجد روابط Discord و Telegram — يرجى الانضمام لتصلك الإعلانات والجداول.",
+      "line5": "إذا احتجت مساعدة، ردّ على هذه الرسالة.",
       "signature": "— Triad Tactics"
     }
   },
@@ -288,9 +299,19 @@
     "gallery": {
       "items": {
         "1": { "alt": "لقطة لعب Triad Tactics 1" },
-        "2": { "alt": "لقطة لعب Triad Tactics 2" },
+        "2": {
+          "alt": "لقطة لعب Triad Tactics 2",
+          "videoAlt": "فيديو لعب خادم Triad Tactics في Arma Reforger"
+        },
         "3": { "alt": "لقطة لعب Triad Tactics 3" }
       }
+    },
+    "community": {
+      "title": "انضم إلى المجتمع",
+      "subtitle": "ابقَ على تواصل بين الجلسات وتلقَّ التحديثات فورًا.",
+      "joinAction": "انضم",
+      "telegramLabel": "قناة تيليجرام",
+      "discordLabel": "خادم ديسكورد"
     },
     "disclaimerTitle": "تنبيه مهم",
     "disclaimerText": "Triad Tactics هو مشروع ألعاب ومحاكاة خيالية ضمن Arma Reforger. نحن لا ندعم أو نروّج أو نبرّر الحروب الواقعية أو العنف أو الكراهية، كما أننا لا نصمّم مهاماً تُجسّد صراعات واقعية جارية."

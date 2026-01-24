@@ -55,7 +55,7 @@ export default function SteamAuthControls() {
 		<div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
 			<span
 				title={name}
-				className="inline-flex min-w-0 max-w-full items-center truncate rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-50 shadow-sm shadow-black/30 sm:max-w-[260px] md:max-w-[320px]"
+				className="inline-flex min-w-0 max-w-full items-center break-words rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-50 shadow-sm shadow-black/30"
 			>
 				{t('signedInAs', { name })}
 			</span>

@@ -5,6 +5,7 @@ export type ApprovalEmailPayload = {
 	toName?: string | null;
 	callsign?: string | null;
 	locale?: string | null;
+	renameRequired?: boolean;
 	applicationId: number;
 };
 

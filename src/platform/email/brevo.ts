@@ -9,11 +9,12 @@ type BrevoConfig = {
 	replyToEmail?: string;
 };
 
-type ApprovalEmailInput = {
+export type ApprovalEmailInput = {
 	toEmail: string;
 	toName?: string | null;
 	callsign?: string | null;
 	locale?: string | null;
+	renameRequired?: boolean;
 };
 
 type BrevoSendResult =
@@ -47,32 +48,62 @@ function formatTemplate(template: string, params: Record<string, string>) {
 	return template.replace(/\{(\w+)\}/g, (_, key: string) => params[key] ?? '');
 }
 
-async function buildApprovalContent(input: ApprovalEmailInput) {
+export async function buildApprovalContent(input: ApprovalEmailInput) {
 	const name = input.toName?.trim() || input.callsign?.trim() || 'there';
 	const resolvedLocale = resolveLocale(input.locale ?? undefined);
 	const messages = await loadMessages(resolvedLocale);
 	const emailSection = (messages.email as Record<string, unknown> | undefined) ?? {};
 	const approved = (emailSection.applicationApproved as Record<string, string> | undefined) ?? {};
+	const approvedRename =
+		(emailSection.applicationApprovedRenameRequired as Record<string, string> | undefined) ?? {};
 
-	const subject = approved.subject ?? 'Your Triad Tactics application is approved';
-	const greeting = approved.greeting ?? 'Hi {name},';
-	const line1 = approved.line1 ?? "Good news — your application has been approved.";
-	const line2 = approved.line2 ?? "We'll be in touch with next steps soon.";
-	const line3 = approved.line3 ?? 'If you have any questions, just reply to this email.';
-	const signature = approved.signature ?? '— Triad Tactics';
+	const siteUrl = 'https://triad-tactics.com';
+	const params = {
+		name,
+		websiteUrl: siteUrl
+	};
 
-	const textContent = [
-		formatTemplate(greeting, { name }),
-		'',
-		line1,
-		line2,
-		'',
-		line3,
-		'',
-		signature
-	].join('\n');
+	const useRenameTemplate = input.renameRequired === true;
+	const template = useRenameTemplate ? approvedRename : approved;
 
-	return { subject: formatTemplate(subject, { name }), textContent };
+	const subject =
+		template.subject ??
+		(useRenameTemplate
+			? 'Your Triad Tactics application is approved — callsign update needed'
+			: 'Your Triad Tactics application is approved');
+	const greeting = template.greeting ?? 'Hi {name},';
+	const line1 =
+		template.line1 ??
+		(useRenameTemplate
+			? 'Good news — your application has been approved.'
+			: 'Good news — your Triad Tactics application has been approved.');
+	const line2 =
+		template.line2 ??
+		(useRenameTemplate
+			? 'Before you can join sessions, we need you to update your callsign.'
+			: 'Please visit {websiteUrl} and sign in with Steam to check your access.');
+	const line3 =
+		template.line3 ??
+		(useRenameTemplate
+			? 'Please sign in at {websiteUrl} and change your callsign.'
+			: 'On the main page you’ll find our Discord and Telegram — please join them to get announcements and schedules.');
+	const line4 =
+		template.line4 ??
+		(useRenameTemplate
+			? 'On the main page you’ll find our Discord and Telegram — please join them to get announcements and schedules.'
+			: 'If you have any questions, reply to this email and we’ll help.');
+	const line5 = template.line5 ?? (useRenameTemplate ? 'If anything is unclear, just reply to this email.' : undefined);
+	const line6 = template.line6 ?? undefined;
+	const line7 = template.line7 ?? undefined;
+	const signature = template.signature ?? '— Triad Tactics';
+
+	const lines = [line1, line2, line3, line4, line5, line6, line7]
+		.filter((line): line is string => typeof line === 'string' && line.trim().length > 0)
+		.map((line) => formatTemplate(line, params));
+
+	const textContent = [formatTemplate(greeting, params), '', ...lines, '', signature].join('\n');
+
+	return { subject: formatTemplate(subject, params), textContent };
 }
 
 export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): Promise<BrevoSendResult> {

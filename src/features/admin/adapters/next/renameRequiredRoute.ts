@@ -30,7 +30,8 @@ export async function postRenameRequiredRoute(request: NextRequest): Promise<Nex
 		if (applicationId != null) {
 			const confirmed = await confirmApplicationAndNotify(confirmApplicationAndNotifyDeps, {
 				applicationId,
-				confirmedBySteamId64: identity.steamid64
+				confirmedBySteamId64: identity.steamid64,
+				renameRequired: true
 			});
 
 			if (!confirmed.ok) {
