@@ -162,6 +162,8 @@ export default function RenamePage(props: Props) {
 					title={t('pendingTitle')}
 					text={t('pendingText')}
 					successText={t('successText')}
+					successLinkLabel={t('successLinkLabel')}
+					successLinkHref={`/${props.locale}`}
 					showSuccess={isSubmitted}
 				/>
 			) : (

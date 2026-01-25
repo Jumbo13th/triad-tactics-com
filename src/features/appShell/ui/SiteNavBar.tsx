@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import { LanguageSwitcher } from '@/features/language/ui/root';
-import { useAdminStatus } from '@/features/steamAuth/ui/root';
+import { useAdminStatus, useSteamStatus } from '@/features/steamAuth/ui/root';
 import { DropdownMenuPanel } from '@/features/appShell/ui/root';
 
 function isActivePath(currentPathname: string, href: string) {
@@ -25,6 +25,7 @@ export default function SiteNavBar() {
 	const ta = useTranslations('admin');
 	const pathname = usePathname();
 	const status = useAdminStatus();
+	const steamStatus = useSteamStatus();
 	const adminMenuRef = useRef<HTMLDetailsElement>(null);
 
 	useEffect(() => {
@@ -33,10 +34,12 @@ export default function SiteNavBar() {
 	}, [pathname]);
 
 	const items = useMemo(() => {
-		return [
-			{ href: '/', label: t('home') }
-		];
-	}, [t]);
+		const base = [{ href: '/', label: t('home') }];
+		if (steamStatus?.connected && (steamStatus.accessLevel === 'player' || steamStatus.accessLevel === 'admin')) {
+			base.push({ href: '/feed', label: t('feed') });
+		}
+		return base;
+	}, [t, steamStatus]);
 
 	return (
 		<div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 shadow-sm shadow-black/20">
