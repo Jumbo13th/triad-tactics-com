@@ -6,7 +6,8 @@
   "nav": {
     "aria": "Navigation",
     "home": "Home",
-    "joinGames": "Join Games"
+    "joinGames": "Join Games",
+    "feed": "Feed"
   },
   "footer": {
     "termsLink": "Terms of use"
@@ -188,7 +189,8 @@
     "submitText": "Enter your desired callsign and submit it for admin review.",
     "submit": "Submit rename request",
     "submitting": "Submitting...",
-    "successText": "Request submitted. You'll be notified by admins (out of band) once a decision is made.",
+    "successText": "We’ve received your rename request. An administrator will review it as soon as possible. You can keep using the site with your current callsign; once approved, the new callsign will be applied automatically.",
+    "successLinkLabel": "Back to home page",
     "errorNotSignedIn": "You need to sign in with Steam to submit a rename request.",
     "errorRenameNotRequired": "Rename is not required for your account.",
     "errorDuplicatePending": "You already have a pending rename request.",
@@ -346,7 +348,7 @@
       "line1": "Good news — your Triad Tactics application has been approved.",
       "line2": "Please visit {websiteUrl} and sign in with Steam to check your access.",
       "line3": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
-      "line4": "If you have any questions, reply to this email and we’ll help.",
+      "line4": "Please do not reply to this email. If you have questions, write directly in our Telegram channel or Discord — we’ll try to help.",
       "signature": "— Triad Tactics"
     },
     "applicationApprovedRenameRequired": {
@@ -356,9 +358,15 @@
       "line2": "Before you can join sessions, we need you to update your callsign.",
       "line3": "Please visit {websiteUrl} and change your callsign.",
       "line4": "On the home page you’ll find our Discord and Telegram — please join them to get announcements and schedules.",
-      "line5": "If you have any questions, reply to this email and we’ll help.",
+      "line5": "Please do not reply to this email. If you have questions, write directly in our Telegram channel or Discord — we’ll try to help.",
       "signature": "— Triad Tactics"
     }
+  },
+  "feed": {
+    "title": "Feed",
+    "subtitle": "Member updates and announcements",
+    "notice": "This part of the website is still in development.",
+    "joinPrompt": "In the meantime, please join our Discord or Telegram to get updates and schedules."
   },
   "welcome": {
     "applyButton": "Join Games",
