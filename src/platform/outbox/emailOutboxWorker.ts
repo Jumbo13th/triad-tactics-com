@@ -4,19 +4,18 @@ import {
 	markEmailOutboxFailed,
 	markEmailOutboxGiveUp,
 	markEmailOutboxSent,
-	type ApprovalEmailPayload
+	type OutboxEmailPayload
 } from './emailOutbox';
-import { sendApplicationApprovedEmail } from '@/platform/email/brevo';
-import { markApprovalEmailSent } from '@/features/apply/infra/sqliteApplications';
+import { sendOutboxEmail } from '@/platform/email/brevo';
 import { createRequestId, errorToLogObject, logger } from '@/platform/logger';
 
 let started = false;
 
-function parsePayload(raw: string): ApprovalEmailPayload | null {
+function parsePayload<T>(raw: string): T | null {
 	try {
 		const parsed = JSON.parse(raw) as unknown;
 		if (!parsed || typeof parsed !== 'object') return null;
-		return parsed as ApprovalEmailPayload;
+		return parsed as T;
 	} catch {
 		return null;
 	}
@@ -61,21 +60,24 @@ async function processBatch() {
 			outboxId: row.id,
 			outboxType: row.type,
 			attempts: row.attempts,
-			applicationId: row.application_id ?? undefined
+			userId: row.user_id ?? undefined
 		});
-		const payload = parsePayload(row.payload);
-		if (!payload) {
-			rowLog.warn('email_outbox_invalid_payload');
-			markEmailOutboxGiveUp(row.id, row.attempts + 1, 'invalid_payload', 'Failed to parse JSON payload');
-			continue;
-		}
-
 		try {
 			const sendStartedAt = Date.now();
+			const payload = parsePayload<OutboxEmailPayload>(row.payload);
+			if (!payload || !payload.toEmail || !payload.subject || !payload.textContent) {
+				rowLog.warn('email_outbox_invalid_payload');
+				markEmailOutboxGiveUp(
+					row.id,
+					row.attempts + 1,
+					'invalid_payload',
+					'Missing required email fields'
+				);
+				continue;
+			}
 			rowLog.debug({ ...summarizeEmail(payload.toEmail) }, 'email_outbox_send_start');
-			const result = await sendApplicationApprovedEmail(payload);
+			const result = await sendOutboxEmail(payload);
 			if (result.ok) {
-				markApprovalEmailSent(payload.applicationId);
 				const markResult = markEmailOutboxSent(row.id);
 				const durationMs = Date.now() - sendStartedAt;
 				rowLog.info({ durationMs }, 'email_outbox_send_success');
@@ -87,7 +89,12 @@ async function processBatch() {
 
 			const nextAttemptAt = computeNextAttempt(row.attempts + 1);
 			if (!nextAttemptAt) {
-				const markResult = markEmailOutboxGiveUp(row.id, row.attempts + 1, result.error, result.details);
+				const markResult = markEmailOutboxGiveUp(
+					row.id,
+					row.attempts + 1,
+					result.error,
+					result.details
+				);
 				rowLog.warn({ error: result.error, details: result.details }, 'email_outbox_give_up');
 				if (!markResult.success) {
 					rowLog.error('email_outbox_mark_giveup_failed');

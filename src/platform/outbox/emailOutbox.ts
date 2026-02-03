@@ -2,19 +2,18 @@ import { createHash } from 'node:crypto';
 import { getDb } from '@/platform/db/connection';
 import { errorToLogObject, logger } from '@/platform/logger';
 
-export type ApprovalEmailPayload = {
+export type OutboxEmailPayload = {
 	toEmail: string;
 	toName?: string | null;
-	callsign?: string | null;
-	locale?: string | null;
-	renameRequired?: boolean;
-	applicationId: number;
+	subject: string;
+	textContent: string;
+	tags?: string[];
 };
 
 export type EmailOutboxRow = {
 	id: number;
-	type: 'application_approved';
-	application_id: number | null;
+	type: string;
+	user_id: number | null;
 	payload: string;
 	attempts: number;
 	last_error: string | null;
@@ -38,20 +37,28 @@ function summarizeEmail(email?: string | null) {
 	};
 }
 
-export function enqueueApplicationApprovedEmail(payload: ApprovalEmailPayload): EnqueueResult {
+export function enqueueOutboxEmail(input: {
+	userId?: number | null;
+	type?: string;
+	payload: OutboxEmailPayload;
+}): EnqueueResult {
 	const db = getDb();
 	const log = logger.child({
-		outboxType: 'application_approved',
-		applicationId: payload.applicationId,
-		...summarizeEmail(payload.toEmail)
+		outboxType: input.type ?? 'generic',
+		userId: input.userId ?? null,
+		...summarizeEmail(input.payload.toEmail)
 	});
 	const stmt = db.prepare(`
-		INSERT INTO email_outbox (type, application_id, payload, status)
+		INSERT INTO email_outbox (type, user_id, payload, status)
 		VALUES (?, ?, ?, 'pending')
 	`);
 
 	try {
-		stmt.run('application_approved', payload.applicationId, JSON.stringify(payload));
+		stmt.run(
+			input.type ?? 'generic',
+			input.userId ?? null,
+			JSON.stringify(input.payload)
+		);
 		log.info('email_outbox_enqueue_success');
 		return { success: true };
 	} catch (error: unknown) {
@@ -69,7 +76,7 @@ export function claimPendingEmailOutbox(limit: number): EmailOutboxRow[] {
 	const db = getDb();
 	const now = new Date().toISOString();
 	const selectStmt = db.prepare(`
-		SELECT id, type, application_id, payload, attempts, last_error
+		SELECT id, type, user_id, payload, attempts, last_error
 		FROM email_outbox
 		WHERE status = 'pending'
 			AND (next_attempt_at IS NULL OR next_attempt_at <= ?)

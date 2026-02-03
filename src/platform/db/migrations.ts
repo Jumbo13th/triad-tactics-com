@@ -261,5 +261,91 @@ export const migrations: Migration[] = [
 				ON email_outbox(type, application_id)
 				WHERE status IN ('pending', 'processing');
 		`
+	},
+	{
+		id: 5,
+		name: 'email_outbox_allow_multiple_per_application',
+		up: `
+			DROP INDEX IF EXISTS idx_email_outbox_pending_unique;
+
+			-- Mark legacy pending outbox rows as failed if they lack the new subject/textContent fields.
+			UPDATE email_outbox
+			SET status = 'failed',
+				last_error = 'schema_mismatch',
+				last_error_details = 'Outbox payload missing subject/textContent after schema change',
+				updated_at = CURRENT_TIMESTAMP
+			WHERE status IN ('pending', 'processing')
+				AND (
+					json_type(payload, '$.subject') IS NULL
+					OR json_type(payload, '$.textContent') IS NULL
+				);
+
+			ALTER TABLE email_outbox ADD COLUMN user_id INTEGER;
+			UPDATE email_outbox
+			SET user_id = (
+				SELECT a.user_id
+				FROM applications a
+				WHERE a.id = email_outbox.application_id
+				LIMIT 1
+			)
+			WHERE user_id IS NULL AND application_id IS NOT NULL;
+
+			CREATE TABLE IF NOT EXISTS email_outbox_new (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				type TEXT NOT NULL,
+				user_id INTEGER,
+				payload TEXT NOT NULL,
+				status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'sent', 'failed')),
+				attempts INTEGER NOT NULL DEFAULT 0,
+				last_error TEXT,
+				last_error_details TEXT,
+				next_attempt_at DATETIME,
+				processing_at DATETIME,
+				sent_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);
+
+			INSERT INTO email_outbox_new (
+				id,
+				type,
+				user_id,
+				payload,
+				status,
+				attempts,
+				last_error,
+				last_error_details,
+				next_attempt_at,
+				processing_at,
+				sent_at,
+				created_at,
+				updated_at
+			)
+			SELECT
+				id,
+				type,
+				user_id,
+				payload,
+				status,
+				attempts,
+				last_error,
+				last_error_details,
+				next_attempt_at,
+				processing_at,
+				sent_at,
+				created_at,
+				updated_at
+			FROM email_outbox;
+
+			DROP TABLE email_outbox;
+			ALTER TABLE email_outbox_new RENAME TO email_outbox;
+
+			CREATE INDEX IF NOT EXISTS idx_email_outbox_status
+				ON email_outbox(status, next_attempt_at);
+			CREATE INDEX IF NOT EXISTS idx_email_outbox_type
+				ON email_outbox(type);
+			CREATE INDEX IF NOT EXISTS idx_email_outbox_user_id
+				ON email_outbox(user_id);
+		`
 	}
 ];

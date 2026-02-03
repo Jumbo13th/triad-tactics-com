@@ -19,6 +19,23 @@ export type ApprovalEmailInput = {
 	renameRequired?: boolean;
 };
 
+export type ApprovedBroadcastInput = {
+	toEmail: string;
+	toName?: string | null;
+	callsign?: string | null;
+	locale?: string | null;
+	subjectTemplate: string;
+	bodyTemplate: string;
+};
+
+export type OutboxEmailInput = {
+	toEmail: string;
+	toName?: string | null;
+	subject: string;
+	textContent: string;
+	tags?: string[];
+};
+
 type BrevoSendResult =
 	| { ok: true; skipped?: boolean }
 	| { ok: false; error: 'send_failed'; details?: string };
@@ -126,6 +143,22 @@ export async function buildApprovalContent(input: ApprovalEmailInput) {
 	return { subject: formatTemplate(subject, params), textContent };
 }
 
+export function buildApprovedBroadcastContent(input: ApprovedBroadcastInput) {
+	const name = input.toName?.trim() || input.callsign?.trim() || 'there';
+	const callsign = input.callsign?.trim() || input.toName?.trim() || 'there';
+	const siteUrl = 'https://triad-tactics.com';
+	const params = {
+		name,
+		callsign,
+		websiteUrl: siteUrl
+	};
+
+	const subject = formatTemplate(input.subjectTemplate, params).trim();
+	const textContent = formatTemplate(input.bodyTemplate, params).trim();
+
+	return { subject, textContent };
+}
+
 export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): Promise<BrevoSendResult> {
 	if (process.env.NODE_ENV === 'test') return { ok: true, skipped: true };
 
@@ -155,6 +188,51 @@ export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): P
 	message.sender = { name: config.senderName, email: config.senderEmail };
 	message.to = [{ email: input.toEmail, name: input.toName ?? undefined }];
 	message.tags = ['application-approved'];
+	if (config.replyToEmail) {
+		message.replyTo = { email: config.replyToEmail, name: config.senderName };
+	}
+
+	try {
+		const response = await emailApi.sendTransacEmail(message);
+		const durationMs = Date.now() - startedAt;
+		log.info({ durationMs, brevoResponse: response?.body ?? undefined }, 'brevo_send_success');
+		return { ok: true };
+	} catch (error: unknown) {
+		const durationMs = Date.now() - startedAt;
+		const details = JSON.stringify(errorToLogObject(error));
+		log.error({ ...errorToLogObject(error), durationMs }, 'brevo_send_failed');
+		return { ok: false, error: 'send_failed', details };
+	}
+}
+
+export async function sendOutboxEmail(input: OutboxEmailInput): Promise<BrevoSendResult> {
+	if (process.env.NODE_ENV === 'test') return { ok: true, skipped: true };
+
+	const startedAt = Date.now();
+	const config = getBrevoConfig();
+	const ctx = getRequestContext();
+	const log = logger.child({
+		requestId: ctx?.requestId,
+		route: ctx?.route,
+		provider: 'brevo',
+		template: 'outbox',
+		recipient: summarizeRecipient(input.toEmail),
+		senderDomain: getEmailDomain(config.senderEmail)
+	});
+
+	const emailApi = new TransactionalEmailsApi();
+	emailApi.authentications.apiKey.apiKey = config.apiKey;
+
+	const subject = input.subject.trim();
+	const textContent = input.textContent.trim();
+	log.info({ subjectLength: subject.length, bodyLength: textContent.length }, 'brevo_send_start');
+
+	const message = new SendSmtpEmail();
+	message.subject = subject;
+	message.textContent = textContent;
+	message.sender = { name: config.senderName, email: config.senderEmail };
+	message.to = [{ email: input.toEmail, name: input.toName ?? undefined }];
+	if (input.tags?.length) message.tags = input.tags;
 	if (config.replyToEmail) {
 		message.replyTo = { email: config.replyToEmail, name: config.senderName };
 	}

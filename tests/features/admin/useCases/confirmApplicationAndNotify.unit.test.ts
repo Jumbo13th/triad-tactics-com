@@ -11,11 +11,11 @@ type OutboxRow = {
 	payload: string;
 };
 
-function getOutboxRowByApplicationId(applicationId: number): OutboxRow | undefined {
+function getOutboxRowByUserId(userId: number): OutboxRow | undefined {
 	const db = getDb();
 	return db
-		.prepare('SELECT id, payload FROM email_outbox WHERE application_id = ? ORDER BY id DESC LIMIT 1')
-		.get(applicationId) as OutboxRow | undefined;
+		.prepare('SELECT id, payload FROM email_outbox WHERE user_id = ? ORDER BY id DESC LIMIT 1')
+		.get(userId) as OutboxRow | undefined;
 }
 
 function countOutboxRows(): number {
@@ -41,6 +41,10 @@ describe('confirmApplicationAndNotify (mailing)', () => {
 		const inserted = insertApplication(record);
 		if (!inserted.success) throw new Error('Failed to insert application');
 		const applicationId = Number(inserted.id);
+		const userRow = getDb().prepare('SELECT user_id FROM applications WHERE id = ?').get(applicationId) as {
+			user_id: number | null;
+		};
+		const userId = userRow.user_id ?? applicationId;
 
 		const result = await confirmApplicationAndNotify(confirmApplicationAndNotifyDeps, {
 			applicationId,
@@ -48,13 +52,13 @@ describe('confirmApplicationAndNotify (mailing)', () => {
 		});
 
 		expect(result.ok).toBe(true);
-		const row = getOutboxRowByApplicationId(applicationId);
+		const row = getOutboxRowByUserId(userId);
 		expect(row).toBeDefined();
 
 		const payload = JSON.parse(row?.payload ?? '{}') as Record<string, unknown>;
 		expect(payload.toEmail).toBe('applicant@example.com');
-		expect(payload.callsign).toBe('Ghost');
-		expect(payload.renameRequired).toBe(false);
+		expect(typeof payload.subject).toBe('string');
+		expect(typeof payload.textContent).toBe('string');
 	});
 
 	it('does not enqueue when email is missing', async () => {
@@ -74,6 +78,32 @@ describe('confirmApplicationAndNotify (mailing)', () => {
 		});
 
 		expect(result.ok).toBe(true);
+		expect(countOutboxRows()).toBe(0);
+	});
+
+	it('returns database_error when user_id is missing', async () => {
+		const record = buildTestApplicationRecord({
+			email: 'missing-user@example.com',
+			steamid64: '76561198077777777',
+			callsign: 'NoUserId'
+		});
+
+		const inserted = insertApplication(record);
+		if (!inserted.success) throw new Error('Failed to insert application');
+		const applicationId = Number(inserted.id);
+
+		const db = getDb();
+		db.prepare('UPDATE applications SET user_id = NULL WHERE id = ?').run(applicationId);
+
+		const result = await confirmApplicationAndNotify(confirmApplicationAndNotifyDeps, {
+			applicationId,
+			confirmedBySteamId64: '76561198012345678'
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toBe('database_error');
+		}
 		expect(countOutboxRows()).toBe(0);
 	});
 

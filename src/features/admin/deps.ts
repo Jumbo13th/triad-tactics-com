@@ -1,7 +1,8 @@
 import {
 	countApplicationsByStatus,
 	getApplicationsByStatus,
-	getById as getApplicationById
+	getById as getApplicationById,
+	markApprovalEmailSent
 } from '@/features/apply/infra/sqliteApplications';
 import {
 	clearUserRenameRequiredBySteamId64,
@@ -21,7 +22,8 @@ import type {
 	ListUsersDeps,
 	RenameRequiredDeps
 } from './ports';
-import { enqueueApplicationApprovedEmail } from '@/platform/outbox/emailOutbox';
+import { enqueueOutboxEmail } from '@/platform/outbox/emailOutbox';
+import { buildApprovalContent, buildApprovedBroadcastContent } from '@/platform/email/brevo';
 
 export const listApplicationsDeps: ListApplicationsDeps = {
 	repo: {
@@ -35,10 +37,27 @@ export const confirmApplicationAndNotifyDeps: ConfirmApplicationAndNotifyDeps = 
 		confirmApplication
 	},
 	applications: {
-		getApplicationById
+		getApplicationById,
+		markApprovalEmailSent
 	},
 	outbox: {
-		enqueueApplicationApproved: enqueueApplicationApprovedEmail
+		enqueueOutboxEmail
+	},
+	email: {
+		buildApprovalContent
+	}
+};
+
+export const sendMailingDeps = {
+	repo: {
+		getApplicationsByStatus,
+		countApplicationsByStatus
+	},
+	outbox: {
+		enqueueOutboxEmail
+	},
+	email: {
+		buildApprovedBroadcastContent
 	}
 };
 
