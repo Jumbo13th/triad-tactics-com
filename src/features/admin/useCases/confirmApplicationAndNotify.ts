@@ -15,9 +15,9 @@ export async function confirmApplicationAndNotify(
 	if (!result.success) return { ok: false, error: result.error };
 
 	if (!application || !shouldNotify) return { ok: true };
+	if (application.user_id == null) return { ok: false, error: 'database_error' };
 
-	const queued = deps.outbox.enqueueApplicationApproved({
-		applicationId: application.id ?? input.applicationId,
+	const { subject, textContent } = await deps.email.buildApprovalContent({
 		toEmail: application.email,
 		toName: application.answers?.name || undefined,
 		callsign: application.answers?.callsign || undefined,
@@ -25,7 +25,24 @@ export async function confirmApplicationAndNotify(
 		renameRequired: input.renameRequired ?? false
 	});
 
+	const queued = deps.outbox.enqueueOutboxEmail({
+		userId: application.user_id,
+		type: 'application_approved',
+		payload: {
+			toEmail: application.email,
+			toName: application.answers?.name || undefined,
+			subject,
+			textContent,
+			tags: ['application-approved']
+		}
+	});
+
 	if (!queued.success && queued.error !== 'duplicate') {
+		return { ok: false, error: 'database_error' };
+	}
+
+	const markResult = deps.applications.markApprovalEmailSent(application.id ?? input.applicationId);
+	if (!markResult.success) {
 		return { ok: false, error: 'database_error' };
 	}
 

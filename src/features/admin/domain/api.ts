@@ -124,6 +124,14 @@ const adminRenameRequestsSuccessSchema = z.object({
 	renameRequests: z.array(adminRenameRequestRowSchema)
 });
 
+const adminMailingSuccessSchema = z.object({
+	success: z.literal(true),
+	total: z.number(),
+	queued: z.number(),
+	skippedNoEmail: z.number(),
+	skippedDuplicate: z.number()
+});
+
 const adminErrorSchema = z.object({
 	error: z.string()
 });
@@ -138,6 +146,16 @@ export type AdminUsersView =
 
 export type AdminRenameRequestsView =
 	| { success: true; count: number; renameRequests: AdminRenameRequestRow[] }
+	| { error: string };
+
+export type AdminMailingResult =
+	| {
+			success: true;
+			total: number;
+			queued: number;
+			skippedNoEmail: number;
+			skippedDuplicate: number;
+	  }
 	| { error: string };
 
 export function parseAdminApplicationsResponse(input: unknown): AdminApplicationsView | null {
@@ -166,6 +184,18 @@ export function parseAdminUsersResponse(input: unknown): AdminUsersView | null {
 
 export function parseAdminRenameRequestsResponse(input: unknown): AdminRenameRequestsView | null {
 	const success = adminRenameRequestsSuccessSchema.safeParse(input);
+	if (success.success) {
+		return success.data;
+	}
+	const error = adminErrorSchema.safeParse(input);
+	if (error.success) {
+		return error.data;
+	}
+	return null;
+}
+
+export function parseAdminMailingResponse(input: unknown): AdminMailingResult | null {
+	const success = adminMailingSuccessSchema.safeParse(input);
 	if (success.success) {
 		return success.data;
 	}

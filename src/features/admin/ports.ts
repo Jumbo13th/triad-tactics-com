@@ -18,22 +18,46 @@ export type ListApplicationsDeps = {
 };
 
 export type EmailOutboxPort = {
-	enqueueApplicationApproved: (input: {
-		applicationId: number;
-		toEmail: string;
-		toName?: string | null;
-		callsign?: string | null;
-		locale?: string | null;
-		renameRequired?: boolean;
+	enqueueOutboxEmail: (input: {
+		userId?: number | null;
+		type?: string;
+		payload: {
+			toEmail: string;
+			toName?: string | null;
+			subject: string;
+			textContent: string;
+			tags?: string[];
+		};
 	}) => { success: true } | { success: false; error: 'duplicate' | 'database_error' };
 };
+
+export type ApprovalEmailBuilder = (input: {
+	toEmail: string;
+	toName?: string | null;
+	callsign?: string | null;
+	locale?: string | null;
+	renameRequired?: boolean;
+}) => Promise<{ subject: string; textContent: string }>;
+
+export type ApprovedBroadcastBuilder = (input: {
+	toEmail: string;
+	toName?: string | null;
+	callsign?: string | null;
+	locale?: string | null;
+	subjectTemplate: string;
+	bodyTemplate: string;
+}) => { subject: string; textContent: string };
 
 export type ConfirmApplicationAndNotifyDeps = {
 	repo: AdminConfirmRepo;
 	applications: {
 		getApplicationById: (applicationId: number) => Application | null;
+		markApprovalEmailSent: (applicationId: number) => { success: true; changes: number } | { success: false; error: 'database_error' };
 	};
 	outbox: EmailOutboxPort;
+	email: {
+		buildApprovalContent: ApprovalEmailBuilder;
+	};
 };
 
 export type AdminUserRenameRepo = {
@@ -80,4 +104,12 @@ export type AdminRenameRequestsRepo = {
 
 export type ListRenameRequestsDeps = {
 	repo: AdminRenameRequestsRepo;
+};
+
+export type SendMailingDeps = {
+	repo: AdminApplicationsRepo;
+	outbox: EmailOutboxPort;
+	email: {
+		buildApprovedBroadcastContent: ApprovedBroadcastBuilder;
+	};
 };
