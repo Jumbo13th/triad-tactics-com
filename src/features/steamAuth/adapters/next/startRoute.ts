@@ -4,7 +4,7 @@ import { startSteamLogin } from '@/features/steamAuth/useCases/startSteamLogin';
 import { getRequestOrigin } from './origin';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 3; // 3 days
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 10; // 10 days
 
 export async function getSteamStartRoute(request: NextRequest): Promise<NextResponse> {
 	const origin = getRequestOrigin(request);

@@ -91,7 +91,7 @@
     "signInSteam": "Увійти через Steam",
     "steamAuthProviderWarningTitle": "Авторизація може тривати довше",
     "steamAuthProviderWarningBody": "Залежно від стану провайдера Steam та вашого з'єднання, вхід може зайняти більше часу.",
-    "steamAuthProviderWarningVpn": "Якщо очікування триває більше кількох хвилин, спробуйте VPN і повторіть вхід.",
+    "steamAuthProviderWarningVpn": "Якщо очікування триває більше 10 хвилин, спробуйте VPN і повторіть вхід.",
     "signOut": "Вийти",
     "signingOut": "Вихід...",
     "signedInAs": "Ви увійшли як {name}",

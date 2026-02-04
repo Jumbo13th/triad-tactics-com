@@ -91,7 +91,7 @@
     "signInSteam": "Sign in with Steam",
     "steamAuthProviderWarningTitle": "Authorization may take a while",
     "steamAuthProviderWarningBody": "Depending on the Steam provider status and your connection, the sign-in process can take longer than usual.",
-    "steamAuthProviderWarningVpn": "If it’s lagging for more than a couple of minutes, try a VPN and retry the login.",
+    "steamAuthProviderWarningVpn": "If it's lagging for more than 10 minutes, try a VPN and retry the login.",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
     "signedInAs": "Signed in as {name}",
