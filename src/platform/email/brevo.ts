@@ -22,25 +22,40 @@ export function buildRecipient(email: string, name?: string | null): BrevoRecipi
 	return { email };
 }
 
+const BREVO_TIMEOUT_MS = 10_000;
+
 async function sendBrevoEmail(
 	apiKey: string,
 	payload: BrevoEmailPayload
 ): Promise<{ ok: true; body?: unknown } | { ok: false; status: number; body?: unknown }> {
-	const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-		method: 'POST',
-		headers: {
-			'api-key': apiKey,
-			'Content-Type': 'application/json; charset=utf-8',
-			Accept: 'application/json'
-		},
-		body: JSON.stringify(payload)
-	});
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), BREVO_TIMEOUT_MS);
 
-	const body = await response.json().catch(() => undefined);
-	if (response.ok) {
-		return { ok: true, body };
+	try {
+		const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+			method: 'POST',
+			headers: {
+				'api-key': apiKey,
+				'Content-Type': 'application/json; charset=utf-8',
+				Accept: 'application/json'
+			},
+			body: JSON.stringify(payload),
+			signal: controller.signal
+		});
+		clearTimeout(timeoutId);
+
+		const body = await response.json().catch(() => undefined);
+		if (response.ok) {
+			return { ok: true, body };
+		}
+		return { ok: false, status: response.status, body };
+	} catch (error) {
+		clearTimeout(timeoutId);
+		if (error instanceof Error && error.name === 'AbortError') {
+			return { ok: false, status: 408, body: { error: 'timeout' } };
+		}
+		return { ok: false, status: 500, body: { error: error instanceof Error ? error.message : 'unknown' } };
 	}
-	return { ok: false, status: response.status, body };
 }
 
 type BrevoConfig = {
