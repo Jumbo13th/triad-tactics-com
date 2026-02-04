@@ -35,6 +35,11 @@ describe('buildRecipient', () => {
 		expect(result).toEqual({ email: 'user@example.com' });
 		expect('name' in result).toBe(false);
 	});
+
+	it('trims whitespace from email', () => {
+		const result = buildRecipient('  user@example.com  ', 'John');
+		expect(result).toEqual({ email: 'user@example.com', name: 'John' });
+	});
 });
 
 describe('buildApprovalContent', () => {

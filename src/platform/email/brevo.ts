@@ -15,11 +15,12 @@ type BrevoEmailPayload = {
 };
 
 export function buildRecipient(email: string, name?: string | null): BrevoRecipient {
+	const trimmedEmail = email.trim();
 	const trimmedName = name?.trim();
 	if (trimmedName && trimmedName.length > 0) {
-		return { email, name: trimmedName };
+		return { email: trimmedEmail, name: trimmedName };
 	}
-	return { email };
+	return { email: trimmedEmail };
 }
 
 const BREVO_TIMEOUT_MS = 10_000;
