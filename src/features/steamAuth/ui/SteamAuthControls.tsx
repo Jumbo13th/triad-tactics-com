@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { usePathname } from '@/i18n/routing';
 import { useAdminStatus } from './useAdminStatus';
 import SteamSignInButton from './SteamSignInButton';
+import SteamAuthProviderWarning from './SteamAuthProviderWarning';
 
 function buildLocalizedPath(locale: string, pathname: string) {
 	const suffix = pathname === '/' ? '' : pathname;
@@ -149,6 +150,7 @@ function SteamLoginModalButton({ redirectPath }: { redirectPath: string }) {
 							</div>
 
 							<div className="mt-6 flex flex-col items-center justify-center gap-2">
+								<SteamAuthProviderWarning />
 								<SteamSignInButton
 									redirectPath={redirectPath}
 									ariaLabel={t('signInSteam')}
