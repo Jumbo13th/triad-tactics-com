@@ -1,7 +1,8 @@
 import Image from 'next/image';
-import { SteamAuthControls } from '@/features/steamAuth/ui/root';
+import {SteamAuthControls} from '@/features/steamAuth/ui/root';
 import { Link } from '@/i18n/routing';
 import SiteNavBar from './SiteNavBar';
+import PrimaryActionButton from "@/features/appShell/ui/PrimaryActionButton";
 
 type SiteHeaderProps = {
   homeAriaLabel: string;
@@ -47,16 +48,7 @@ export default function SiteHeader({ homeAriaLabel, title, subtitle, primaryActi
 
               <p className="mt-1.5 text-base text-neutral-200/90">{subtitle}</p>
 
-              {primaryAction ? (
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <Link
-                    href={primaryAction.href}
-                    className="inline-flex w-fit items-center justify-center rounded-2xl bg-[color:var(--accent)] px-5 py-3 text-base font-semibold tracking-wide text-neutral-950 shadow-[0_18px_45px_rgba(0,0,0,0.6)] hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
-                  >
-                    {primaryAction.label}
-                  </Link>
-                </div>
-              ) : null}
+              <PrimaryActionButton primaryAction={primaryAction} />
             </div>
           </div>
 
