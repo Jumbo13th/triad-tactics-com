@@ -22,16 +22,7 @@ function assertIncludes(haystack: string, needle: string, label: string) {
 }
 
 function assertNoCyrillicCorruption(text: string) {
-	// Detect common UTF-8 mojibake patterns (Cyrillic interpreted as Latin-1/CP1252)
-	// When UTF-8 Cyrillic (2 bytes per char) is decoded as Latin-1, you get sequences like:
-	// - "╨" (U+2550) followed by various box-drawing or extended Latin chars
-	// - "Ð" (U+00D0) followed by extended Latin chars
-	// These patterns should never appear in properly encoded Russian text
-	const corruptionIndicators = [
-		'╨', // Box drawing character that appears in corrupted UTF-8
-		'╤', // Another box drawing character from corruption
-		'Ã', // Common Latin-1 misinterpretation prefix
-	];
+	const corruptionIndicators = ['╨', '╤', 'Ã'];
 	for (const indicator of corruptionIndicators) {
 		if (text.includes(indicator)) {
 			throw new Error(`Canary preflight failed: detected Cyrillic encoding corruption (mojibake) in text - found "${indicator}"`);

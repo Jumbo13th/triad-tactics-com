@@ -3,14 +3,24 @@ import { errorToLogObject, logger } from '@/platform/logger';
 import { defaultLocale, isAppLocale } from '@/i18n/locales';
 import { getRequestContext } from '@/platform/requestContext';
 
+type BrevoRecipient = { email: string; name?: string };
+
 type BrevoEmailPayload = {
 	sender: { name: string; email: string };
-	to: Array<{ email: string; name?: string }>;
+	to: BrevoRecipient[];
 	subject: string;
 	textContent: string;
 	replyTo?: { email: string; name: string };
 	tags?: string[];
 };
+
+export function buildRecipient(email: string, name?: string | null): BrevoRecipient {
+	const trimmedName = name?.trim();
+	if (trimmedName && trimmedName.length > 0) {
+		return { email, name: trimmedName };
+	}
+	return { email };
+}
 
 async function sendBrevoEmail(
 	apiKey: string,
@@ -208,9 +218,10 @@ export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): P
 	const { subject, textContent } = await buildApprovalContent(input);
 	log.info({ subjectLength: subject.length, bodyLength: textContent.length }, 'brevo_send_start');
 
+	const recipientName = input.toName?.trim() || input.callsign?.trim() || null;
 	const payload: BrevoEmailPayload = {
 		sender: { name: config.senderName, email: config.senderEmail },
-		to: [{ email: input.toEmail, name: input.toName ?? undefined }],
+		to: [buildRecipient(input.toEmail, recipientName)],
 		subject,
 		textContent,
 		tags: ['application-approved']
@@ -258,7 +269,7 @@ export async function sendOutboxEmail(input: OutboxEmailInput): Promise<BrevoSen
 
 	const payload: BrevoEmailPayload = {
 		sender: { name: config.senderName, email: config.senderEmail },
-		to: [{ email: input.toEmail, name: input.toName ?? undefined }],
+		to: [buildRecipient(input.toEmail, input.toName)],
 		subject,
 		textContent
 	};
