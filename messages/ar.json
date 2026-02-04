@@ -91,6 +91,7 @@
     "signInSteam": "تسجيل الدخول عبر Steam",
     "steamAuthProviderWarningTitle": "قد تستغرق عملية التفويض بعض الوقت",
     "steamAuthProviderWarningBody": "اعتمادًا على حالة مزوّد Steam واتصالك بالإنترنت، قد يستغرق تسجيل الدخول وقتًا أطول من المعتاد.",
+    "steamAuthProviderWarningVpn": "إذا استغرق الأمر أكثر من بضع دقائق، جرّب استخدام VPN ثم أعد محاولة تسجيل الدخول.",
     "signOut": "تسجيل الخروج",
     "signingOut": "جارٍ تسجيل الخروج...",
     "signedInAs": "تم تسجيل الدخول باسم {name}",

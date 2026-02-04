@@ -11,6 +11,9 @@ export default function SteamAuthProviderWarning() {
 			<p className="mt-1 text-xs text-amber-200/90">
 				{t('steamAuthProviderWarningBody')}
 			</p>
+			<p className="mt-2 text-xs text-amber-200/90">
+				{t('steamAuthProviderWarningVpn')}
+			</p>
 		</div>
 	);
 }
