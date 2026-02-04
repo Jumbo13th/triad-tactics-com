@@ -11,7 +11,9 @@ type PrimaryActionButtonProps = {
 export default function PrimaryActionButton ({primaryAction}: PrimaryActionButtonProps) {
     const steamStatus = useSteamStatus();
 
-    if (!primaryAction || steamStatus?.connected !== false) {
+    const isConfirmed = steamStatus.accessLevel ==='player' || steamStatus.accessLevel === 'admin';
+
+    if (!primaryAction || (steamStatus.connected && isConfirmed)) {
         return null;
     }
 
