@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
 	return (
 		<AdminSurface>
 			<AdminGate status={status} redirectPath={redirectPath} t={ta}>
-				<div className="grid gap-4">
+				<div className="grid gap-4 grid-cols-1">
 					<AdminToolbar
 						title={ta('usersTitle')}
 						countText={
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
 							{debouncedQuery.trim() ? ta('noMatchesUsers') : ta('noUsers')}
 						</p>
 					) : (
-						<div className="grid gap-3">
+						<div className="grid gap-3 grid-cols-1">
 							{renameError ? <p className="text-sm text-neutral-300">{ta('renameError')}</p> : null}
 							{users.users.map((row, idx) => {
 								const key = (row.id ?? idx).toString();
