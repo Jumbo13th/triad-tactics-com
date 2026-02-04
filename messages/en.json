@@ -89,6 +89,8 @@
   },
   "auth": {
     "signInSteam": "Sign in with Steam",
+    "steamAuthProviderWarningTitle": "Authorization may take a while",
+    "steamAuthProviderWarningBody": "Depending on the Steam provider status and your connection, the sign-in process can take longer than usual.",
     "signOut": "Sign out",
     "signingOut": "Signing out...",
     "signedInAs": "Signed in as {name}",

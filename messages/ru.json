@@ -89,6 +89,8 @@
   },
   "auth": {
     "signInSteam": "Войти через Steam",
+    "steamAuthProviderWarningTitle": "Авторизация может занять время",
+    "steamAuthProviderWarningBody": "В зависимости от статуса провайдера Steam и вашего соединения вход может занять больше времени.",
     "signOut": "Выйти",
     "signingOut": "Выходим...",
     "signedInAs": "Вы вошли как {name}",

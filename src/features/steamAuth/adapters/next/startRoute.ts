@@ -4,6 +4,8 @@ import { startSteamLogin } from '@/features/steamAuth/useCases/startSteamLogin';
 import { getRequestOrigin } from './origin';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 3; // 3 days
+
 export async function getSteamStartRoute(request: NextRequest): Promise<NextResponse> {
 	const origin = getRequestOrigin(request);
 	const redirectParam = request.nextUrl.searchParams.get('redirect');
@@ -18,7 +20,8 @@ export async function getSteamStartRoute(request: NextRequest): Promise<NextResp
 		httpOnly: true,
 		sameSite: 'lax',
 		secure: process.env.NODE_ENV === 'production',
-		path: '/'
+		path: '/',
+		maxAge: COOKIE_MAX_AGE,
 	});
 
 	return response;
