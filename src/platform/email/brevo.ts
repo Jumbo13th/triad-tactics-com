@@ -1,8 +1,63 @@
 import { createHash } from 'node:crypto';
-import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { defaultLocale, isAppLocale } from '@/i18n/locales';
 import { getRequestContext } from '@/platform/requestContext';
+
+type BrevoRecipient = { email: string; name?: string };
+
+type BrevoEmailPayload = {
+	sender: { name: string; email: string };
+	to: BrevoRecipient[];
+	subject: string;
+	textContent: string;
+	replyTo?: { email: string; name: string };
+	tags?: string[];
+};
+
+export function buildRecipient(email: string, name?: string | null): BrevoRecipient {
+	const trimmedEmail = email.trim();
+	const trimmedName = name?.trim();
+	if (trimmedName && trimmedName.length > 0) {
+		return { email: trimmedEmail, name: trimmedName };
+	}
+	return { email: trimmedEmail };
+}
+
+const BREVO_TIMEOUT_MS = 10_000;
+
+async function sendBrevoEmail(
+	apiKey: string,
+	payload: BrevoEmailPayload
+): Promise<{ ok: true; body?: unknown } | { ok: false; status: number; body?: unknown }> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), BREVO_TIMEOUT_MS);
+
+	try {
+		const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+			method: 'POST',
+			headers: {
+				'api-key': apiKey,
+				'Content-Type': 'application/json; charset=utf-8',
+				Accept: 'application/json'
+			},
+			body: JSON.stringify(payload),
+			signal: controller.signal
+		});
+		clearTimeout(timeoutId);
+
+		const body = await response.json().catch(() => undefined);
+		if (response.ok) {
+			return { ok: true, body };
+		}
+		return { ok: false, status: response.status, body };
+	} catch (error) {
+		clearTimeout(timeoutId);
+		if (error instanceof Error && error.name === 'AbortError') {
+			return { ok: false, status: 408, body: { error: 'timeout' } };
+		}
+		return { ok: false, status: 500, body: { error: error instanceof Error ? error.message : 'unknown' } };
+	}
+}
 
 type BrevoConfig = {
 	apiKey: string;
@@ -176,27 +231,31 @@ export async function sendApplicationApprovedEmail(input: ApprovalEmailInput): P
 		renameRequired: input.renameRequired ?? false
 	});
 
-	const emailApi = new TransactionalEmailsApi();
-	emailApi.authentications.apiKey.apiKey = config.apiKey;
-
 	const { subject, textContent } = await buildApprovalContent(input);
 	log.info({ subjectLength: subject.length, bodyLength: textContent.length }, 'brevo_send_start');
 
-	const message = new SendSmtpEmail();
-	message.subject = subject;
-	message.textContent = textContent;
-	message.sender = { name: config.senderName, email: config.senderEmail };
-	message.to = [{ email: input.toEmail, name: input.toName ?? undefined }];
-	message.tags = ['application-approved'];
+	const recipientName = input.toName?.trim() || input.callsign?.trim() || null;
+	const payload: BrevoEmailPayload = {
+		sender: { name: config.senderName, email: config.senderEmail },
+		to: [buildRecipient(input.toEmail, recipientName)],
+		subject,
+		textContent,
+		tags: ['application-approved']
+	};
 	if (config.replyToEmail) {
-		message.replyTo = { email: config.replyToEmail, name: config.senderName };
+		payload.replyTo = { email: config.replyToEmail, name: config.senderName };
 	}
 
 	try {
-		const response = await emailApi.sendTransacEmail(message);
+		const response = await sendBrevoEmail(config.apiKey, payload);
 		const durationMs = Date.now() - startedAt;
-		log.info({ durationMs, brevoResponse: response?.body ?? undefined }, 'brevo_send_success');
-		return { ok: true };
+		if (response.ok) {
+			log.info({ durationMs, brevoResponse: response.body }, 'brevo_send_success');
+			return { ok: true };
+		}
+		const details = JSON.stringify({ status: response.status, body: response.body });
+		log.error({ durationMs, status: response.status, body: response.body }, 'brevo_send_failed');
+		return { ok: false, error: 'send_failed', details };
 	} catch (error: unknown) {
 		const durationMs = Date.now() - startedAt;
 		const details = JSON.stringify(errorToLogObject(error));
@@ -220,28 +279,31 @@ export async function sendOutboxEmail(input: OutboxEmailInput): Promise<BrevoSen
 		senderDomain: getEmailDomain(config.senderEmail)
 	});
 
-	const emailApi = new TransactionalEmailsApi();
-	emailApi.authentications.apiKey.apiKey = config.apiKey;
-
 	const subject = input.subject.trim();
 	const textContent = input.textContent.trim();
 	log.info({ subjectLength: subject.length, bodyLength: textContent.length }, 'brevo_send_start');
 
-	const message = new SendSmtpEmail();
-	message.subject = subject;
-	message.textContent = textContent;
-	message.sender = { name: config.senderName, email: config.senderEmail };
-	message.to = [{ email: input.toEmail, name: input.toName ?? undefined }];
-	if (input.tags?.length) message.tags = input.tags;
+	const payload: BrevoEmailPayload = {
+		sender: { name: config.senderName, email: config.senderEmail },
+		to: [buildRecipient(input.toEmail, input.toName)],
+		subject,
+		textContent
+	};
+	if (input.tags?.length) payload.tags = input.tags;
 	if (config.replyToEmail) {
-		message.replyTo = { email: config.replyToEmail, name: config.senderName };
+		payload.replyTo = { email: config.replyToEmail, name: config.senderName };
 	}
 
 	try {
-		const response = await emailApi.sendTransacEmail(message);
+		const response = await sendBrevoEmail(config.apiKey, payload);
 		const durationMs = Date.now() - startedAt;
-		log.info({ durationMs, brevoResponse: response?.body ?? undefined }, 'brevo_send_success');
-		return { ok: true };
+		if (response.ok) {
+			log.info({ durationMs, brevoResponse: response.body }, 'brevo_send_success');
+			return { ok: true };
+		}
+		const details = JSON.stringify({ status: response.status, body: response.body });
+		log.error({ durationMs, status: response.status, body: response.body }, 'brevo_send_failed');
+		return { ok: false, error: 'send_failed', details };
 	} catch (error: unknown) {
 		const durationMs = Date.now() - startedAt;
 		const details = JSON.stringify(errorToLogObject(error));
