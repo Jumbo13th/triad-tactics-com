@@ -17,6 +17,7 @@ function getActiveAdminHref(pathname: string) {
 	if (pathname.startsWith('/admin/users')) return '/admin/users';
 	if (pathname.startsWith('/admin/rename-requests')) return '/admin/rename-requests';
 	if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
+	if (pathname.startsWith('/admin/content')) return '/admin/content';
 	return '/admin';
 }
 
@@ -95,7 +96,8 @@ export default function SiteNavBar() {
 										{ href: '/admin', label: ta('navApplications') },
 										{ href: '/admin/users', label: ta('navUsers') },
 										{ href: '/admin/rename-requests', label: ta('navRenameRequests') },
-										{ href: '/admin/mailing', label: ta('navMailing') }
+										{ href: '/admin/mailing', label: ta('navMailing') },
+										{ href: '/admin/content', label: ta('navContent') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);
 									return items.map((item) => (

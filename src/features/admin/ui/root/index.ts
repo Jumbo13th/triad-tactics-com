@@ -10,6 +10,7 @@ export * from './AdminDisclosure';
 export * from './AdminField';
 export { default as AdminPage } from '../AdminPage';
 export { default as AdminMailingPage } from '../AdminMailingPage';
+export { default as AdminContentPage } from '../AdminContentPage';
 export { default as AdminUsersPage } from '../AdminUsersPage';
 export { default as AdminRenameRequestsPage } from '../AdminRenameRequestsPage';
 export { default as AdminNav } from '../AdminNav';

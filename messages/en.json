@@ -104,6 +104,7 @@
     "navUsers": "Users",
     "navRenameRequests": "Rename requests",
     "navMailing": "Mailing",
+    "navContent": "Content",
     "title": "Admin",
     "subtitle": "Admin dashboard",
     "mailingTitle": "Mailing",
@@ -211,7 +212,25 @@
     "outboxRunSuccess": "Outbox processed.",
     "outboxRunError": "Couldn't run outbox. Please try again.",
     "outboxTitle": "Outbox runner",
-    "outboxHelp": "Manually process queued emails and retries."
+    "outboxHelp": "Manually process queued emails and retries.",
+    "contentTitle": "Content",
+    "contentSubtitle": "Manage public-facing site content.",
+    "contentUpcomingTitle": "Upcoming games widget",
+    "contentUpcomingEnabled": "Show upcoming games widget",
+    "contentUpcomingEnabledHelp": "Controls whether the widget is visible on the home page.",
+    "contentUpcomingStartsAt": "Start time",
+    "contentUpcomingStartsAtHelp": "Displayed in each viewer's local time.",
+    "contentUpcomingTextLabel": "Announcement text",
+    "contentUpcomingTextHelp": "Short copy shown below the countdown.",
+    "contentSave": "Save content",
+    "contentSaving": "Saving...",
+    "contentSaved": "Content updated.",
+    "contentSaveError": "Couldn't save content. Please try again.",
+    "contentLoadError": "Couldn't load content settings.",
+    "contentLocaleEn": "English",
+    "contentLocaleRu": "Russian",
+    "contentLocaleUk": "Ukrainian",
+    "contentLocaleAr": "Arabic"
   },
   "rename": {
     "title": "Rename required",
@@ -436,6 +455,20 @@
       "joinAction": "Join",
       "telegramLabel": "Telegram Channel",
       "discordLabel": "Discord Server"
+    },
+    "upcomingGames": {
+      "title": "Upcoming games",
+      "countdownTitle": "Next operation begins in",
+      "startsAtLabel": "Start time",
+      "localTimeHint": "Times shown in your local time zone ({timezone})",
+      "textFallback": "For more details, join our Discord or Telegram. Links are above.",
+      "liveLabel": "Live",
+      "units": {
+        "days": "Days",
+        "hours": "Hours",
+        "minutes": "Minutes",
+        "seconds": "Seconds"
+      }
     },
     "disclaimerTitle": "Important note",
     "disclaimerText": "Triad Tactics is a gaming project within Arma Reforger. We do not support, promote, or justify real-world war, violence, or hatred, and we do not create missions that depict ongoing real-world conflicts."

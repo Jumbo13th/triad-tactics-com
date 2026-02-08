@@ -1,9 +1,14 @@
 import { useTranslations } from 'next-intl';
 import { CommunityLinks, MediaStrip } from '@/features/welcome/ui/root';
 import type { MediaStripItem } from '@/features/welcome/ui/MediaStrip';
+import { getContentSettings } from '@/features/content/useCases/getContentSettings';
+import { getContentSettingsDeps } from '@/features/content/deps';
+import { UpcomingGamesWidget } from '@/features/content/ui/root';
 
 export default function WelcomePage() {
   const tw = useTranslations('welcome');
+  const content = getContentSettings(getContentSettingsDeps);
+  const upcomingGames = content.upcomingGames;
 
   const screenshots: MediaStripItem[] = [
     { type: 'image', src: '/screenshots/01.jpg', alt: tw('gallery.items.1.alt') },
@@ -22,6 +27,9 @@ export default function WelcomePage() {
           <CommunityLinks />
         </div>
       </div>
+      {upcomingGames.enabled && upcomingGames.startsAt ? (
+        <UpcomingGamesWidget startsAt={upcomingGames.startsAt} text={upcomingGames.text} />
+      ) : null}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
         <h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">{tw('aboutTitle')}</h2>
         <p className="mt-4 text-neutral-300">{tw('aboutP1')}</p>

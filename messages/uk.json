@@ -104,6 +104,7 @@
     "navUsers": "Користувачі",
     "navRenameRequests": "Запити на зміну позивного",
     "navMailing": "Розсилка",
+    "navContent": "Контент",
     "title": "Адмін",
     "subtitle": "Панель адміністратора",
     "mailingTitle": "Розсилка",
@@ -211,7 +212,25 @@
     "outboxRunSuccess": "Outbox оброблено.",
     "outboxRunError": "Не вдалося запустити outbox. Спробуйте ще раз.",
     "outboxTitle": "Запуск outbox",
-    "outboxHelp": "Вручну обробити чергу листів і повторні спроби."
+    "outboxHelp": "Вручну обробити чергу листів і повторні спроби.",
+    "contentTitle": "Контент",
+    "contentSubtitle": "Керування публічним контентом сайту.",
+    "contentUpcomingTitle": "Віджет найближчих ігор",
+    "contentUpcomingEnabled": "Показувати віджет найближчих ігор",
+    "contentUpcomingEnabledHelp": "Керує видимістю віджета на головній сторінці.",
+    "contentUpcomingStartsAt": "Час початку",
+    "contentUpcomingStartsAtHelp": "Показується в локальному часі кожного користувача.",
+    "contentUpcomingTextLabel": "Текст оголошення",
+    "contentUpcomingTextHelp": "Короткий текст під таймером.",
+    "contentSave": "Зберегти контент",
+    "contentSaving": "Збереження...",
+    "contentSaved": "Контент оновлено.",
+    "contentSaveError": "Не вдалося зберегти контент. Спробуйте ще раз.",
+    "contentLoadError": "Не вдалося завантажити налаштування контенту.",
+    "contentLocaleEn": "Англійська",
+    "contentLocaleRu": "Російська",
+    "contentLocaleUk": "Українська",
+    "contentLocaleAr": "Арабська"
   },
   "rename": {
     "title": "Потрібна зміна позивного",
@@ -436,6 +455,20 @@
       "joinAction": "Приєднатись",
       "telegramLabel": "Телеграм-канал",
       "discordLabel": "Сервер Discord"
+    },
+    "upcomingGames": {
+      "title": "Найближчі ігри",
+      "countdownTitle": "Наступна операція розпочнеться через",
+      "startsAtLabel": "Час початку",
+      "localTimeHint": "Час показано у вашому часовому поясі ({timezone})",
+      "textFallback": "Щоб дізнатися більше, приєднуйтесь до нашого Discord або Telegram — посилання вище.",
+      "liveLabel": "Зараз",
+      "units": {
+        "days": "Дні",
+        "hours": "Години",
+        "minutes": "Хвилини",
+        "seconds": "Секунди"
+      }
     },
     "disclaimerTitle": "Важливо",
     "disclaimerText": "Triad Tactics - виключно ігровий проєкт в межах Arma Reforger. Ми не підтримуємо, не пропагуємо й не виправдовуємо реальні війни, насильство або ненависть, а також не створюємо місії, що відтворюють поточні реальні конфлікти."
