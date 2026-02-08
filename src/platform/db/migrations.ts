@@ -347,5 +347,20 @@ export const migrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_email_outbox_user_id
 				ON email_outbox(user_id);
 		`
+	},
+	{
+		id: 6,
+		name: 'content_settings',
+		up: `
+			CREATE TABLE IF NOT EXISTS content_settings (
+				key TEXT PRIMARY KEY,
+				value TEXT,
+				updated_by TEXT,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_content_settings_updated_at
+				ON content_settings(updated_at);
+		`
 	}
 ];

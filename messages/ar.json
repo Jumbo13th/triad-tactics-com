@@ -104,6 +104,7 @@
     "navUsers": "المستخدمون",
     "navRenameRequests": "طلبات تغيير اسم النداء",
     "navMailing": "المراسلات",
+    "navContent": "المحتوى",
     "title": "الإدارة",
     "subtitle": "لوحة الإدارة",
     "mailingTitle": "المراسلات",
@@ -211,7 +212,25 @@
     "outboxRunSuccess": "تمت معالجة outbox.",
     "outboxRunError": "تعذر تشغيل outbox. حاول مرة أخرى.",
     "outboxTitle": "تشغيل outbox",
-    "outboxHelp": "معالجة الرسائل المعلّقة ومحاولات الإرسال يدويًا."
+    "outboxHelp": "معالجة الرسائل المعلّقة ومحاولات الإرسال يدويًا.",
+    "contentTitle": "المحتوى",
+    "contentSubtitle": "إدارة محتوى الموقع الظاهر للعامة.",
+    "contentUpcomingTitle": "ودجت الألعاب القادمة",
+    "contentUpcomingEnabled": "إظهار ودجت الألعاب القادمة",
+    "contentUpcomingEnabledHelp": "يتحكم في ظهور الودجت على الصفحة الرئيسية.",
+    "contentUpcomingStartsAt": "وقت البدء",
+    "contentUpcomingStartsAtHelp": "يُعرض حسب توقيت كل مستخدم المحلي.",
+    "contentUpcomingTextLabel": "نص الإعلان",
+    "contentUpcomingTextHelp": "نص قصير أسفل العد التنازلي.",
+    "contentSave": "حفظ المحتوى",
+    "contentSaving": "جارٍ الحفظ...",
+    "contentSaved": "تم تحديث المحتوى.",
+    "contentSaveError": "تعذر حفظ المحتوى. يرجى المحاولة مرة أخرى.",
+    "contentLoadError": "تعذر تحميل إعدادات المحتوى.",
+    "contentLocaleEn": "الإنجليزية",
+    "contentLocaleRu": "الروسية",
+    "contentLocaleUk": "الأوكرانية",
+    "contentLocaleAr": "العربية"
   },
   "rename": {
     "title": "مطلوب تغيير اسم النداء",
@@ -436,6 +455,20 @@
       "joinAction": "انضم",
       "telegramLabel": "قناة تيليجرام",
       "discordLabel": "خادم ديسكورد"
+    },
+    "upcomingGames": {
+      "title": "الألعاب القادمة",
+      "countdownTitle": "تبدأ العملية التالية خلال",
+      "startsAtLabel": "وقت البدء",
+      "localTimeHint": "يُعرض الوقت حسب منطقتك الزمنية المحلية ({timezone})",
+      "textFallback": "للمزيد من التفاصيل انضموا إلى Discord أو Telegram لدينا — الروابط بالأعلى.",
+      "liveLabel": "الآن",
+      "units": {
+        "days": "أيام",
+        "hours": "ساعات",
+        "minutes": "دقائق",
+        "seconds": "ثوانٍ"
+      }
     },
     "disclaimerTitle": "تنبيه مهم",
     "disclaimerText": "Triad Tactics هو مشروع ألعاب ومحاكاة خيالية ضمن Arma Reforger. نحن لا ندعم أو نروّج أو نبرّر الحروب الواقعية أو العنف أو الكراهية، كما أننا لا نصمّم مهاماً تُجسّد صراعات واقعية جارية."
