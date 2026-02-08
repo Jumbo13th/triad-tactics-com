@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import type { AppLocale } from '@/i18n/locales';
 
-function formatUnit(value: number) {
+function formatUnit(value: number | null) {
+	if (value === null) return '--';
 	return value.toString().padStart(2, '0');
 }
 
@@ -25,25 +26,27 @@ type UpcomingGamesWidgetProps = {
 export default function UpcomingGamesWidget({ startsAt, text }: UpcomingGamesWidgetProps) {
 	const t = useTranslations('welcome');
 	const locale = useLocale();
-	const [now, setNow] = useState(() => Date.now());
+	const [now, setNow] = useState<number | null>(null);
 
 	useEffect(() => {
+		setNow(Date.now());
 		const timer = window.setInterval(() => setNow(Date.now()), 1000);
 		return () => window.clearInterval(timer);
 	}, []);
 
 	const timeZone = useMemo(() => {
+		if (now === null) return null;
 		return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-	}, []);
+	}, [now]);
 
 	const startDate = useMemo(() => new Date(startsAt), [startsAt]);
 	const startValid = !Number.isNaN(startDate.getTime());
-	const diffMs = startValid ? startDate.getTime() - now : 0;
-	const countdown = toTimeParts(diffMs);
-	const isLive = diffMs <= 0;
+	const diffMs = now === null || !startValid ? null : startDate.getTime() - now;
+	const countdown = diffMs === null ? null : toTimeParts(diffMs);
+	const isLive = diffMs !== null && diffMs <= 0;
 
 	const formattedStart = useMemo(() => {
-		if (!startValid) return null;
+		if (!startValid || timeZone === null) return null;
 		return new Intl.DateTimeFormat(locale, {
 			dateStyle: 'full',
 			timeStyle: 'short',
@@ -54,10 +57,10 @@ export default function UpcomingGamesWidget({ startsAt, text }: UpcomingGamesWid
 	const bodyText = text[locale as AppLocale] || text.en || t('upcomingGames.textFallback');
 
 	const units = [
-		{ key: 'days', value: countdown.days, label: t('upcomingGames.units.days') },
-		{ key: 'hours', value: countdown.hours, label: t('upcomingGames.units.hours') },
-		{ key: 'minutes', value: countdown.minutes, label: t('upcomingGames.units.minutes') },
-		{ key: 'seconds', value: countdown.seconds, label: t('upcomingGames.units.seconds') }
+		{ key: 'days', value: countdown?.days ?? null, label: t('upcomingGames.units.days') },
+		{ key: 'hours', value: countdown?.hours ?? null, label: t('upcomingGames.units.hours') },
+		{ key: 'minutes', value: countdown?.minutes ?? null, label: t('upcomingGames.units.minutes') },
+		{ key: 'seconds', value: countdown?.seconds ?? null, label: t('upcomingGames.units.seconds') }
 	];
 
 	return (
@@ -101,15 +104,13 @@ export default function UpcomingGamesWidget({ startsAt, text }: UpcomingGamesWid
 					))}
 				</div>
 
-			<div className="inline-flex w-fit items-center rounded-full border border-neutral-800 bg-neutral-950/80 px-3 py-1 text-xs font-semibold text-neutral-300 self-start">
-				{formattedStart ? (
+			{formattedStart ? (
+				<div className="inline-flex w-fit items-center rounded-full border border-neutral-800 bg-neutral-950/80 px-3 py-1 text-xs font-semibold text-neutral-300 self-start">
 					<span>
 						{t('upcomingGames.startsAtLabel')}: {formattedStart}
 					</span>
-				) : (
-					<span>{t('upcomingGames.startsAtLabel')}</span>
-				)}
-			</div>
+				</div>
+			) : null}
 
 				{isLive ? (
 					<div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--accent)]">
@@ -118,10 +119,12 @@ export default function UpcomingGamesWidget({ startsAt, text }: UpcomingGamesWid
 					</div>
 				) : null}
 
-				<div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
-					<span className="inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--accent)]/70" />
-					<span>{t('upcomingGames.localTimeHint', { timezone: timeZone })}</span>
-				</div>
+				{timeZone ? (
+					<div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+						<span className="inline-flex h-1.5 w-1.5 rounded-full bg-[color:var(--accent)]/70" />
+						<span>{t('upcomingGames.localTimeHint', { timezone: timeZone })}</span>
+					</div>
+				) : null}
 
 				<div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
