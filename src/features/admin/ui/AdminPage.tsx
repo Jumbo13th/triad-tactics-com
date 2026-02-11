@@ -149,7 +149,7 @@ export default function AdminPage() {
 	return (
 		<AdminSurface>
 			<AdminGate status={status} redirectPath={redirectPath} t={ta}>
-				<div className="grid gap-4">
+				<div className="grid gap-4 grid-cols-1">
 					<AdminToolbar
 						title={ta('applicationsTitle')}
 						countText={
@@ -191,7 +191,7 @@ export default function AdminPage() {
 							{debouncedQuery.trim() ? ta('noMatches') : ta('noApplications')}
 						</p>
 					) : (
-						<div className="grid gap-3">
+						<div className="grid gap-3 grid-cols-1">
 							{confirmError ? <p className="text-sm text-neutral-300">{ta('confirmError')}</p> : null}
 							{confirmRenameError ? (
 								<p className="text-sm text-neutral-300">{ta('confirmRenameError')}</p>
