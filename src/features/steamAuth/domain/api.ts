@@ -10,6 +10,8 @@ const steamMeConnectedSchema = z.object({
 	steamid64: z.string(),
 	personaName: z.string().nullable(),
 	currentCallsign: z.string().nullable(),
+	playerConfirmed: sqliteBoolean,
+	discordId: z.string().nullable(),
 	hasExisting: sqliteBoolean,
 	submittedAt: z.string().nullable(),
 	renameRequired: sqliteBoolean,
@@ -27,6 +29,8 @@ export type SteamMeStatus =
 			steamid64: string;
 			personaName: string | null;
 			currentCallsign: string | null;
+			playerConfirmed: boolean;
+			discordId: string | null;
 			hasExisting: boolean;
 			submittedAt: string | null;
 			renameRequired: boolean;

@@ -8,6 +8,7 @@ const API_PREFIX = '/api/';
 const ADMIN_API_PREFIX = '/api/admin';
 const STEAM_AUTH_API_PREFIX = '/api/auth/steam/';
 const CALLSIGN_API_PREFIX = '/api/callsign/';
+const DISCORD_API_PREFIX = '/api/auth/discord';
 
 function jsonError(error: string, status: number): Response {
 	return NextResponse.json({ error }, { status });
@@ -35,6 +36,10 @@ function isSteamAuthApiPath(pathname: string): boolean {
 
 function isCallsignApiPath(pathname: string): boolean {
 	return pathname.startsWith(CALLSIGN_API_PREFIX);
+}
+
+function isDiscordApiPath(pathname: string): boolean {
+	return pathname.startsWith(DISCORD_API_PREFIX);
 }
 
 function getExpectedOrigin(request: NextRequest): string {
@@ -86,6 +91,7 @@ function enforceSameOriginForAdminMutations(request: NextRequest): Response | nu
 function isAllowedDuringRenameBlock(pathname: string): boolean {
 	// Allow Steam auth routes so the user can sign in/out.
 	if (isSteamAuthApiPath(pathname)) return true;
+	if (isDiscordApiPath(pathname)) return true;
 	// Allow submitting a rename request and checking callsign availability.
 	if (pathname === '/api/rename') return true;
 	if (isCallsignApiPath(pathname)) return true;
@@ -95,6 +101,7 @@ function isAllowedDuringRenameBlock(pathname: string): boolean {
 function isAllowedDuringApplyRequired(pathname: string): boolean {
 	// Allow Steam auth routes so the user can sign in/out.
 	if (isSteamAuthApiPath(pathname)) return true;
+	if (isDiscordApiPath(pathname)) return true;
 	// Allow application submission and callsign checks while filling the form.
 	if (pathname === '/api/submit') return true;
 	if (isCallsignApiPath(pathname)) return true;

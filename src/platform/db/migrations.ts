@@ -362,5 +362,14 @@ export const migrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_content_settings_updated_at
 				ON content_settings(updated_at);
 		`
+	},
+	{
+		id: 7,
+		name: 'discord_identity',
+		up: `
+			ALTER TABLE users ADD COLUMN discord_id TEXT;
+			ALTER TABLE users ADD COLUMN discord_token TEXT;
+			CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
+		`
 	}
 ];

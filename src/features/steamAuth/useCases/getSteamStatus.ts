@@ -8,6 +8,8 @@ export type SteamStatusResult =
       steamid64: string;
       personaName: string | null;
       currentCallsign: string | null;
+      playerConfirmed: boolean;
+      discordId: string | null;
       hasExisting: boolean;
       submittedAt: string | null;
       renameRequired: boolean;
@@ -40,12 +42,15 @@ export function getSteamStatus(deps: SteamAuthDeps, sid: string | null): SteamSt
     : user?.player_confirmed_at
       ? 'player'
       : 'guest';
+	const playerConfirmed = !!user?.player_confirmed_at;
 
   return {
     connected: true,
     steamid64: identity.steamid64,
     personaName: identity.personaName,
     currentCallsign: user?.current_callsign ?? null,
+    playerConfirmed,
+    discordId: user?.discord_id ?? null,
     hasExisting: !!existing,
     submittedAt: existing?.created_at ?? null,
     renameRequired,
