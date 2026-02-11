@@ -1,23 +1,27 @@
 'use client';
 
-import { useSteamStatus } from '@/features/steamAuth/ui/useSteamStatus';
+import { useTranslations } from 'next-intl';
+import { useUserStatus } from '@/features/users/ui/useUserStatus';
 import { DiscordLinkButton } from './DiscordLinkButton';
 
 export default function DiscordLinkGate() {
-	const status = useSteamStatus();
-
-	console.log(status);
+	const t = useTranslations('discordAuth');
+	const status = useUserStatus();
 
 	if (!status || !status.connected) return null;
-	// TODO сделать кнопку реюзабл
 	if (!status.playerConfirmed) return null;
-	// TODO i18n
+
 	return (
 		<DiscordLinkButton
+			className={
+				status.discordId
+					? 'border border-[#5865F2] bg-transparent text-[#5865F2] hover:bg-[#5865F2]/10'
+					: undefined
+			}
 			onClick={() => {
 				window.location.assign('/api/auth/discord/start/');
 			}}>
-			{status.discordId === null ? 'Привязать дискорд' : 'Перепривязать дискорд'}
+			{status.discordId ? t('relink') : t('link')}
 		</DiscordLinkButton>
 	);
 }

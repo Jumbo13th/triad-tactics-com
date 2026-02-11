@@ -7,3 +7,7 @@ export const BREVO_REPLY_TO_EMAIL: string | undefined = process.env.BREVO_REPLY_
 export const DISCORD_CLIENT_ID: string | undefined = process.env.DISCORD_CLIENT_ID;
 export const DISCORD_CLIENT_SECRET: string | undefined = process.env.DISCORD_CLIENT_SECRET;
 export const DISCORD_BOT_TOKEN: string | undefined = process.env.DISCORD_BOT_TOKEN;
+export const DISCORD_REDIRECT_URI: string | undefined = process.env.DISCORD_REDIRECT_URI;
+export const DISCORD_REDIRECT_URI_LOCAL: string | undefined = process.env.DISCORD_REDIRECT_URI_LOCAL;
+export const DISCORD_GUILD_ID: string | undefined = process.env.DISCORD_GUILD_ID;
+export const DISCORD_CONFIRMED_ROLE_ID: string | undefined = process.env.DISCORD_CONFIRMED_ROLE_ID;

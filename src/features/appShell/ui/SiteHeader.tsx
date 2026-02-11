@@ -54,8 +54,8 @@ export default function SiteHeader({ homeAriaLabel, title, subtitle, primaryActi
           </div>
 
           <div className="flex flex-col gap-3 sm:items-end">
-            <DiscordLinkGate />
             <SteamAuthControls />
+            <DiscordLinkGate />
           </div>
         </div>
       </div>

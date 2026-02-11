@@ -98,7 +98,11 @@
     "notAssociatedWithValve": "Цей сервіс не пов’язаний з Valve Corp.",
     "clickSteamButton": "Натисніть кнопку вище, щоб продовжити."
   },
-  "admin": {
+    "discordAuth": {
+      "link": "Прив'язати Discord",
+      "relink": "Переприв'язати Discord"
+    },
+    "admin": {
     "nav": "Адмін",
     "navApplications": "Заявки",
     "navUsers": "Користувачі",

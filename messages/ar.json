@@ -98,7 +98,11 @@
     "notAssociatedWithValve": "هذه الخدمة غير مرتبطة بشركة Valve Corp.",
     "clickSteamButton": "اضغط على الزر أعلاه للمتابعة."
   },
-  "admin": {
+    "discordAuth": {
+      "link": "ربط Discord",
+      "relink": "إعادة ربط Discord"
+    },
+    "admin": {
     "nav": "الإدارة",
     "navApplications": "الطلبات",
     "navUsers": "المستخدمون",

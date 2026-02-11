@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } from '@/platform/env';
+import {
+	DISCORD_BOT_TOKEN,
+	DISCORD_CLIENT_ID,
+	DISCORD_CLIENT_SECRET,
+	DISCORD_CONFIRMED_ROLE_ID,
+	DISCORD_GUILD_ID,
+	DISCORD_REDIRECT_URI,
+	DISCORD_REDIRECT_URI_LOCAL
+} from '@/platform/env';
 import { withApiGuards } from '@/platform/apiGates';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
@@ -7,11 +15,6 @@ import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { setDiscordIdentityByUserId } from '@/features/users/infra/sqliteUsers';
 import { getRequestOrigin } from '@/features/steamAuth/adapters/next/origin';
-
-const DISCORD_REDIRECT_URI = 'https://triad-tactics.com/api/auth/discord';
-const DISCORD_REDIRECT_URI_LOCAL = 'http://localhost:3000/api/auth/discord';
-const DISCORD_GUILD_ID = '1464208489361440790';
-const DISCORD_CONFIRMED_ROLE_ID = '1470739552204230840';
 
 type DiscordTokenResponse = {
 	access_token?: string;
@@ -23,6 +26,11 @@ type DiscordUserResponse = {
 	username?: string;
 };
 
+function getDiscordRedirectUri(): string | null {
+	const isDev = process.env.NODE_ENV !== 'production';
+	return isDev ? (DISCORD_REDIRECT_URI_LOCAL ?? null) : (DISCORD_REDIRECT_URI ?? null);
+}
+
 async function getDiscordCallbackRoute(request: NextRequest): Promise<NextResponse> {
 	try {
 		const code = request.nextUrl.searchParams.get('code');
@@ -30,24 +38,26 @@ async function getDiscordCallbackRoute(request: NextRequest): Promise<NextRespon
 			return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 		}
 
-		console.log('routeCode', code);
-
 		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value ?? null;
 		const identity = getSteamIdentity(steamAuthDeps, sid);
 		if (!identity.connected) {
 			return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 		}
 
-		console.log('routesid', sid);
-
 		const user = steamAuthDeps.users.getUserBySteamId64(identity.steamid64);
 		if (!user?.id || !user.player_confirmed_at) {
 			return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 		}
 
-		console.log('routeuser', user);
-
-		if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_BOT_TOKEN) {
+		const redirectUri = getDiscordRedirectUri();
+		if (
+			!DISCORD_CLIENT_ID ||
+			!DISCORD_CLIENT_SECRET ||
+			!DISCORD_BOT_TOKEN ||
+			!DISCORD_GUILD_ID ||
+			!DISCORD_CONFIRMED_ROLE_ID ||
+			!redirectUri
+		) {
 			logger.warn('discord_env_missing');
 			return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 		}
@@ -62,11 +72,9 @@ async function getDiscordCallbackRoute(request: NextRequest): Promise<NextRespon
 				client_secret: DISCORD_CLIENT_SECRET,
 				grant_type: 'authorization_code',
 				code,
-				redirect_uri: DISCORD_REDIRECT_URI_LOCAL, // TODO сделать зависимость от env
+				redirect_uri: redirectUri
 			})
 		});
-
-		console.log('routetokenRes', tokenRes);
 
 		if (!tokenRes.ok) {
 			logger.warn({ status: tokenRes.status }, 'discord_token_exchange_failed');
@@ -80,15 +88,11 @@ async function getDiscordCallbackRoute(request: NextRequest): Promise<NextRespon
 			return NextResponse.redirect(new URL('/', getRequestOrigin(request)));
 		}
 
-		console.log('routeaccessToken', accessToken);
-
 		const meRes = await fetch('https://discord.com/api/users/@me', {
 			headers: {
 				Authorization: `Bearer ${accessToken}`
 			}
 		});
-
-		console.log('routemeRes', meRes);
 
 		if (!meRes.ok) {
 			logger.warn({ status: meRes.status }, 'discord_user_fetch_failed');
@@ -122,7 +126,7 @@ async function getDiscordCallbackRoute(request: NextRequest): Promise<NextRespon
 				body: JSON.stringify({ access_token: accessToken })
 			}
 		);
-		console.log(guildRes.ok);
+
 		if (!guildRes.ok) {
 			logger.warn({ status: guildRes.status }, 'discord_guild_join_failed');
 		}

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import { LanguageSwitcher } from '@/features/language/ui/root';
-import { useAdminStatus, useSteamStatus } from '@/features/steamAuth/ui/root';
+import { useAdminStatus } from '@/features/steamAuth/ui/root';
+import { useUserStatus } from '@/features/users/ui/useUserStatus';
 import { DropdownMenuPanel } from '@/features/appShell/ui/root';
 
 function isActivePath(currentPathname: string, href: string) {
@@ -26,7 +27,7 @@ export default function SiteNavBar() {
 	const ta = useTranslations('admin');
 	const pathname = usePathname();
 	const status = useAdminStatus();
-	const steamStatus = useSteamStatus();
+	const steamStatus = useUserStatus();
 	const adminMenuRef = useRef<HTMLDetailsElement>(null);
 
 	useEffect(() => {

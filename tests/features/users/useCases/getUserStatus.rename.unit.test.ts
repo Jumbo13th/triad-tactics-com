@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getSteamStatus } from '@/features/steamAuth/useCases/getSteamStatus';
 import type { SteamAuthDeps } from '@/features/steamAuth/ports';
+import { getUserStatus } from "@/features/users/useCases/getUserStatus";
 
 type DeepPartial<T> = {
 	[K in keyof T]?: T[K] extends (...args: never[]) => unknown
@@ -54,7 +54,7 @@ function makeDeps(overrides: DeepPartial<SteamAuthDeps> = {}): SteamAuthDeps {
 	};
 }
 
-describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
+describe('users/getUserStatus (unit: rename gating signals)', () => {
 	it('returns connected=false when no session identity exists', () => {
 		const deps = makeDeps({
 			sessions: {
@@ -62,7 +62,7 @@ describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
 			}
 		});
 
-		const status = getSteamStatus(deps, 'missing');
+		const status = getUserStatus(deps, 'missing');
 		expect(status.connected).toBe(false);
 	});
 
@@ -94,7 +94,7 @@ describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
 			}
 		});
 
-		const status = getSteamStatus(deps, 'sid');
+		const status = getUserStatus(deps, 'sid');
 		expect(status.connected).toBe(true);
 		if (!status.connected) throw new Error('unreachable');
 		expect(status.renameRequired).toBe(true);
@@ -131,7 +131,7 @@ describe('steamAuth/getSteamStatus (unit: rename gating signals)', () => {
 			}
 		});
 
-		const status = getSteamStatus(deps, 'sid');
+		const status = getUserStatus(deps, 'sid');
 		expect(status.connected).toBe(true);
 		if (!status.connected) throw new Error('unreachable');
 		expect(status.renameRequiredReason).toBe('Latest declined reason');

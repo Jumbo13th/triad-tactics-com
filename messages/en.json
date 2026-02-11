@@ -98,6 +98,10 @@
     "notAssociatedWithValve": "This service is not associated with Valve Corp.",
     "clickSteamButton": "Click the button above to continue."
   },
+  "discordAuth": {
+    "link": "Link Discord",
+    "relink": "Relink Discord"
+  },
   "admin": {
     "nav": "Admin",
     "navApplications": "Applications",

@@ -1,18 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { DISCORD_CLIENT_ID } from '@/platform/env';
+import { NextResponse } from 'next/server';
+import { DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_REDIRECT_URI_LOCAL } from '@/platform/env';
 import { withApiGuards } from '@/platform/apiGates';
 
-const DISCORD_REDIRECT_URI = 'https://triad-tactics.com/api/auth/discord';
-const DISCORD_REDIRECT_URI_LOCAL = "http://localhost:3000/api/auth/discord";
+function getDiscordRedirectUri(): string | null {
+	const isDev = process.env.NODE_ENV !== 'production';
+	return isDev ? (DISCORD_REDIRECT_URI_LOCAL ?? null) : (DISCORD_REDIRECT_URI ?? null);
+}
 
-async function getDiscordStartRoute(_request: NextRequest): Promise<NextResponse> {
-	if (!DISCORD_CLIENT_ID) {
+async function getDiscordStartRoute(): Promise<NextResponse> {
+	const redirectUri = getDiscordRedirectUri();
+	if (!DISCORD_CLIENT_ID || !redirectUri) {
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 
 	const params = new URLSearchParams({
 		client_id: DISCORD_CLIENT_ID,
-		redirect_uri: DISCORD_REDIRECT_URI_LOCAL,
+		redirect_uri: redirectUri,
 		response_type: 'code',
 		scope: 'identify guilds.join'
 	});
