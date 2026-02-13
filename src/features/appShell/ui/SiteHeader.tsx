@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import {SteamAuthControls} from '@/features/steamAuth/ui/root';
+import { SteamAuthControls } from '@/features/steamAuth/ui/root';
 import { Link } from '@/i18n/routing';
 import SiteNavBar from './SiteNavBar';
 import PrimaryActionButton from "@/features/appShell/ui/PrimaryActionButton";

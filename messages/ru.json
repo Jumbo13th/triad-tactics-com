@@ -7,7 +7,8 @@
     "aria": "Навигация",
     "home": "Главная",
     "joinGames": "Присоединиться",
-    "feed": "Лента"
+    "feed": "Лента",
+    "profile": "Профиль"
   },
   "footer": {
     "termsLink": "Условия использования"
@@ -98,7 +99,11 @@
     "notAssociatedWithValve": "Этот сервис не связан с Valve Corp.",
     "clickSteamButton": "Нажмите кнопку выше, чтобы продолжить."
   },
-  "admin": {
+    "discordAuth": {
+      "link": "Привязать Discord",
+      "relink": "Перепривязать Discord"
+    },
+    "admin": {
     "nav": "Админ",
     "navApplications": "Заявки",
     "navUsers": "Пользователи",
@@ -423,6 +428,37 @@
     "subtitle": "Обновления и объявления для участников",
     "notice": "Этот раздел сайта ещё в разработке.",
     "joinPrompt": "Пока что вступайте в наш Discord или Telegram, чтобы получать обновления и расписание."
+  },
+  "profile": {
+    "title": "Профиль",
+    "subtitle": "Данные текущего аккаунта и статус доступа.",
+    "loading": "Загружаем профиль...",
+    "notAuthorized": "Чтобы открыть профиль, войдите через Steam.",
+    "fields": {
+      "personaName": "Имя в Steam",
+      "callsign": "Позывной",
+      "steamId": "SteamID64",
+      "accessLevel": "Уровень доступа",
+      "discord": "Discord",
+      "playerConfirmed": "Игрок подтвержден",
+      "application": "Заявка",
+      "renameRequired": "Нужна смена позывного",
+      "pendingRename": "Запрос на смену позывного"
+    },
+    "values": {
+      "yes": "Да",
+      "no": "Нет",
+      "missing": "Не указано",
+      "discordLinked": "Привязан",
+      "discordNotLinked": "Не привязан",
+      "applicationSubmitted": "Подана",
+      "applicationMissing": "Не подана"
+    },
+    "access": {
+      "guest": "Гость",
+      "player": "Игрок",
+      "admin": "Админ"
+    }
   },
   "welcome": {
     "applyButton": "Присоединиться",

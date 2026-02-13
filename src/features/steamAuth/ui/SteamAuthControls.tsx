@@ -8,6 +8,7 @@ import { usePathname } from '@/i18n/routing';
 import { useAdminStatus } from './useAdminStatus';
 import SteamSignInButton from './SteamSignInButton';
 import SteamAuthProviderWarning from './SteamAuthProviderWarning';
+import ProfileNavButton from "@/features/profile/ui/ProfileNavButton";
 
 function buildLocalizedPath(locale: string, pathname: string) {
 	const suffix = pathname === '/' ? '' : pathname;
@@ -54,12 +55,7 @@ export default function SteamAuthControls() {
 
 	return (
 		<div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
-			<span
-				title={name}
-				className="inline-flex min-w-0 max-w-full items-center break-words rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-50 shadow-sm shadow-black/30"
-			>
-				{t('signedInAs', { name })}
-			</span>
+			<ProfileNavButton userName={name} />
 			<button
 				className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-neutral-50 shadow-sm shadow-black/30 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 disabled:opacity-60"
 				onClick={handleLogout}

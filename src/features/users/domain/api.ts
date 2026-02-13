@@ -1,0 +1,56 @@
+import { z } from 'zod';
+import { sqliteBoolean } from '@/platform/validation/zod';
+
+const userStatusDisconnectedSchema = z.object({
+	connected: z.literal(false)
+});
+
+const userStatusConnectedSchema = z.object({
+	connected: z.literal(true),
+	steamid64: z.string(),
+	personaName: z.string().nullable(),
+	currentCallsign: z.string().nullable(),
+	playerConfirmed: sqliteBoolean,
+	discordId: z.string().nullable(),
+	hasExisting: sqliteBoolean,
+	submittedAt: z.string().nullable(),
+	renameRequired: sqliteBoolean,
+	hasPendingRenameRequest: sqliteBoolean,
+	renameRequiredReason: z.string().nullable(),
+	renameRequiredBySteamId64: z.string().nullable(),
+	renameRequiredByCallsign: z.string().nullable(),
+	accessLevel: z.enum(['guest', 'player', 'admin'])
+});
+
+export type UserStatus =
+	| { connected: false }
+	| {
+			connected: true;
+			steamid64: string;
+			personaName: string | null;
+			currentCallsign: string | null;
+			playerConfirmed: boolean;
+			discordId: string | null;
+			hasExisting: boolean;
+			submittedAt: string | null;
+			renameRequired: boolean;
+			hasPendingRenameRequest: boolean;
+			renameRequiredReason: string | null;
+			renameRequiredBySteamId64: string | null;
+			renameRequiredByCallsign: string | null;
+			accessLevel: 'guest' | 'player' | 'admin';
+	  };
+
+export function parseUserStatus(input: unknown): UserStatus | null {
+	const connected = userStatusConnectedSchema.safeParse(input);
+	if (connected.success) {
+		return connected.data;
+	}
+
+	const disconnected = userStatusDisconnectedSchema.safeParse(input);
+	if (disconnected.success) {
+		return disconnected.data;
+	}
+
+	return null;
+}

@@ -7,7 +7,8 @@
     "aria": "Навігація",
     "home": "Головна",
     "joinGames": "Приєднатися",
-    "feed": "Стрічка"
+    "feed": "Стрічка",
+    "profile": "Профіль"
   },
   "footer": {
     "termsLink": "Умови користування"
@@ -98,7 +99,11 @@
     "notAssociatedWithValve": "Цей сервіс не пов’язаний з Valve Corp.",
     "clickSteamButton": "Натисніть кнопку вище, щоб продовжити."
   },
-  "admin": {
+    "discordAuth": {
+      "link": "Прив'язати Discord",
+      "relink": "Переприв'язати Discord"
+    },
+    "admin": {
     "nav": "Адмін",
     "navApplications": "Заявки",
     "navUsers": "Користувачі",
@@ -423,6 +428,37 @@
     "subtitle": "Оновлення та оголошення для учасників",
     "notice": "Цей розділ сайту ще в розробці.",
     "joinPrompt": "Поки що приєднуйтесь до нашого Discord або Telegram, щоб отримувати оновлення та розклад."
+  },
+  "profile": {
+    "title": "Профіль",
+    "subtitle": "Дані поточного акаунта та статус доступу.",
+    "loading": "Завантаження профілю...",
+    "notAuthorized": "Щоб переглянути профіль, увійдіть через Steam.",
+    "fields": {
+      "personaName": "Ім'я в Steam",
+      "callsign": "Позивний",
+      "steamId": "SteamID64",
+      "accessLevel": "Рівень доступу",
+      "discord": "Discord",
+      "playerConfirmed": "Гравець підтверджений",
+      "application": "Заявка",
+      "renameRequired": "Потрібна зміна позивного",
+      "pendingRename": "Запит на зміну позивного"
+    },
+    "values": {
+      "yes": "Так",
+      "no": "Ні",
+      "missing": "Не вказано",
+      "discordLinked": "Прив'язано",
+      "discordNotLinked": "Не прив'язано",
+      "applicationSubmitted": "Подана",
+      "applicationMissing": "Не подана"
+    },
+    "access": {
+      "guest": "Гість",
+      "player": "Гравець",
+      "admin": "Адмін"
+    }
   },
   "welcome": {
     "applyButton": "Доєднатись",

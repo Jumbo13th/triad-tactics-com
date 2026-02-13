@@ -8,6 +8,8 @@ const API_PREFIX = '/api/';
 const ADMIN_API_PREFIX = '/api/admin';
 const STEAM_AUTH_API_PREFIX = '/api/auth/steam/';
 const CALLSIGN_API_PREFIX = '/api/callsign/';
+const DISCORD_API_PREFIX = '/api/auth/discord';
+const USER_STATUS_API_PATH = '/api/me';
 
 function jsonError(error: string, status: number): Response {
 	return NextResponse.json({ error }, { status });
@@ -35,6 +37,10 @@ function isSteamAuthApiPath(pathname: string): boolean {
 
 function isCallsignApiPath(pathname: string): boolean {
 	return pathname.startsWith(CALLSIGN_API_PREFIX);
+}
+
+function isDiscordApiPath(pathname: string): boolean {
+	return pathname.startsWith(DISCORD_API_PREFIX);
 }
 
 function getExpectedOrigin(request: NextRequest): string {
@@ -86,6 +92,8 @@ function enforceSameOriginForAdminMutations(request: NextRequest): Response | nu
 function isAllowedDuringRenameBlock(pathname: string): boolean {
 	// Allow Steam auth routes so the user can sign in/out.
 	if (isSteamAuthApiPath(pathname)) return true;
+	if (isDiscordApiPath(pathname)) return true;
+	if (pathname === USER_STATUS_API_PATH) return true;
 	// Allow submitting a rename request and checking callsign availability.
 	if (pathname === '/api/rename') return true;
 	if (isCallsignApiPath(pathname)) return true;
@@ -95,6 +103,8 @@ function isAllowedDuringRenameBlock(pathname: string): boolean {
 function isAllowedDuringApplyRequired(pathname: string): boolean {
 	// Allow Steam auth routes so the user can sign in/out.
 	if (isSteamAuthApiPath(pathname)) return true;
+	if (isDiscordApiPath(pathname)) return true;
+	if (pathname === USER_STATUS_API_PATH) return true;
 	// Allow application submission and callsign checks while filling the form.
 	if (pathname === '/api/submit') return true;
 	if (isCallsignApiPath(pathname)) return true;
@@ -114,10 +124,10 @@ export async function enforceSteamGatesForApi(request: NextRequest): Promise<Res
 	try {
 		const { STEAM_SESSION_COOKIE } = await import('../features/steamAuth/sessionCookie');
 		const { steamAuthDeps } = await import('../features/steamAuth/deps');
-		const { getSteamStatus } = await import('../features/steamAuth/useCases/getSteamStatus');
+		const { getUserStatus } = await import('../features/users/useCases/getUserStatus');
 
 		const sid = request.cookies.get(STEAM_SESSION_COOKIE)?.value ?? null;
-		const status = getSteamStatus(steamAuthDeps, sid);
+		const status = getUserStatus(steamAuthDeps, sid);
 		if (!status.connected) return isCallsignApiPath(pathname) ? jsonError('steam_required', 401) : null;
 
 		// Hard block: rename required until the user submits a rename request.

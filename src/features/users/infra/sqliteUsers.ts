@@ -10,6 +10,8 @@ type UserRow = {
 	rename_required_at: string | null;
 	rename_required_reason: string | null;
 	rename_required_by_steamid64: string | null;
+	discord_id: string | null;
+	discord_token: string | null;
 };
 
 export function getOrCreateUserBySteamId64(input: { steamid64: string }) {
@@ -18,7 +20,7 @@ export function getOrCreateUserBySteamId64(input: { steamid64: string }) {
 	const fallbackCallsign = `Steam_${steamid64}`;
 	const select = db.prepare(`
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-			u.current_callsign,
+			u.current_callsign, u.discord_id, u.discord_token,
 			rr.required_at as rename_required_at,
 			rr.reason as rename_required_reason,
 			rr.required_by_steamid64 as rename_required_by_steamid64
@@ -67,7 +69,7 @@ export function getUserBySteamId64(steamid64: string): User | null {
 	const db = getDb();
 	const stmt = db.prepare(`
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-			u.current_callsign,
+			u.current_callsign, u.discord_id, u.discord_token,
 			rr.required_at as rename_required_at,
 			rr.reason as rename_required_reason,
 			rr.required_by_steamid64 as rename_required_by_steamid64
@@ -108,4 +110,25 @@ export function getLatestDeclineReasonByUserId(userId: number) {
 	const row = stmt.get(userId) as { decline_reason?: string | null } | undefined;
 	const reason = row?.decline_reason ?? null;
 	return reason && reason.trim() ? reason : null;
+}
+
+export function setDiscordIdentityByUserId(input: {
+	userId: number;
+	discordId: string;
+	discordToken: string;
+}) {
+	const db = getDb();
+	const stmt = db.prepare(`
+		UPDATE users
+		SET discord_id = ?,
+			discord_token = ?
+		WHERE id = ?
+	`);
+
+	try {
+		const info = stmt.run(input.discordId, input.discordToken, input.userId);
+		return { success: info.changes > 0 };
+	} catch {
+		return { success: false, error: 'database_error' as const };
+	}
 }

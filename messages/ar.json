@@ -7,7 +7,8 @@
     "aria": "التنقل",
     "home": "الرئيسية",
     "joinGames": "انضم إلى اللعب",
-    "feed": "الخلاصة"
+    "feed": "الخلاصة",
+    "profile": "الملف الشخصي"
   },
   "footer": {
     "termsLink": "شروط الاستخدام"
@@ -98,7 +99,11 @@
     "notAssociatedWithValve": "هذه الخدمة غير مرتبطة بشركة Valve Corp.",
     "clickSteamButton": "اضغط على الزر أعلاه للمتابعة."
   },
-  "admin": {
+    "discordAuth": {
+      "link": "ربط Discord",
+      "relink": "إعادة ربط Discord"
+    },
+    "admin": {
     "nav": "الإدارة",
     "navApplications": "الطلبات",
     "navUsers": "المستخدمون",
@@ -423,6 +428,37 @@
     "subtitle": "التحديثات والإعلانات للأعضاء",
     "notice": "هذا القسم من الموقع ما زال قيد التطوير.",
     "joinPrompt": "في الوقت الحالي، انضم إلى Discord أو Telegram للحصول على التحديثات والجداول."
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "subtitle": "بيانات الحساب الحالي وحالة الوصول.",
+    "loading": "جارٍ تحميل الملف الشخصي...",
+    "notAuthorized": "يجب تسجيل الدخول عبر Steam لعرض الملف الشخصي.",
+    "fields": {
+      "personaName": "اسم Steam",
+      "callsign": "نداء",
+      "steamId": "SteamID64",
+      "accessLevel": "مستوى الوصول",
+      "discord": "Discord",
+      "playerConfirmed": "تم تأكيد اللاعب",
+      "application": "الطلب",
+      "renameRequired": "مطلوب تغيير نداء",
+      "pendingRename": "طلب تغيير النداء"
+    },
+    "values": {
+      "yes": "نعم",
+      "no": "لا",
+      "missing": "غير محدد",
+      "discordLinked": "مرتبط",
+      "discordNotLinked": "غير مرتبط",
+      "applicationSubmitted": "مُقدَّم",
+      "applicationMissing": "غير مُقدَّم"
+    },
+    "access": {
+      "guest": "ضيف",
+      "player": "لاعب",
+      "admin": "مشرف"
+    }
   },
   "welcome": {
     "applyButton": "انضم للألعاب",

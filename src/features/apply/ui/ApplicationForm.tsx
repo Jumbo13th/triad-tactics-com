@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { parseSubmitApplicationResponse } from '@/features/apply/domain/api';
-import { parseSteamMeStatus, type SteamMeStatus } from '@/features/steamAuth/domain/api';
+import { parseUserStatus, type UserStatus } from '@/features/users/domain/api';
 import { applicationSchema, type ApplicationFormData } from '../schema';
 import type { ZodIssue } from 'zod';
 import { SteamSignInButton } from '@/features/steamAuth/ui/root';
@@ -39,7 +39,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
     motivation: ''
   });
 
-  const [steamAuth, setSteamAuth] = useState<SteamMeStatus | null>(null);
+  const [steamAuth, setSteamAuth] = useState<UserStatus | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +66,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
 
   const refreshSteamAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/steam/me', {
+      const res = await fetch('/api/me', {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -78,7 +78,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
       }
 
       const json: unknown = (await res.json()) as unknown;
-      const parsed = parseSteamMeStatus(json);
+      const parsed = parseUserStatus(json);
       setSteamAuth(parsed ?? { connected: false });
     } catch {
       setSteamAuth({ connected: false });

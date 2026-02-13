@@ -7,7 +7,8 @@
     "aria": "Navigation",
     "home": "Home",
     "joinGames": "Join Games",
-    "feed": "Feed"
+    "feed": "Feed",
+    "profile": "Profile"
   },
   "footer": {
     "termsLink": "Terms of use"
@@ -97,6 +98,10 @@
     "signedInAs": "Signed in as {name}",
     "notAssociatedWithValve": "This service is not associated with Valve Corp.",
     "clickSteamButton": "Click the button above to continue."
+  },
+  "discordAuth": {
+    "link": "Link Discord",
+    "relink": "Relink Discord"
   },
   "admin": {
     "nav": "Admin",
@@ -423,6 +428,37 @@
     "subtitle": "Member updates and announcements",
     "notice": "This part of the website is still in development.",
     "joinPrompt": "In the meantime, please join our Discord or Telegram to get updates and schedules."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your current account details and access status.",
+    "loading": "Loading profile...",
+    "notAuthorized": "You need to sign in with Steam to view your profile.",
+    "fields": {
+      "personaName": "Steam name",
+      "callsign": "Callsign",
+      "steamId": "SteamID64",
+      "accessLevel": "Access level",
+      "discord": "Discord",
+      "playerConfirmed": "Player confirmed",
+      "application": "Application",
+      "renameRequired": "Rename required",
+      "pendingRename": "Pending rename request"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No",
+      "missing": "Not set",
+      "discordLinked": "Linked",
+      "discordNotLinked": "Not linked",
+      "applicationSubmitted": "Submitted",
+      "applicationMissing": "Not submitted"
+    },
+    "access": {
+      "guest": "Guest",
+      "player": "Player",
+      "admin": "Admin"
+    }
   },
   "welcome": {
     "applyButton": "Join Games",
