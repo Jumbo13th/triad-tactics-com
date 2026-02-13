@@ -30,9 +30,17 @@ jobs:
       with:
         node-version: 20
         cache: npm
+    - name: Logging git status
+      run: git status --porcelain
+    - name: Logging package.json
+      run: cat package.json | head -n 40
+    - name: Logging Node
+      run: node -v && npm -v
+    - name: Logging package-lock.json
+      run: cat package-lock.json | head -n 60
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --verbose
 
     - name: Lint (format check)
       run: npm run lint
