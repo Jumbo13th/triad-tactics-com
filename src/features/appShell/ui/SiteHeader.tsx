@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import { SteamAuthControls } from '@/features/steamAuth/ui/root';
-import DiscordLinkGate from '@/features/discordAuth/ui/DiscordLinkGate';
 import { Link } from '@/i18n/routing';
 import SiteNavBar from './SiteNavBar';
 import PrimaryActionButton from "@/features/appShell/ui/PrimaryActionButton";
@@ -55,7 +54,6 @@ export default function SiteHeader({ homeAriaLabel, title, subtitle, primaryActi
 
           <div className="flex flex-col gap-3 sm:items-end">
             <SteamAuthControls />
-            <DiscordLinkGate />
           </div>
         </div>
       </div>

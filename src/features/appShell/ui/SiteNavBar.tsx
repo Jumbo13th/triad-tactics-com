@@ -37,7 +37,9 @@ export default function SiteNavBar() {
 
 	const items = useMemo(() => {
 		const base = [{ href: '/', label: t('home') }];
-		if (steamStatus?.connected && (steamStatus.accessLevel === 'player' || steamStatus.accessLevel === 'admin')) {
+		const isAuthorized =
+			steamStatus?.connected && (steamStatus.accessLevel === 'player' || steamStatus.accessLevel === 'admin');
+		if (isAuthorized) {
 			base.push({ href: '/feed', label: t('feed') });
 		}
 		return base;
