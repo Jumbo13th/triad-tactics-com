@@ -13,7 +13,7 @@ export function AdminDisclosure({
 		<details className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 shadow-sm shadow-black/20">
 			<summary className="flex cursor-pointer list-none flex-col gap-2 [&::-webkit-details-marker]:hidden [&::marker]:hidden sm:flex-row sm:items-center sm:justify-between">
 				<div className="min-w-0">{summaryLeft}</div>
-				<div className="flex flex-wrap items-center gap-2">
+				<div className="flex shrink-0 flex-wrap items-center gap-2">
 					{summaryRight}
 					<svg
 						viewBox="0 0 20 20"
