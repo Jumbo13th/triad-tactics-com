@@ -19,6 +19,12 @@ describe('platform/dateTime', () => {
 		expect(result?.toISOString()).toBe('2026-03-15T14:45:00.000Z');
 	});
 
+	it('parses sqlite-style timestamps with surrounding whitespace', () => {
+		const result = parseDateTimeValue('  2026-03-15 14:45:00  ');
+
+		expect(result?.toISOString()).toBe('2026-03-15T14:45:00.000Z');
+	});
+
 	it('preserves explicit offsets when parsing timestamps', () => {
 		const result = parseDateTimeValue('2026-03-15T14:45:00+02:00');
 
