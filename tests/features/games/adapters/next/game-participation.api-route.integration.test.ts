@@ -38,7 +38,7 @@ function createMissionSlotting(opts: { priorityOccupantUserId?: number | null })
 							{
 								id: 'slot-squad',
 								role: 'Squad Leader',
-								access: 'squad',
+								access: 'unit',
 								occupant: { type: 'placeholder', label: 'Alpha Squad' }
 							},
 							{

@@ -13,7 +13,7 @@
             {
               "id": "side-1-squad-1-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -22,7 +22,7 @@
             {
               "id": "side-1-squad-1-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -37,7 +37,7 @@
             {
               "id": "side-1-squad-2-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -46,7 +46,7 @@
             {
               "id": "side-1-squad-2-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -55,7 +55,7 @@
             {
               "id": "side-1-squad-2-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -64,7 +64,7 @@
             {
               "id": "side-1-squad-2-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -73,7 +73,7 @@
             {
               "id": "side-1-squad-2-slot-5-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -82,7 +82,7 @@
             {
               "id": "side-1-squad-2-slot-6-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -91,7 +91,7 @@
             {
               "id": "side-1-squad-2-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -100,7 +100,7 @@
             {
               "id": "side-1-squad-2-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -109,7 +109,7 @@
             {
               "id": "side-1-squad-2-slot-9-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -124,7 +124,7 @@
             {
               "id": "side-1-squad-3-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "TT"
@@ -133,7 +133,7 @@
             {
               "id": "side-1-squad-3-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -142,7 +142,7 @@
             {
               "id": "side-1-squad-3-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -151,7 +151,7 @@
             {
               "id": "side-1-squad-3-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -160,7 +160,7 @@
             {
               "id": "side-1-squad-3-slot-5-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -169,7 +169,7 @@
             {
               "id": "side-1-squad-3-slot-6-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -178,7 +178,7 @@
             {
               "id": "side-1-squad-3-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -187,7 +187,7 @@
             {
               "id": "side-1-squad-3-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -196,7 +196,7 @@
             {
               "id": "side-1-squad-3-slot-9-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "KABAN"
@@ -211,7 +211,7 @@
             {
               "id": "side-1-squad-4-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -220,7 +220,7 @@
             {
               "id": "side-1-squad-4-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -229,7 +229,7 @@
             {
               "id": "side-1-squad-4-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -238,7 +238,7 @@
             {
               "id": "side-1-squad-4-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -247,7 +247,7 @@
             {
               "id": "side-1-squad-4-slot-5-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -256,7 +256,7 @@
             {
               "id": "side-1-squad-4-slot-6-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "BKLT"
@@ -265,7 +265,7 @@
             {
               "id": "side-1-squad-4-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -274,7 +274,7 @@
             {
               "id": "side-1-squad-4-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -283,7 +283,7 @@
             {
               "id": "side-1-squad-4-slot-9-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -298,7 +298,7 @@
             {
               "id": "side-1-squad-5-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -307,7 +307,7 @@
             {
               "id": "side-1-squad-5-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -322,7 +322,7 @@
             {
               "id": "side-1-squad-6-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RRT"
@@ -453,7 +453,7 @@
             {
               "id": "side-2-squad-1-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -462,7 +462,7 @@
             {
               "id": "side-2-squad-1-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -477,7 +477,7 @@
             {
               "id": "side-2-squad-2-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -486,7 +486,7 @@
             {
               "id": "side-2-squad-2-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -495,7 +495,7 @@
             {
               "id": "side-2-squad-2-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -504,7 +504,7 @@
             {
               "id": "side-2-squad-2-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -513,7 +513,7 @@
             {
               "id": "side-2-squad-2-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -522,7 +522,7 @@
             {
               "id": "side-2-squad-2-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -531,7 +531,7 @@
             {
               "id": "side-2-squad-2-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -540,7 +540,7 @@
             {
               "id": "side-2-squad-2-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -555,7 +555,7 @@
             {
               "id": "side-2-squad-3-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -564,7 +564,7 @@
             {
               "id": "side-2-squad-3-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "ALFA"
@@ -573,7 +573,7 @@
             {
               "id": "side-2-squad-3-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -582,7 +582,7 @@
             {
               "id": "side-2-squad-3-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -591,7 +591,7 @@
             {
               "id": "side-2-squad-3-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -600,7 +600,7 @@
             {
               "id": "side-2-squad-3-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -609,7 +609,7 @@
             {
               "id": "side-2-squad-3-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -618,7 +618,7 @@
             {
               "id": "side-2-squad-3-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -633,7 +633,7 @@
             {
               "id": "side-2-squad-4-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -642,7 +642,7 @@
             {
               "id": "side-2-squad-4-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "RUS"
@@ -651,7 +651,7 @@
             {
               "id": "side-2-squad-4-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -660,7 +660,7 @@
             {
               "id": "side-2-squad-4-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -669,7 +669,7 @@
             {
               "id": "side-2-squad-4-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -678,7 +678,7 @@
             {
               "id": "side-2-squad-4-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -687,7 +687,7 @@
             {
               "id": "side-2-squad-4-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -696,7 +696,7 @@
             {
               "id": "side-2-squad-4-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -711,7 +711,7 @@
             {
               "id": "side-2-squad-5-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -720,7 +720,7 @@
             {
               "id": "side-2-squad-5-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "STRB"
@@ -735,7 +735,7 @@
             {
               "id": "side-2-squad-6-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -744,7 +744,7 @@
             {
               "id": "side-2-squad-6-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -753,7 +753,7 @@
             {
               "id": "side-2-squad-6-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -762,7 +762,7 @@
             {
               "id": "side-2-squad-6-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -771,7 +771,7 @@
             {
               "id": "side-2-squad-6-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -780,7 +780,7 @@
             {
               "id": "side-2-squad-6-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -789,7 +789,7 @@
             {
               "id": "side-2-squad-6-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -798,7 +798,7 @@
             {
               "id": "side-2-squad-6-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "REV"
@@ -813,7 +813,7 @@
             {
               "id": "side-2-squad-7-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -822,7 +822,7 @@
             {
               "id": "side-2-squad-7-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -831,7 +831,7 @@
             {
               "id": "side-2-squad-7-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -840,7 +840,7 @@
             {
               "id": "side-2-squad-7-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -849,7 +849,7 @@
             {
               "id": "side-2-squad-7-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -858,7 +858,7 @@
             {
               "id": "side-2-squad-7-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -867,7 +867,7 @@
             {
               "id": "side-2-squad-7-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "SSOT"
@@ -876,7 +876,7 @@
             {
               "id": "side-2-squad-7-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -891,7 +891,7 @@
             {
               "id": "side-2-squad-8-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -900,7 +900,7 @@
             {
               "id": "side-2-squad-8-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -909,7 +909,7 @@
             {
               "id": "side-2-squad-8-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -918,7 +918,7 @@
             {
               "id": "side-2-squad-8-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -927,7 +927,7 @@
             {
               "id": "side-2-squad-8-slot-5-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"
@@ -936,7 +936,7 @@
             {
               "id": "side-2-squad-8-slot-6-submachine-gunner",
               "role": "Submachine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": {
                 "type": "placeholder",
                 "label": "PP"

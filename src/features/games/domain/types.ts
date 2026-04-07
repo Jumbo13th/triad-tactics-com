@@ -45,7 +45,7 @@ export type GameAuditEvent = {
 };
 
 export type GameMissionUpdateKind =
-	| 'squads_slotting_started'
+	| 'units_slotting_started'
 	| 'priority_slotting_started'
 	| 'regular_slotting_started'
 	| 'game_started_wait_next_episode';

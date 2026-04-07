@@ -313,7 +313,7 @@ describe('Admin game mission updates endpoint (integration)', () => {
 					cookie: `tt_steam_session=${adminSid}`
 				},
 				body: JSON.stringify({
-					kind: 'squads_slotting_started',
+					kind: 'units_slotting_started',
 					episodeNumber: 1,
 					totalEpisodes: 3
 				})
@@ -403,7 +403,7 @@ describe('Admin game mission updates endpoint (integration)', () => {
 					cookie: `tt_steam_session=${adminSid}`
 				},
 				body: JSON.stringify({
-					kind: 'squads_slotting_started',
+					kind: 'units_slotting_started',
 					episodeNumber: 2,
 					totalEpisodes: 5
 				})
@@ -452,7 +452,7 @@ describe('Admin game mission updates endpoint (integration)', () => {
 		expect(publicJson.mission.updates).toEqual([
 			expect.objectContaining({
 				id: updateId,
-				kind: 'squads_slotting_started',
+				kind: 'units_slotting_started',
 				episodeNumber: 2,
 				totalEpisodes: 5
 			})
@@ -547,7 +547,7 @@ describe('Admin game mission updates endpoint (integration)', () => {
 					cookie: `tt_steam_session=${adminSid}`
 				},
 				body: JSON.stringify({
-					kind: 'squads_slotting_started',
+					kind: 'units_slotting_started',
 					episodeNumber: 1,
 					totalEpisodes: 3
 				})

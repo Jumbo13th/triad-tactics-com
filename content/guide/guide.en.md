@@ -10,7 +10,7 @@ To get started, you need to own Arma Reforger on Steam. Visit the Triad Tactics 
 - Fill out all required fields carefully. Pay special attention to the gaming experience and motivation questions — admins evaluate applications based on them
 - Your callsign must be unique, 1-12 characters, using only letters, numbers, and underscores
 - You must be 18 or older to apply
-- This is an application to access the Triad Tactics project, not to join the Triad Team squad
+- This is an application to access the Triad Tactics project, not to join the Triad Team unit
 
 ![Homepage with Join Games button](/guide/guide-01.png)
 
@@ -40,26 +40,26 @@ The duration of a mission is approximately 4 hours, while a single episode lasts
 
 There are three categories of players in each mission:
 
-- Squad players — members of official Triad Tactics squads. Their slots are pre-assigned on the slotting board and marked with the squad tag. Squad members receive the password from their commander
+- Unit players — members of official Triad Tactics units. Their slots are pre-assigned on the slotting board and marked with the unit tag. Unit members receive the password from their commander
 - Priority players — players who earned a special badge through contributions like server testing or event support. They can claim any open priority slot on the slotting board before the game
 - Regular players — everyone else. Regular players join the mission through the Join mission button. Being on the list does not guarantee a slot, but when admins release regular access, everyone on the list receives the gameplay password
 
 ## Slotting board
 
-After a mission is published, the admin sets up the slotting board — a table showing all squads, roles, and available positions. Squad slots are pre-assigned. Priority players can then claim any open priority slot. Regular players join the regular list using the Join mission button
+After a mission is published, the admin sets up the slotting board — a table showing all units, roles, and available positions. Unit slots are pre-assigned. Priority players can then claim any open priority slot. Regular players join the regular list using the Join mission button
 
-- If you see your squad tag on the board, wait for your squad leader's instructions
+- If you see your unit tag on the board, wait for your unit leader's instructions
 - If you have a priority badge, find and claim an open priority slot
 - If you are a regular player, press Join mission to add your callsign to the regular list
 
-![Slotting board with squads and Join mission button](/guide/guide-03.png)
+![Slotting board with units and Join mission button](/guide/guide-03.png)
 
 ## Passwords and connecting
 
 There are two passwords for each mission:
 
 - Mod-download password — released first so all approved players can download the required mods
-- Gameplay password — released closer to game time. Squad members receive it from their leaders first, then priority players see it on the mission page, and finally regular players get access
+- Gameplay password — released closer to game time. Unit members receive it from their leaders first, then priority players see it on the mission page, and finally regular players get access
 
 Passwords appear in the Server section of the mission page when they become available for your category. Server passwords are confidential — sharing them with unauthorized people is forbidden
 

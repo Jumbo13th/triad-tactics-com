@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const slotAccessSchema = z.enum(['squad', 'priority', 'regular']);
+export const slotAccessSchema = z.enum(['unit', 'priority', 'regular']);
 
 export const slotOccupantSchema = z.union([
 	z.null(),
@@ -163,7 +163,7 @@ function normalizeLegacyColor(value: unknown, sideIndex: number): string {
 function parseLegacyAccess(value: unknown): z.infer<typeof slotAccessSchema> {
 	if (typeof value !== 'string') return 'regular';
 	const normalized = value.trim().toLowerCase();
-	if (normalized === 'squad' || normalized === 'reserved') return 'squad';
+	if (normalized === 'unit' || normalized === 'squad' || normalized === 'reserved') return 'unit';
 	if (normalized === 'priority' || normalized === 'badge') return 'priority';
 	if (normalized === 'regular' || normalized === 'open') return 'regular';
 	throw new Error('legacy_slot_access_invalid');
@@ -192,7 +192,7 @@ function parseLegacySlot(value: unknown): LegacySlotSource {
 		role,
 		access,
 		placeholderLabel:
-			access === 'squad'
+			access === 'unit'
 				? typeof placeholderSource === 'string' && placeholderSource.trim()
 					? placeholderSource.trim()
 					: role
@@ -300,7 +300,7 @@ export function normalizeLegacySlotting(
 						role: slot.role,
 						access: slot.access,
 						occupant:
-							slot.access === 'squad'
+							slot.access === 'unit'
 								? { type: 'placeholder' as const, label: slot.placeholderLabel ?? slot.role }
 								: preservedOccupant
 					};

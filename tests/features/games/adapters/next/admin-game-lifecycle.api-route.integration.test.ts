@@ -24,7 +24,7 @@ function createSlottingShape(opts: { includePriority?: boolean; includeRegular?:
 		{
 			id: 'slot-squad-lead',
 			role: 'Squad Leader',
-			access: 'squad',
+			access: 'unit',
 			occupant: { type: 'placeholder', label: 'Alpha Squad' }
 		}
 	];

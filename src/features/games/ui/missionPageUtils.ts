@@ -67,14 +67,14 @@ export function slotOccupantLabel(occupant: CanonicalSlotOccupant | null, t: Ret
 export function slotAccessLabel(access: CanonicalSlot['access'], t: ReturnType<typeof useTranslations<'games'>>): string {
 	if (access === 'priority') return t('slotAccessPriority');
 	if (access === 'regular') return t('slotAccessRegular');
-	return t('slotAccessSquad');
+	return t('slotAccessUnit');
 }
 
 export function formatMissionUpdateMessage(update: GameMissionUpdate, t: ReturnType<typeof useTranslations<'games'>>): string {
 	const prefix = update.episodeNumber !== null ? `${t('missionUpdateEpisodePrefix', { episodeNumber: update.episodeNumber })} ` : '';
 
-	if (update.kind === 'squads_slotting_started') {
-		return `${prefix}${t('missionUpdateKindSquadsSlottingStarted')}`;
+	if (update.kind === 'units_slotting_started') {
+		return `${prefix}${t('missionUpdateKindUnitsSlottingStarted')}`;
 	}
 
 	if (update.kind === 'priority_slotting_started') {
@@ -193,7 +193,7 @@ export function buildSlottingSummary(
 					sideHasViewer = true;
 				}
 
-				if (slot.access === 'squad') {
+				if (slot.access === 'unit') {
 					const team = slot.occupant?.type === 'placeholder' ? slot.occupant.label : '?';
 					teamCounts.set(team, (teamCounts.get(team) ?? 0) + 1);
 				} else if (slot.access === 'priority') {

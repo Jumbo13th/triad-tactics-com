@@ -13,7 +13,7 @@ import {
 import { SyncedHorizontalScroll } from './missionPageComponents';
 
 const ACCESS_LABELS: Record<string, string> = {
-	squad: 'Squad',
+	unit: 'Unit',
 	priority: 'Priority',
 	regular: 'Regular'
 };
@@ -118,7 +118,7 @@ export function SlottingPreview({ slotting }: { slotting: CanonicalSlotting }) {
 							<tr>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Side</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Squad</th>
-								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Squad Slots</th>
+								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Unit Slots</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Priority</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Regular</th>
 							</tr>

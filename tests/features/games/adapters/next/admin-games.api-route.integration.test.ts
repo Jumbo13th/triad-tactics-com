@@ -119,7 +119,7 @@ describe('Admin games endpoints (integration)', () => {
 								{
 									id: 'slot-placeholder',
 									role: 'Squad Leader',
-									access: 'squad',
+									access: 'unit',
 									occupant: { type: 'placeholder', label: 'Alpha Squad' }
 								},
 								{

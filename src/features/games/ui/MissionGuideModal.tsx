@@ -128,7 +128,7 @@ export function MissionGuideModal({
 
 				<div className="mt-6 space-y-5">
 					<GuideBlock title={t('guideProcessTitle')} body={t('guideProcessBody')} />
-					<GuideBlock title={t('guideSquadTitle')} body={t('guideSquadBody')} accent="blue" />
+					<GuideBlock title={t('guideUnitTitle')} body={t('guideUnitBody')} accent="blue" />
 					<GuideBlock title={t('guidePriorityTitle')} body={t('guidePriorityBody')} accent="amber" />
 					<GuideBlock title={t('guideRegularTitle')} body={t('guideRegularBody')} accent="neutral" />
 					<GuideBlock title={t('guidePasswordsTitle')} body={t('guidePasswordsBody')} />

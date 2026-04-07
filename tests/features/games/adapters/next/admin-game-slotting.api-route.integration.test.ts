@@ -24,7 +24,7 @@ function createCanonicalSlotting(opts: { includePriorityUser?: boolean; repeated
 		{
 			id: 'slot-squad',
 			role: 'Squad Leader',
-			access: 'squad',
+			access: 'unit',
 			occupant: { type: 'placeholder', label: 'Alpha Squad' }
 		}
 	];
@@ -156,7 +156,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 								{
 									id: 'slot-squad',
 									role: 'Squad Leader',
-									access: 'squad',
+									access: 'unit',
 									occupant: { type: 'placeholder', label: 'Bravo Squad' }
 								},
 								{
@@ -254,7 +254,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 								{
 									id: 'slot-squad',
 									role: 'Squad Leader',
-									access: 'squad',
+									access: 'unit',
 									occupant: { type: 'placeholder', label: 'Alpha Squad' }
 								},
 								{
@@ -319,7 +319,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 								{
 									id: 'slot-squad',
 									role: 'Squad Leader',
-									access: 'squad',
+									access: 'unit',
 									occupant: { type: 'placeholder', label: 'Alpha Squad' }
 								},
 								{
@@ -378,7 +378,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 						{
 							name: '1-1',
 							slots: [
-								{ role: 'Squad Leader', access: 'squad', placeholder: 'Alpha Squad' },
+								{ role: 'Squad Leader', access: 'unit', placeholder: 'Alpha Squad' },
 								{ role: 'Machine Gunner', access: 'priority' },
 								{ role: 'Machine Gunner', access: 'priority' },
 								{ role: 'Rifleman', access: 'regular' }

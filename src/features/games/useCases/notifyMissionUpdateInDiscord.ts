@@ -17,7 +17,7 @@ const getMissionUpdateDiscordMessages = (data: ParsedUpdateRequestData) => {
     const ts = Math.floor(Date.now() / 1000);
 
     const missionUpdateDiscordMessagesMap = {
-        squads_slotting_started: `>>> <t:${ts}:T> \n` +
+        units_slotting_started: `>>> <t:${ts}:T> \n` +
             `🛡️ **Отрядная расстановка началась!** \nОтрядные игроки могут вставать на слоты\nВсю информацию об игре вы можете найти на сайте: ${missionLink} \n `,
         priority_slotting_started: `>>> <t:${ts}:T> \n` +
             `⭐ **Приоритетная расстановка открыта!**\nИгроки с приоритетным статусом могут занимать слоты\n`,
