@@ -33,7 +33,7 @@ function archivedSlotting() {
 							{
 								id: 'usk-sl',
 								role: 'Squad Leader',
-								access: 'squad',
+								access: 'unit',
 								occupant: { type: 'placeholder', label: 'Alpha Squad' }
 							}
 						]

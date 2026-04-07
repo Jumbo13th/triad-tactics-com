@@ -117,7 +117,7 @@ export const deleteArchivedMissionRequestSchema = z.object({
 
 export const createMissionUpdateRequestSchema = z.object({
 	kind: z.enum([
-		'squads_slotting_started',
+		'units_slotting_started',
 		'priority_slotting_started',
 		'regular_slotting_started',
 		'game_started_wait_next_episode'
@@ -144,7 +144,7 @@ export const createMissionUpdateRequestSchema = z.object({
 
 export const updateMissionUpdateRequestSchema = z.object({
 	kind: z.enum([
-		'squads_slotting_started',
+		'units_slotting_started',
 		'priority_slotting_started',
 		'regular_slotting_started',
 		'game_started_wait_next_episode'

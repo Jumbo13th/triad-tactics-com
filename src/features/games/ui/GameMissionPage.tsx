@@ -202,7 +202,7 @@ function MissionAccessNoticeSection({
 				<p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-200">{t('missionAccessNoticeTitle')}</p>
 				<p className="max-w-5xl text-base font-semibold leading-8 text-neutral-50">{t('missionAccessNoticeBody')}</p>
 				<ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-amber-50/95">
-					<li>{t('missionAccessNoticeSquad')}</li>
+					<li>{t('missionAccessNoticeUnit')}</li>
 					<li>{t('missionAccessNoticePriority')}</li>
 					<li>{t('missionAccessNoticeRegular')}</li>
 				</ul>
@@ -450,7 +450,7 @@ function ServerSection({
 						<div className="grid gap-3">
 							<div className="rounded-2xl bg-white/[0.03] px-4 py-3">
 								<p className="text-sm leading-7 text-neutral-200">{t('passwordSubtitle')}</p>
-								<p className="mt-3 text-sm leading-7 text-neutral-200">{t('passwordSquadNotice')}</p>
+								<p className="mt-3 text-sm leading-7 text-neutral-200">{t('passwordUnitNotice')}</p>
 							</div>
 							<div className="rounded-2xl border border-red-500/35 bg-red-500/10 px-4 py-3">
 								<p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-200">{t('passwordSecurityTitle')}</p>
@@ -695,7 +695,7 @@ function RegularJoinModal({
 								onChange={(event) => setConfirmedNoSquad(event.target.checked)}
 								className="mt-1 h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-[color:var(--accent)]"
 							/>
-							<span>{t('regularJoinModalNoSquadCheckbox')}</span>
+							<span>{t('regularJoinModalNoUnitCheckbox')}</span>
 						</label>
 
 						{needsPriorityConfirmation ? (
@@ -874,7 +874,7 @@ function SlottingSection({
 							<tr>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummarySideCol')}</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummarySquadCol')}</th>
-								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummarySquadSlotsCol')}</th>
+								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummaryUnitSlotsCol')}</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummaryPriorityCol')}</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummaryRegularCol')}</th>
 								<th className="border-b border-neutral-800 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">{t('slottingSummaryYouCol')}</th>

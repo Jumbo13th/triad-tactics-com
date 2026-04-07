@@ -664,7 +664,7 @@ export default function AdminGameMissionPage() {
 		setMissionUpdateTotalEpisodes('3');
 	};
 
-	const handleCreateMissionUpdate = async (kind: 'squads_slotting_started' | 'priority_slotting_started' | 'regular_slotting_started' | 'game_started_wait_next_episode') => {
+	const handleCreateMissionUpdate = async (kind: 'units_slotting_started' | 'priority_slotting_started' | 'regular_slotting_started' | 'game_started_wait_next_episode') => {
 		if (!mission) return;
 
 		if (!/^\d+$/.test(missionUpdateEpisodeNumber.trim())) {
@@ -1126,8 +1126,8 @@ export default function AdminGameMissionPage() {
 															) : null}
 
 															<div className="flex flex-wrap gap-3">
-																<AdminButton variant="secondary" onClick={() => void handleCreateMissionUpdate('squads_slotting_started')} disabled={activeAction !== null || mission.status !== 'published' || !missionUpdateEpisodeNumber.trim() || !missionUpdateTotalEpisodes.trim()}>
-																	{activeAction === 'mission-update' ? ta(editingMissionUpdateId !== null ? 'gamesMissionUpdatesSaving' : 'gamesMissionUpdatesPosting') : editingMissionUpdateId !== null ? ta('gamesMissionUpdatesSaveSquadsAction') : ta('gamesMissionUpdatesSquadsAction')}
+																<AdminButton variant="secondary" onClick={() => void handleCreateMissionUpdate('units_slotting_started')} disabled={activeAction !== null || mission.status !== 'published' || !missionUpdateEpisodeNumber.trim() || !missionUpdateTotalEpisodes.trim()}>
+																	{activeAction === 'mission-update' ? ta(editingMissionUpdateId !== null ? 'gamesMissionUpdatesSaving' : 'gamesMissionUpdatesPosting') : editingMissionUpdateId !== null ? ta('gamesMissionUpdatesSaveUnitsAction') : ta('gamesMissionUpdatesUnitsAction')}
 																</AdminButton>
 																<AdminButton variant="secondary" onClick={() => void handleCreateMissionUpdate('priority_slotting_started')} disabled={activeAction !== null || mission.status !== 'published' || !missionUpdateEpisodeNumber.trim() || !missionUpdateTotalEpisodes.trim()}>
 																	{activeAction === 'mission-update' ? ta(editingMissionUpdateId !== null ? 'gamesMissionUpdatesSaving' : 'gamesMissionUpdatesPosting') : editingMissionUpdateId !== null ? ta('gamesMissionUpdatesSavePriorityAction') : ta('gamesMissionUpdatesPriorityAction')}

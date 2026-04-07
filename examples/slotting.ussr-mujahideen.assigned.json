@@ -13,13 +13,13 @@
             {
               "id": "side-1-squad-1-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-1-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             }
           ]
@@ -31,49 +31,49 @@
             {
               "id": "side-1-squad-2-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-3-recon-machine-gunner",
               "role": "Recon Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-4-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-5-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-6-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-7-gunner",
               "role": "Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-2-slot-8-driver",
               "role": "Driver",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             }
           ]
@@ -85,49 +85,49 @@
             {
               "id": "side-1-squad-3-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-3-recon-machine-gunner",
               "role": "Recon Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-4-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-5-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-6-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-7-gunner",
               "role": "Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             },
             {
               "id": "side-1-squad-3-slot-8-driver",
               "role": "Driver",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "KABAN" }
             }
           ]
@@ -139,49 +139,49 @@
             {
               "id": "side-1-squad-4-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-3-recon-machine-gunner",
               "role": "Recon Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-4-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-5-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-6-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-7-gunner",
               "role": "Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             },
             {
               "id": "side-1-squad-4-slot-8-driver",
               "role": "Driver",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RUS" }
             }
           ]
@@ -205,7 +205,7 @@
             {
               "id": "side-1-squad-5-slot-3-recon-machine-gunner",
               "role": "Recon Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             },
             {
@@ -229,13 +229,13 @@
             {
               "id": "side-1-squad-5-slot-7-gunner",
               "role": "Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-5-slot-8-driver",
               "role": "Driver",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             }
           ]
@@ -247,13 +247,13 @@
             {
               "id": "side-1-squad-6-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-6-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             }
           ]
@@ -349,13 +349,13 @@
             {
               "id": "side-1-squad-9-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             },
             {
               "id": "side-1-squad-9-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "ALFA" }
             }
           ]
@@ -367,31 +367,31 @@
             {
               "id": "side-1-squad-10-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             },
             {
               "id": "side-1-squad-10-slot-2-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             },
             {
               "id": "side-1-squad-10-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             },
             {
               "id": "side-1-squad-10-slot-4-machine-gunner",
               "role": "Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             },
             {
               "id": "side-1-squad-10-slot-5-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RRT" }
             }
           ]
@@ -403,49 +403,49 @@
             {
               "id": "side-1-squad-11-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-2-automatic-grenade-launcher-gunner",
               "role": "Automatic Grenade Launcher Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-3-assistant-gunner",
               "role": "Assistant Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-4-automatic-grenade-launcher-gunner",
               "role": "Automatic Grenade Launcher Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-5-assistant-gunner",
               "role": "Assistant Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-6-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-7-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             },
             {
               "id": "side-1-squad-11-slot-8-rifleman",
               "role": "Rifleman",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TEST" }
             }
           ]
@@ -457,49 +457,49 @@
             {
               "id": "side-1-squad-12-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-3-recon-machine-gunner",
               "role": "Recon Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-4-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-5-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-6-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-7-recon",
               "role": "Recon",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             },
             {
               "id": "side-1-squad-12-slot-8-recon-sniper",
               "role": "Recon Sniper",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "TT" }
             }
           ]
@@ -519,13 +519,13 @@
             {
               "id": "side-2-squad-1-slot-1-amir",
               "role": "Amir",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-1-slot-2-naib",
               "role": "Naib",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             }
           ]
@@ -537,61 +537,61 @@
             {
               "id": "side-2-squad-2-slot-1-lead-mujahid",
               "role": "Lead Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-2-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-3-mujahid-machine-gunner",
               "role": "Mujahid Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-4-mujahid-assistant-machine-gunner",
               "role": "Mujahid Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-5-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-6-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-7-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-8-mujahid-anti-tank",
               "role": "Mujahid Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-9-mujahid-assistant-anti-tank",
               "role": "Mujahid Assistant Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
               "id": "side-2-squad-2-slot-10-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "SSOT" }
             },
             {
@@ -609,67 +609,67 @@
             {
               "id": "side-2-squad-3-slot-1-lead-mujahid",
               "role": "Lead Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-2-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-3-mujahid-machine-gunner",
               "role": "Mujahid Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-4-mujahid-assistant-machine-gunner",
               "role": "Mujahid Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-5-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-6-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-7-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-8-mujahid-anti-tank",
               "role": "Mujahid Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "STRB" }
             },
             {
               "id": "side-2-squad-3-slot-9-mujahid-assistant-anti-tank",
               "role": "Mujahid Assistant Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             },
             {
               "id": "side-2-squad-3-slot-10-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             },
             {
               "id": "side-2-squad-3-slot-11-sharp-eyed-mujahid",
               "role": "Sharp-eyed Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             }
           ]
@@ -681,61 +681,61 @@
             {
               "id": "side-2-squad-4-slot-1-lead-mujahid",
               "role": "Lead Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-2-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-3-mujahid-machine-gunner",
               "role": "Mujahid Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-4-mujahid-assistant-machine-gunner",
               "role": "Mujahid Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-5-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-6-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-7-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "PP" }
             },
             {
               "id": "side-2-squad-4-slot-8-mujahid-anti-tank",
               "role": "Mujahid Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             },
             {
               "id": "side-2-squad-4-slot-9-mujahid-assistant-anti-tank",
               "role": "Mujahid Assistant Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             },
             {
               "id": "side-2-squad-4-slot-10-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "BKLT" }
             },
             {
@@ -771,37 +771,37 @@
             {
               "id": "side-2-squad-6-slot-1-lead-mujahid",
               "role": "Lead Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
               "id": "side-2-squad-6-slot-2-experienced-mujahid",
               "role": "Experienced Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
               "id": "side-2-squad-6-slot-3-mujahid-machine-gunner",
               "role": "Mujahid Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
               "id": "side-2-squad-6-slot-4-mujahid-assistant-machine-gunner",
               "role": "Mujahid Assistant Machine Gunner",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
               "id": "side-2-squad-6-slot-5-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
               "id": "side-2-squad-6-slot-6-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "RT7" }
             },
             {
@@ -843,43 +843,43 @@
             {
               "id": "side-2-squad-7-slot-1-lead-mujahid",
               "role": "Lead Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-2-mujahid-anti-tank",
               "role": "Mujahid Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-3-mujahid-assistant-anti-tank",
               "role": "Mujahid Assistant Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-4-mujahid-anti-tank",
               "role": "Mujahid Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-5-mujahid-assistant-anti-tank",
               "role": "Mujahid Assistant Anti-Tank",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-6-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             },
             {
               "id": "side-2-squad-7-slot-7-mujahid",
               "role": "Mujahid",
-              "access": "squad",
+              "access": "unit",
               "occupant": { "type": "placeholder", "label": "REV" }
             }
           ]

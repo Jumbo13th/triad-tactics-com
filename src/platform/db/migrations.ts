@@ -537,5 +537,45 @@ export const migrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_mission_public_updates_mission_created
 				ON mission_public_updates(mission_id, created_at DESC, id DESC);
 		`
+	},
+	{
+		id: 10,
+		name: 'rename_squad_access_to_unit',
+		up: `
+			-- Rename slot access type 'squad' → 'unit' in slotting JSON blobs
+			UPDATE missions
+			SET slotting_json = REPLACE(slotting_json, '"access":"squad"', '"access":"unit"')
+			WHERE slotting_json LIKE '%"access":"squad"%';
+
+			-- Recreate mission_public_updates with updated CHECK constraint
+			CREATE TABLE mission_public_updates_new (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				mission_id INTEGER NOT NULL,
+				kind TEXT NOT NULL CHECK(kind IN (
+					'units_slotting_started',
+					'priority_slotting_started',
+					'regular_slotting_started',
+					'game_started_wait_next_episode'
+				)),
+				episode_number INTEGER CHECK(episode_number IS NULL OR episode_number > 0),
+				total_episodes INTEGER CHECK(total_episodes IS NULL OR total_episodes > 0),
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				created_by_steamid64 TEXT,
+				FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
+			);
+
+			INSERT INTO mission_public_updates_new (id, mission_id, kind, episode_number, total_episodes, created_at, created_by_steamid64)
+			SELECT id, mission_id,
+				CASE WHEN kind = 'squads_slotting_started' THEN 'units_slotting_started' ELSE kind END,
+				episode_number, total_episodes, created_at, created_by_steamid64
+			FROM mission_public_updates;
+
+			DROP TABLE mission_public_updates;
+
+			ALTER TABLE mission_public_updates_new RENAME TO mission_public_updates;
+
+			CREATE INDEX IF NOT EXISTS idx_mission_public_updates_mission_created
+				ON mission_public_updates(mission_id, created_at DESC, id DESC);
+		`
 	}
 ];

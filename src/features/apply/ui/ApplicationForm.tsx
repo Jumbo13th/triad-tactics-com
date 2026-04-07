@@ -535,7 +535,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
                 <li>{t('callsignRules.uniqueness')}</li>
                 <li>{t('callsignRules.noOffense')}</li>
                 <li>{t('callsignRules.neutral')}</li>
-                <li>{t('callsignRules.noProjectSquads')}</li>
+                <li>{t('callsignRules.noProjectUnits')}</li>
                 <li>{t('callsignRules.noRealUnits')}</li>
                 <li>{t('callsignRules.noEquipment')}</li>
                 <li>{t('callsignRules.keepSimple')}</li>

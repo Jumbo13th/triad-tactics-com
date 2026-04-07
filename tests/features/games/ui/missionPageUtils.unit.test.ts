@@ -8,8 +8,8 @@ function createGamesTranslator() {
 		switch (key) {
 			case 'missionUpdateEpisodePrefix':
 				return `Episode ${values?.episodeNumber}.`;
-			case 'missionUpdateKindSquadsSlottingStarted':
-				return 'Squads slotting started.';
+			case 'missionUpdateKindUnitsSlottingStarted':
+				return 'Units slotting started.';
 			case 'missionUpdateKindPrioritySlottingStarted':
 				return 'Priority slotting started.';
 			case 'missionUpdateKindRegularSlottingStarted':
@@ -29,7 +29,7 @@ function createGamesTranslator() {
 function buildUpdate(input: Partial<GameMissionUpdate>): GameMissionUpdate {
 	return {
 		id: 1,
-		kind: 'squads_slotting_started',
+		kind: 'units_slotting_started',
 		episodeNumber: 1,
 		totalEpisodes: 3,
 		createdAt: '2026-03-20 18:00:00',
@@ -42,8 +42,8 @@ describe('formatMissionUpdateMessage', () => {
 	it('prefixes slotting updates with a localized episode number', () => {
 		const t = createGamesTranslator();
 
-		expect(formatMissionUpdateMessage(buildUpdate({ kind: 'squads_slotting_started', episodeNumber: 1 }), t)).toBe(
-			'Episode 1. Squads slotting started.'
+		expect(formatMissionUpdateMessage(buildUpdate({ kind: 'units_slotting_started', episodeNumber: 1 }), t)).toBe(
+			'Episode 1. Units slotting started.'
 		);
 	});
 

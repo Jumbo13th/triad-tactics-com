@@ -43,7 +43,7 @@ function createArchiveSlotting() {
 							{
 								id: 'usk-sl',
 								role: 'Squad Leader',
-								access: 'squad',
+								access: 'unit',
 								occupant: { type: 'placeholder', label: 'Alpha Squad' }
 							}
 						]
@@ -62,7 +62,7 @@ function createArchiveSlotting() {
 							{
 								id: 'rus-sl',
 								role: 'Squad Leader',
-								access: 'squad',
+								access: 'unit',
 								occupant: { type: 'placeholder', label: 'Bravo Squad' }
 							}
 						]

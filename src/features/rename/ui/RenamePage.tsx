@@ -62,7 +62,7 @@ export default function RenamePage(props: Props) {
 			tForm('callsignRules.uniqueness'),
 			tForm('callsignRules.noOffense'),
 			tForm('callsignRules.neutral'),
-			tForm('callsignRules.noProjectSquads'),
+			tForm('callsignRules.noProjectUnits'),
 			tForm('callsignRules.noRealUnits'),
 			tForm('callsignRules.noEquipment'),
 			tForm('callsignRules.keepSimple'),

@@ -27,7 +27,7 @@ export default function SiteHeader({ homeAriaLabel, title, subtitle, primaryActi
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <Link href="/" aria-label={homeAriaLabel} className="shrink-0">
-              <Image src="/triad-logo.png" alt="Triad Tactics" width={68} height={68} priority />
+              <Image src="/triad-logo.png" alt="Triad Tactics" width={100} height={100} priority className="size-[68px] min-[400px]:size-[100px]" />
             </Link>
 
             <div className="min-w-0">
