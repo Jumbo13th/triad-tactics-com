@@ -41,7 +41,7 @@ export async function getAdminUnitDetailRoute(request: NextRequest, context: Uni
 		const unitId = await readUnitId(context);
 		if (!unitId) return NextResponse.json({ error: 'invalid_unit_id' }, { status: 400 });
 
-		const result = getUnit(unitDeps, { unitId, viewerSteamId64: admin.identity.steamid64 });
+		const result = getUnit(unitDeps, { unitId, viewerSteamId64: admin.identity.steamid64, isAdmin: true });
 		return NextResponse.json(result.json, { status: result.status });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_get_unit_detail_route_failed');

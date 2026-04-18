@@ -382,6 +382,21 @@ export function setUnitLeader(
 	}
 }
 
+export function clearUnitLeader(
+	unitId: number
+): { success: true } | { success: false; error: 'not_found' | 'database_error' } {
+	const db = getDb();
+	try {
+		const result = db.prepare(`
+			UPDATE units SET leader_user_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+		`).run(unitId);
+		if (result.changes === 0) return { success: false, error: 'not_found' };
+		return { success: true };
+	} catch {
+		return { success: false, error: 'database_error' };
+	}
+}
+
 export function setUnitAvatar(
 	unitId: number,
 	data: string,

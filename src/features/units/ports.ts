@@ -13,6 +13,8 @@ export type UnitRepo = {
 
 	getUnitById: (unitId: number) => Unit | null;
 
+	getUnitIdByTag: (tag: string) => number | null;
+
 	listUnits: (input: {
 		status?: UnitStatus;
 		query?: string;
@@ -42,6 +44,9 @@ export type UnitRepo = {
 
 	setUnitLeader: (unitId: number, userId: number) =>
 		{ success: true } | { success: false; error: 'not_found' | 'not_member' | 'database_error' };
+
+	clearUnitLeader: (unitId: number) =>
+		{ success: true } | { success: false; error: 'not_found' | 'database_error' };
 
 	setUnitAvatar: (unitId: number, data: string, mime: string) =>
 		{ success: true } | { success: false; error: 'not_found' | 'database_error' };

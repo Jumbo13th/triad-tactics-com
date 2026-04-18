@@ -59,7 +59,7 @@ export function manageMember(deps: UnitDeps, input: {
 			if (!result.success) return { ok: false, status: 404, json: { error: 'member_not_found' } };
 			deps.events.logUnitEvent({ unitId: input.unitId, kind: 'member_removed', targetCallsign: removedCallsign, actorCallsign: actorCallsign });
 			if (unit.leaderUserId === userId && input.isAdmin) {
-				deps.repo.setUnitLeader(input.unitId, 0);
+				deps.repo.clearUnitLeader(input.unitId);
 			}
 			return { ok: true, status: 200, json: { success: true } };
 		}

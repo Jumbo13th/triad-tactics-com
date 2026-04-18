@@ -5,7 +5,7 @@ import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
-import { getUnitIdByTag } from '@/features/units/infra/sqliteUnits';
+import { unitDeps } from '@/features/units/deps';
 
 export default async function EditUnitRoutePage({ params }: { params: Promise<{ locale: string; unitTag: string }> }) {
 	const { locale, unitTag } = await params;
@@ -16,7 +16,7 @@ export default async function EditUnitRoutePage({ params }: { params: Promise<{ 
 	const flowRedirect = getProtectedPageRedirect(locale, status);
 	if (flowRedirect) redirect(flowRedirect);
 
-	const id = getUnitIdByTag(unitTag);
+	const id = unitDeps.repo.getUnitIdByTag(unitTag);
 	if (!id) redirect(`/${locale}/units`);
 
 	return <EditUnitPage unitId={id} />;

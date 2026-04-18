@@ -313,9 +313,9 @@ describe('Admin game release endpoints (integration)', () => {
 
 		const row = getDb()
 			.prepare('SELECT regular_gameplay_released_at, regular_gameplay_ever_released FROM missions WHERE id = ? LIMIT 1')
-			.get(missionId) as { regular_gameplay_released_at: string | null };
+			.get(missionId) as { regular_gameplay_released_at: string | null; regular_gameplay_ever_released: number };
 		expect(row.regular_gameplay_released_at).toBeNull();
-		expect((row as { regular_gameplay_ever_released: number }).regular_gameplay_ever_released).toBe(1);
+		expect(row.regular_gameplay_ever_released).toBe(1);
 	});
 
 	it('requires hiding regular password before hiding priority password', async () => {

@@ -2,6 +2,7 @@ import type { UnitDeps } from './ports';
 import {
 	createUnit,
 	getUnitById,
+	getUnitIdByTag,
 	listUnits,
 	countUnits,
 	updateUnit,
@@ -10,6 +11,7 @@ import {
 	deleteUnit,
 	setUnitSlots,
 	setUnitLeader,
+	clearUnitLeader,
 	setUnitAvatar,
 	getUnitAvatar,
 	deleteUnitAvatar,
@@ -37,6 +39,7 @@ export const unitDeps: UnitDeps = {
 	repo: {
 		createUnit,
 		getUnitById,
+		getUnitIdByTag,
 		listUnits,
 		countUnits,
 		updateUnit,
@@ -45,6 +48,7 @@ export const unitDeps: UnitDeps = {
 		deleteUnit,
 		setUnitSlots,
 		setUnitLeader,
+		clearUnitLeader,
 		setUnitAvatar,
 		getUnitAvatar,
 		deleteUnitAvatar

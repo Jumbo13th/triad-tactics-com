@@ -101,19 +101,19 @@ export default function UnitDetailPage({ unitId }: { unitId: number }) {
 			});
 			const data = await res.json();
 			if (!res.ok) {
-				const errorKey = data.error as string;
+				const errorKey = (data.error as string) || 'server_error';
 				setActionError(t(`errors.${errorKey}` as Parameters<typeof t>[0]));
 				return;
 			}
 			loadUnit();
 			return data;
 		} catch {
-			setActionError(t('errors.serverError'));
+			setActionError(t('errors.server_error'));
 		}
 	}
 
 	if (loading) return <p className="py-8 text-center text-sm text-neutral-500">Loading…</p>;
-	if (!unit) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.notFound')}</p>;
+	if (!unit) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.not_found')}</p>;
 
 	const membersList = members.filter(m => m.role === 'member');
 	const applicantsList = members.filter(m => m.role === 'applicant');

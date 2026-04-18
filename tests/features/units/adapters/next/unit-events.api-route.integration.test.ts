@@ -71,13 +71,15 @@ async function createAndVerifyUnit(h: Awaited<ReturnType<typeof loadHarness>>, l
 	return id;
 }
 
-function getEvents(h: Awaited<ReturnType<typeof loadHarness>>, unitId: number, sessionId: string) {
-	return h.GET_UNIT(
+async function getEvents(h: Awaited<ReturnType<typeof loadHarness>>, unitId: number, sessionId: string) {
+	const res = await h.GET_UNIT(
 		new h.NextRequest(`http://localhost/api/units/${unitId}`, {
 			headers: { cookie: `tt_steam_session=${sessionId}` }
 		}),
 		unitContext(unitId)
-	).then(r => r.json()).then(d => d.events as Array<{ kind: string; actorCallsign: string | null; targetCallsign: string | null; meta: string | null }>);
+	);
+	const data = await res.json();
+	return data.events as Array<{ kind: string; actorCallsign: string | null; targetCallsign: string | null; meta: string | null }>;
 }
 
 describe('Unit events (integration)', () => {

@@ -8,8 +8,11 @@ import AvatarUploadField, { type PreparedAvatar } from './AvatarUploadField';
 
 function useSundayTimeRange() {
 	const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const now = new Date();
+	const daysUntilSunday = (7 - now.getUTCDay()) % 7 || 7;
+	const sun = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilSunday));
 	const fmt = (h: number) => {
-		const d = new Date(Date.UTC(2026, 0, 4, h, 0));
+		const d = new Date(Date.UTC(sun.getUTCFullYear(), sun.getUTCMonth(), sun.getUTCDate(), h, 0));
 		return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', timeZone: tz });
 	};
 	return { from: fmt(16), to: fmt(21), tz };
