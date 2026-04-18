@@ -115,7 +115,7 @@ function SteamLoginModalButton({ redirectPath }: { redirectPath: string }) {
 						<div
 							role="dialog"
 							aria-modal="true"
-							className="w-full max-w-2xl rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.85)] sm:p-8"
+							className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-[0_40px_120px_rgba(0,0,0,0.85)] sm:p-8"
 						>
 							<div className="flex items-start justify-between gap-4">
 								<div>

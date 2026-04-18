@@ -356,7 +356,7 @@ export default function UnitDetailPage({ unitId }: { unitId: number }) {
 						className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 						onMouseDown={e => { if (e.target === e.currentTarget) setPendingConfirm(null); }}
 					>
-						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
+						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
 							<p className="text-sm font-semibold text-neutral-100">{pendingConfirm.title}</p>
 							<p className="mt-2 text-sm text-neutral-400">{pendingConfirm.text}</p>
 							<div className="mt-4 flex justify-end gap-2">
@@ -387,7 +387,7 @@ export default function UnitDetailPage({ unitId }: { unitId: number }) {
 						className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 						onMouseDown={e => { if (e.target === e.currentTarget) setShowApplyModal(false); }}
 					>
-						<div role="alertdialog" aria-modal="true" className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
+						<div role="alertdialog" aria-modal="true" className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
 							<p className="text-sm font-semibold text-neutral-100">{t('applyModal.title')}</p>
 							{unit?.joinMessage && (
 								<div className="mt-3 rounded-xl border border-[color:var(--accent)]/20 bg-[color:var(--accent)]/5 px-3 py-3">

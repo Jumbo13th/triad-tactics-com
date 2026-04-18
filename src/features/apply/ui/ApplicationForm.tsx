@@ -404,7 +404,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
 
       {popup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/30 sm:p-6">
+          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/30 sm:p-6">
             <h3 className="text-lg font-semibold tracking-tight text-neutral-50">
               {popup.title}
             </h3>
@@ -435,7 +435,7 @@ export default function ApplicationForm(props: { initialSteamConnected?: boolean
 
       {rateLimitOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/30 sm:p-6">
+          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/30 sm:p-6">
             <h3 className="text-lg font-semibold tracking-tight text-neutral-50">
               {t('rateLimit.title')}
             </h3>

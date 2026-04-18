@@ -107,7 +107,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 						className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 						onMouseDown={(e) => { if (e.target === e.currentTarget) clearActionError(); }}
 					>
-						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-red-500/30 bg-neutral-950/95 p-6 shadow-xl">
+						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-red-500/30 bg-neutral-950/95 p-6 shadow-xl">
 							<p className="text-sm text-red-200">{actionError}</p>
 							<div className="mt-4 flex justify-end">
 								<button
@@ -130,7 +130,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 						className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 						onMouseDown={(e) => { if (e.target === e.currentTarget) setPendingConfirm(null); }}
 					>
-						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
+						<div role="alertdialog" aria-modal="true" className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-950/95 p-6 shadow-xl">
 							<p className="text-sm font-semibold text-neutral-100">
 								{confirmTitle}
 							</p>

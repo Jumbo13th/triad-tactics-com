@@ -463,7 +463,7 @@ export default function AdminMailingPage() {
 									<div
 										role="dialog"
 										aria-modal="true"
-										className="w-full max-w-3xl rounded-2xl border border-neutral-800 bg-neutral-950/95 p-6 shadow-xl"
+										className="w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-950/95 p-6 shadow-xl"
 									>
 								<div className="grid gap-4">
 									<div>
