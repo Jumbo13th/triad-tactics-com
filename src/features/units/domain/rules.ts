@@ -10,7 +10,7 @@ export function isUnitLeader(unit: Unit, userId: number): boolean {
 
 export function canEditUnit(unit: Unit, userId: number, isAdmin: boolean): boolean {
 	if (isAdmin) return true;
-	return unit.status === 'verified' && isUnitLeader(unit, userId);
+	return isUnitLeader(unit, userId);
 }
 
 export function canManageMembers(unit: Unit, userId: number, isAdmin: boolean): boolean {
