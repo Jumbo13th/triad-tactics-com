@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "output=$(npx tsc --noEmit 2>&1); rc=$?; output=$(echo \"$output\" | grep -F -v '.next-dev/' | head -30); if [ $rc -ne 0 ]; then node -e \"console.log(JSON.stringify({decision:'block',reason:'tsc --noEmit found type errors:\\n'+process.argv[1]}))\" \"$output\"; fi",
+            "timeout": 120,
+            "statusMessage": "Type-checking with tsc..."
+          }
+        ]
+      }
+    ]
+  }
+}

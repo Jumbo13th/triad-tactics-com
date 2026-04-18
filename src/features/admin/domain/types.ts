@@ -31,6 +31,9 @@ export type AdminUserRow = {
 	has_pending_rename_request: boolean;
 	steamid64?: string | null;
 	badges: AdminUserBadge[];
+	unit_id?: number | null;
+	unit_name?: string | null;
+	unit_tag?: string | null;
 };
 
 export type AdminRenameRequestRow = {
