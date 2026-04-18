@@ -335,8 +335,19 @@ export default function AdminUsersPage() {
 										key={key}
 										summaryLeft={
 											<>
-												<p className="truncate text-base font-semibold text-neutral-50">
-													{callsign ?? steamid64 ?? `User #${row.id ?? idx}`}
+												<p className="flex items-center gap-2 text-base font-semibold text-neutral-50">
+													<span className="truncate">{callsign ?? steamid64 ?? `User #${row.id ?? idx}`}</span>
+													{row.unit_tag && row.unit_id && (
+														<a
+															href={`/en/units/${row.unit_tag}`}
+															target="_blank"
+															rel="noreferrer"
+															onClick={e => e.stopPropagation()}
+															className="shrink-0 rounded-lg border border-[color:var(--accent)]/25 bg-[color:var(--accent)]/10 px-1.5 py-0.5 text-xs font-bold tracking-widest text-[color:var(--accent)] transition hover:bg-[color:var(--accent)]/20"
+														>
+															{row.unit_tag}
+														</a>
+													)}
 												</p>
 												<p className="mt-1 truncate text-sm text-neutral-400">
 													<span>{steamid64 ?? ''}</span>

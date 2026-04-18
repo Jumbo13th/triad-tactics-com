@@ -100,7 +100,10 @@ const adminUserRowSchema = z.object({
 	rename_required_by_steamid64: z.string().nullable().optional(),
 	has_pending_rename_request: sqliteBoolean,
 	steamid64: z.string().nullable().optional(),
-	badges: z.array(adminUserBadgeSchema).default([])
+	badges: z.array(adminUserBadgeSchema).default([]),
+	unit_id: z.number().nullable().optional(),
+	unit_name: z.string().nullable().optional(),
+	unit_tag: z.string().nullable().optional()
 });
 
 const adminRenameRequestRowSchema = z.object({

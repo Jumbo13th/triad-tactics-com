@@ -577,5 +577,74 @@ export const migrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_mission_public_updates_mission_created
 				ON mission_public_updates(mission_id, created_at DESC, id DESC);
 		`
+	},
+	{
+		id: 11,
+		name: 'units',
+		up: `
+			CREATE TABLE IF NOT EXISTS units (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL,
+				tag TEXT NOT NULL,
+				description TEXT NOT NULL DEFAULT '',
+				status TEXT NOT NULL DEFAULT 'unverified' CHECK(status IN ('unverified', 'verified')),
+				avatar_data TEXT,
+				avatar_mime TEXT,
+				leader_user_id INTEGER,
+				slots_allocated INTEGER NOT NULL DEFAULT 0,
+				member_names TEXT NOT NULL DEFAULT '',
+				history TEXT NOT NULL DEFAULT '',
+				other_projects TEXT NOT NULL DEFAULT '',
+				join_message TEXT NOT NULL DEFAULT '',
+				created_by_user_id INTEGER NOT NULL,
+				verified_at DATETIME,
+				verified_by_steamid64 TEXT,
+				unverified_at DATETIME,
+				unverified_by_steamid64 TEXT,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (leader_user_id) REFERENCES users(id) ON DELETE SET NULL,
+				FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+			);
+
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_units_tag_unique
+				ON units(LOWER(tag));
+
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_units_name_unique
+				ON units(LOWER(name));
+
+			CREATE INDEX IF NOT EXISTS idx_units_status ON units(status);
+			CREATE INDEX IF NOT EXISTS idx_units_leader ON units(leader_user_id);
+
+			CREATE TABLE IF NOT EXISTS unit_memberships (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				unit_id INTEGER NOT NULL,
+				user_id INTEGER NOT NULL,
+				role TEXT NOT NULL CHECK(role IN ('member', 'applicant')),
+				message TEXT NOT NULL DEFAULT '',
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE,
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+				UNIQUE(unit_id, user_id)
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_unit ON unit_memberships(unit_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_user ON unit_memberships(user_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_role ON unit_memberships(role);
+
+			CREATE TABLE IF NOT EXISTS unit_events (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				unit_id INTEGER NOT NULL,
+				kind TEXT NOT NULL,
+				actor_callsign TEXT,
+				target_callsign TEXT,
+				meta TEXT,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_unit_events_unit ON unit_events(unit_id, created_at DESC);
+		`
 	}
 ];

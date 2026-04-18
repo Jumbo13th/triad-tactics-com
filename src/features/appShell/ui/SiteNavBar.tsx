@@ -22,6 +22,7 @@ function getActiveAdminHref(pathname: string) {
 	if (pathname.startsWith('/admin/rename-requests')) return '/admin/rename-requests';
 	if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
 	if (pathname.startsWith('/admin/games')) return '/admin/games';
+	if (pathname.startsWith('/admin/units')) return '/admin/units';
 	return '/admin';
 }
 
@@ -56,6 +57,7 @@ export default function SiteNavBar() {
 				badge: currentGame ? t('currentIndicator') : null
 			});
 		}
+		base.push({ href: '/units', label: t('units'), badge: null });
 		base.push({ href: '/important', label: t('important'), badge: null });
 		base.push({ href: '/rules', label: t('rules'), badge: null });
 		return base;
@@ -127,7 +129,8 @@ export default function SiteNavBar() {
 										{ href: '/admin/badges', label: ta('navBadges') },
 										{ href: '/admin/rename-requests', label: ta('navRenameRequests') },
 										{ href: '/admin/mailing', label: ta('navMailing') },
-										{ href: '/admin/games', label: ta('navGames') }
+										{ href: '/admin/games', label: ta('navGames') },
+									{ href: '/admin/units', label: ta('navUnits') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);
 									return items.map((item) => (

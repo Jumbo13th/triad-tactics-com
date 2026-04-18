@@ -21,6 +21,8 @@ export const dbOperations = {
 		const db = getDb();
 		try {
 			db.exec(
+				'DELETE FROM unit_memberships; ' +
+				'DELETE FROM units; ' +
 				'DELETE FROM mission_audit_events; ' +
 				'DELETE FROM mission_regular_release_snapshot; ' +
 				'DELETE FROM mission_regular_joins; ' +

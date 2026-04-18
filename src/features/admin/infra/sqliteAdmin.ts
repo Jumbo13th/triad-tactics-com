@@ -169,11 +169,20 @@ export function listUsersPage(input: {
 				FROM rename_requests rr
 				WHERE rr.user_id = u.id AND rr.status = 'pending'
 			) as has_pending_rename_request,
-			ui.provider_user_id as steamid64
+			ui.provider_user_id as steamid64,
+			mu.id as unit_id,
+			mu.name as unit_name,
+			mu.tag as unit_tag
 		FROM users u
 		LEFT JOIN user_identities ui
 			ON ui.user_id = u.id AND ui.provider = 'steam'
 		LEFT JOIN rename_requirements rrq ON rrq.user_id = u.id
+		LEFT JOIN (
+			SELECT um.user_id, un.id, un.name, un.tag
+			FROM unit_memberships um
+			JOIN units un ON un.id = um.unit_id
+			WHERE um.role = 'member'
+		) mu ON mu.user_id = u.id
 		${whereClause}
 		ORDER BY u.created_at DESC
 		LIMIT ?

@@ -51,3 +51,5 @@ next-env.d.ts
 #ide
 /.idea/
 /.playwright-mcp
+scripts/seed-units.js
+.claude/settings.local.json

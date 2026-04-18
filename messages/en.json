@@ -12,7 +12,8 @@
     "feed": "Feed",
     "important": "Important",
     "rules": "Rules",
-    "profile": "Profile"
+    "profile": "Profile",
+    "units": "Units"
   },
   "rulesPage": {
     "sectionsAria": "Rules sections",
@@ -130,6 +131,7 @@
     "navMailing": "Mailing",
     "navBadges": "Badges",
     "navGames": "Games",
+    "navUnits": "Units",
     "title": "Admin",
     "subtitle": "Admin dashboard",
     "mailingTitle": "Mailing",
@@ -987,5 +989,182 @@
       "discord_callback_route_failed": "Discord authentication failed unexpectedly.",
       "steam_callback_route_failed": "Steam authentication failed unexpectedly."
     }
+  },
+  "units": {
+    "title": "Units",
+    "subtitle": "Community units and teams",
+    "create": "Create Unit",
+    "createTitle": "Create a Unit",
+    "createSubtitle": "Register your unit. An admin will verify it before it becomes active.",
+    "nameLabel": "Unit Name",
+    "namePlaceholder": "e.g. Triad Tactics",
+    "tagLabel": "Unit Tag",
+    "tagPlaceholder": "e.g. TT",
+    "nameHint": "2–20 characters. This is the public name of your unit.",
+    "tagHint": "1–6 characters, letters and numbers only. Displayed as a badge next to your unit name.",
+    "avatarChange": "Change Avatar",
+    "avatarConfirm": {
+      "title": "Confirm avatar upload",
+      "body": "By uploading this image, you confirm it does not contain offensive, inappropriate, or misleading content. Avatars are moderated and violations may result in removal.",
+      "accept": "Upload Avatar"
+    },
+    "avatarHint": "PNG, JPEG, or WebP. Minimum 128×128 px, will be cropped to square and scaled to max 256×256 px. Avatars are moderated — offensive, inappropriate, misleading, or political images will be removed. Political symbols are strictly forbidden.",
+    "avatarTooSmall": "Image is too small. Minimum resolution is 128×128 pixels.",
+    "descriptionHint": "Optional. Keep it respectful and relevant. No offensive content, recruitment for external services, or spam.",
+    "memberNamesLabel": "Unit Members",
+    "memberNamesPlaceholder": "List callsigns of at least 6 registered players who will join your unit",
+    "memberNamesHint": "Your unit must have at least 6 players who are already registered on this project. List their callsigns, one per line.",
+    "historyLabel": "Unit History",
+    "historyPlaceholder": "Where has your unit played before? How long have you been together? Any notable achievements?",
+    "historyHint": "Required. Describe your unit's background — where you played, how long you've been active, and any relevant details. Applications without a proper history will be rejected.",
+    "otherProjectsLabel": "Other Projects",
+    "otherProjectsPlaceholder": "What other Arma communities or projects does your unit participate in?",
+    "otherProjectsHint": "Tell us about other projects your unit plays on and your typical schedule there.",
+    "acceptSunday": "We confirm that our unit is available to play on Sundays from {from} to {to} ({tz}).",
+    "acceptCommander": "We confirm that our unit can provide a side commander on a rotation basis for scheduled games.",
+    "checkboxesRequired": "Both confirmations above are required. Units that cannot commit to the Sunday schedule or provide side commanders will not be accepted.",
+    "section": {
+      "profile": "Unit Profile",
+      "profileHint": "This information will be publicly visible on the unit page.",
+      "questionnaire": "Questionnaire",
+      "questionnaireHint": "This information is only visible to administrators and is used to review your application. All fields are mandatory."
+    },
+    "createNotice": {
+      "title": "Important — Read before submitting",
+      "noRename": "You will not be able to change the unit name or tag after creation. Double-check everything before submitting.",
+      "historyRequired": "All questionnaire fields are mandatory. Applications without sufficient detail will be deleted by administrators.",
+      "incompleteDeleted": "If your application is missing necessary details, administrators will delete your unit without notice."
+    },
+    "nextSteps": {
+      "title": "What happens next",
+      "review": "Administrators will review your application and either verify or delete your unit.",
+      "deleteIfBad": "Units with incomplete or low-quality applications will be deleted.",
+      "noGuaranteedSlots": "Registering a unit does not guarantee game slots. Slots are allocated only to units that are part of the active rotation."
+    },
+    "confirmCreate": {
+      "title": "Confirm Unit Creation",
+      "body": "Please review your unit details before submitting. You will not be able to change the name or tag after creation.",
+      "noRenameWarning": "Unit name and tag cannot be changed after creation.",
+      "submit": "Create Unit"
+    },
+    "createRules": {
+      "title": "Unit naming rules",
+      "noOffense": "Must not contain offensive, discriminatory, or provocative language.",
+      "noRealUnits": "Avoid using real-world military unit names (e.g. 101st Airborne, 75th Rangers, 1st Marines). Exceptions may be made for established units with a long history in the community.",
+      "keepSimple": "Keep the name short, recognizable, and appropriate for the community.",
+      "adminReview": "An admin will review your unit before it becomes visible to other players."
+    },
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Tell others about your unit",
+    "commander": "Commander",
+    "members": "Members",
+    "applicants": "Applicants",
+    "slotsAllocated": "Slots Allocated",
+    "searchPlaceholder": "Search units…",
+    "noSearchResults": "No units found matching your search.",
+    "noUnits": "No units registered yet.",
+    "apply": "Apply to Join",
+    "leave": "Leave Unit",
+    "edit": "Edit Unit",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "editTitle": "Edit Unit",
+    "editInfoSection": "Unit Information",
+    "editSaved": "Changes saved.",
+    "editSaving": "Saving…",
+    "backToUnit": "Back to unit",
+    "joinMessageLabel": "Message for Applicants",
+    "joinMessagePlaceholder": "What should applicants know or include in their application?",
+    "joinMessageHint": "This message is shown to players before they apply to your unit. Use it to ask for specific information or explain your requirements.",
+    "joinMessageTitle": "Before you apply",
+    "avatar": "Unit Avatar",
+    "uploadAvatar": "Upload Avatar",
+    "removeAvatar": "Remove Avatar",
+    "transferLeadership": "Transfer Command",
+    "filter": {
+      "slots": {
+        "all": "All",
+        "with": "With Slots",
+        "without": "Without Slots"
+      }
+    },
+    "status": {
+      "unverified": "Unverified",
+      "verified": "Verified"
+    },
+    "role": {
+      "member": "Member",
+      "applicant": "Applicant"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "remove": "Remove",
+      "verify": "Verify Unit",
+      "unverify": "Unverify Unit",
+      "delete": "Delete Unit",
+      "setSlots": "Set Slots",
+      "setLeader": "Set Commander"
+    },
+    "errors": {
+      "not_confirmed": "You must be a confirmed player to manage units.",
+      "already_in_unit": "You are already a member of a unit.",
+      "tag_taken": "This tag is already in use.",
+      "name_taken": "This name is already in use.",
+      "unit_not_verified": "This unit is not yet verified.",
+      "already_applicant": "You have already applied to this unit.",
+      "already_member": "You are already a member of a unit.",
+      "is_leader": "Transfer command before leaving the unit.",
+      "forbidden": "You don't have permission for this action.",
+      "not_found": "Unit not found.",
+      "too_large": "Avatar file is too large (max 256 KB).",
+      "invalid_transition": "This unit cannot be changed in its current state.",
+      "server_error": "Something went wrong. Please try again.",
+      "validation_error": "Invalid input. Please check the form.",
+      "not_member": "You are not a member of this unit.",
+      "already_member_elsewhere": "This player is already a member of another unit.",
+      "member_not_found": "Member not found."
+    },
+    "applyModal": {
+      "title": "Apply to Join",
+      "messageLabel": "Your message (optional)",
+      "messagePlaceholder": "Tell the unit commander why you want to join, your experience, or anything they should know."
+    },
+    "yourApplication": "Your application",
+    "applicationNoMessage": "You submitted your application without a message.",
+    "applicationPending": "Application pending",
+    "withdrawApplication": "Withdraw Application",
+    "confirmWithdraw": "Are you sure you want to withdraw your application?",
+    "confirmApply": "Are you sure you want to apply to this unit?",
+    "confirmLeave": "Are you sure you want to leave this unit?",
+    "confirmReject": "Are you sure you want to reject this applicant?",
+    "confirmRemove": "Are you sure you want to remove this member?",
+    "history": "History",
+    "event": {
+      "created": "Unit created by {actor}",
+      "verified": "Verified by {actor}",
+      "verify": "Verified by {actor}",
+      "verification_added": "Verified by {actor}",
+      "unverified": "Unverified by {actor}",
+      "unverify": "Unverified by {actor}",
+      "verification_removed": "Unverified by {actor}",
+      "member_applied": "{actor} applied to join",
+      "member_joined": "{target} joined the unit",
+      "member_left": "{actor} left the unit",
+      "member_removed": "{target} was removed by {actor}",
+      "member_approved": "{target} was approved by {actor}",
+      "applicant_rejected": "{target} was rejected by {actor}",
+      "application_withdrawn": "{actor} withdrew their application",
+      "leader_changed": "Command transferred to {target}",
+      "slots_changed": "Slots changed to {meta}"
+    },
+    "adminSection": "Admin Controls",
+    "deleteUnitSection": "Delete Unit",
+    "deleteUnitWarning": "Permanently delete this unit and remove all members. This action cannot be undone.",
+    "confirmTransfer": "Are you sure you want to transfer command to this member?",
+    "confirmDelete": "Are you sure you want to permanently delete this unit? This cannot be undone.",
+    "applied": "Application submitted.",
+    "left": "You have left the unit.",
+    "created": "Unit created. It will be visible after admin verification."
   }
 }
