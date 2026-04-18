@@ -190,7 +190,8 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 		});
 		if (!res.ok) {
 			const data = await res.json();
-			setActionError(data.error ?? 'Error');
+			const errorKey = (data.error as string) || 'server_error';
+			setActionError(t(`errors.${errorKey}` as Parameters<typeof t>[0]));
 			return;
 		}
 		onAction();
@@ -207,7 +208,8 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 		});
 		if (!res.ok) {
 			const data = await res.json();
-			setActionError(data.error ?? 'Error');
+			const errorKey = (data.error as string) || 'server_error';
+			setActionError(t(`errors.${errorKey}` as Parameters<typeof t>[0]));
 			return;
 		}
 		setEditSaved(true);
