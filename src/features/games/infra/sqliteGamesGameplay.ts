@@ -1,4 +1,3 @@
-import { parseCanonicalSlotting } from '@/features/games/domain/slotting';
 import type {
 	ReleasePriorityGameplayRepoResult,
 	ReleaseRegularGameplayRepoResult,

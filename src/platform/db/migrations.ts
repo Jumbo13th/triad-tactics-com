@@ -653,6 +653,8 @@ export const migrations: Migration[] = [
 		up: `
 			ALTER TABLE missions ADD COLUMN unit_slotting_manual_state TEXT NOT NULL DEFAULT 'open'
 				CHECK(unit_slotting_manual_state IN ('closed', 'open'));
+			ALTER TABLE missions ADD COLUMN unit_gameplay_released_at DATETIME;
+			ALTER TABLE missions ADD COLUMN unit_gameplay_ever_released INTEGER NOT NULL DEFAULT 0;
 
 			CREATE TABLE IF NOT EXISTS mission_unit_assignments (
 				mission_id INTEGER NOT NULL,
@@ -666,21 +668,6 @@ export const migrations: Migration[] = [
 			);
 
 			CREATE INDEX IF NOT EXISTS idx_mua_mission ON mission_unit_assignments(mission_id);
-		`
-	},
-	{
-		id: 13,
-		name: 'unit_gameplay_release',
-		up: `
-			ALTER TABLE missions ADD COLUMN unit_gameplay_released_at DATETIME;
-			ALTER TABLE missions ADD COLUMN unit_gameplay_ever_released INTEGER NOT NULL DEFAULT 0;
-		`
-	},
-	{
-		id: 14,
-		name: 'auto_convert_flag',
-		up: `
-			ALTER TABLE missions ADD COLUMN unit_slots_auto_converted INTEGER NOT NULL DEFAULT 0;
 		`
 	}
 ];

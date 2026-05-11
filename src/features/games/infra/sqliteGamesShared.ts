@@ -86,8 +86,6 @@ export type MissionUpdateRow = {
 	created_at: string;
 	created_by_steamid64: string | null;
 };
-
-
 export function isNonEmptyText(value: string | null | undefined): boolean {
 	return typeof value === 'string' && value.trim() !== '';
 }
@@ -129,8 +127,6 @@ export function resolvePasswordUpdate(
 	}
 	return nextValue;
 }
-
-
 export function emitSlottingUpdated(shortCode: string | null, slottingRevision: number): void {
 	if (!shortCode) return;
 	slottingEventBus.emit({
@@ -140,8 +136,6 @@ export function emitSlottingUpdated(shortCode: string | null, slottingRevision: 
 		timestamp: new Date().toISOString()
 	});
 }
-
-
 export function selectMissionColumns() {
 	return `
 		id,
@@ -261,8 +255,6 @@ export function selectMissionRegularJoiners(db: DbConnection, missionId: number)
 		joinedAt: row.joined_at
 	}));
 }
-
-
 export function parseStoredArchiveResult(raw: string | null): GameArchiveResult | null {
 	if (!raw) return null;
 
@@ -373,8 +365,6 @@ export function mapMissionSettingsAudit(row: MissionRow, priorityBadgeTypeIds: n
 		priorityBadgeTypeIds
 	};
 }
-
-
 export function isPriorityClaimOpen(row: MissionRow): boolean {
 	if (row.priority_gameplay_released_at || row.priority_gameplay_ever_released) return false;
 	if (row.priority_claim_manual_state === 'open') return true;
@@ -389,8 +379,6 @@ export function isRegularJoinOpen(row: MissionRow): boolean {
 	if (row.regular_gameplay_released_at || row.regular_gameplay_ever_released) return false;
 	return true;
 }
-
-
 export function findUserHeldSlot(slotting: ReturnType<typeof parseCanonicalSlotting>, userId: number) {
 	for (const side of slotting.sides) {
 		for (const squad of side.squads) {
@@ -449,8 +437,6 @@ export function ensureAutoConversion(db: DbConnection, row: MissionRow): void {
 		WHERE id = ?
 	`).run(JSON.stringify(converted), row.id);
 }
-
-
 export function getMissionParticipationUser(db: DbConnection, steamId64: string): MissionParticipationUserRow | null {
 	const row = db
 		.prepare(`
@@ -524,8 +510,6 @@ export function viewerHasUnitGameplayAccess(db: DbConnection, missionId: number,
 	`).get(userId, missionId) as { 1: number } | undefined;
 	return row !== undefined;
 }
-
-
 export function resolveMissionPasswordForViewer(input: {
 	db: DbConnection;
 	row: MissionRow;
@@ -763,8 +747,6 @@ export function mapMissionDetailForViewer(input: {
 		}
 	};
 }
-
-
 export function normalizeArchiveCompletedResult(input: {
 	slotting: ReturnType<typeof parseCanonicalSlotting>;
 	result: { winnerSideId: string | null; sideScores: Array<{ sideId: string; score: number }> };
@@ -862,8 +844,6 @@ export function validatePublishableMission(input: {
 
 	return reasons;
 }
-
-
 export function assignUserToPrioritySlot(
 	slotting: ReturnType<typeof parseCanonicalSlotting>,
 	input: { slotId: string; userId: number; callsign: string }

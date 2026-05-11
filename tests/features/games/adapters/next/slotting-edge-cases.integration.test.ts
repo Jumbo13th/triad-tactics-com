@@ -510,7 +510,7 @@ describe('Slotting edge cases (integration)', () => {
 			const db = getDb();
 
 			// Create mission and a unit, but DO NOT assign unit to mission
-			const missionResult = db.prepare(`
+			db.prepare(`
 				INSERT INTO missions (status, title, description, short_code, slotting_json, early_password, final_password,
 					created_by_steamid64, updated_by_steamid64, unit_slotting_manual_state)
 				VALUES ('published', 'Unassigned Test', '', 'unassigned', ?, 'pw1', 'pw2', ?, ?, 'open')
