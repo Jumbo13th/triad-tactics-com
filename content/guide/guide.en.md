@@ -40,17 +40,20 @@ The duration of a mission is approximately 4 hours, while a single episode lasts
 
 There are three categories of players in each mission:
 
-- Unit players — members of official Triad Tactics units. Their slots are pre-assigned on the slotting board and marked with the unit tag. Unit members receive the password from their commander
-- Priority players — players who earned a special badge through contributions like server testing or event support. They can claim any open priority slot on the slotting board before the game
-- Regular players — everyone else. Regular players join the mission through the Join mission button. Being on the list does not guarantee a slot, but when admins release regular access, everyone on the list receives the gameplay password
+- Unit players — members of official Triad Tactics units that have allocated slots for the mission. Unit leaders claim slots for their unit directly on the slotting board. The gameplay password appears on the mission page automatically once it is released for units. Units without allocated slots (e.g. new units) participate as regular or priority players
+- Priority players — players who earned a special badge through contributions like server testing or event support. After unit slotting closes, unclaimed slots are automatically split between priority and regular access. Priority players can claim any open priority slot on the slotting board
+- Regular players — everyone else, including members of units without allocated slots. Regular players join the mission through the Join mission button. Being on the list does not guarantee a slot, but when admins release regular access, everyone on the list receives the gameplay password
 
 ## Slotting board
 
-After a mission is published, the admin sets up the slotting board — a table showing all units, roles, and available positions. Unit slots are pre-assigned. Priority players can then claim any open priority slot. Regular players join the regular list using the Join mission button
+After a mission is published, the slotting board opens for unit leaders to claim slots for their units. Each unit is assigned to a side by the admin. Leaders can claim any available slot on their assigned side, up to their unit's allocated slot count
 
-- If you see your unit tag on the board, wait for your unit leader's instructions
-- If you have a priority badge, find and claim an open priority slot
-- If you are a regular player, press Join mission to add your callsign to the regular list
+The priority phase is the next stage after unit slotting. It opens either at a scheduled time set by the admin or when the admin manually activates it. When the priority phase opens, unclaimed unit slots are automatically converted to priority and regular access (approximately 2:1 ratio). Priority players can then claim open priority slots
+
+- If you are a leader of a unit with allocated slots, claim slots for your unit on your assigned side
+- If you are a member of a unit with allocated slots, wait for your unit leader to claim slots — the password will appear on the mission page automatically
+- If you have a priority badge, wait for the priority phase to open, then claim an open priority slot
+- If you are a regular player or a member of a unit without allocated slots, press Join mission to add your callsign to the regular list
 
 ![Slotting board with units and Join mission button](/guide/guide-03.png)
 
@@ -59,7 +62,7 @@ After a mission is published, the admin sets up the slotting board — a table s
 There are two passwords for each mission:
 
 - Mod-download password — released first so all approved players can download the required mods
-- Gameplay password — released closer to game time. Unit members receive it from their leaders first, then priority players see it on the mission page, and finally regular players get access
+- Gameplay password — released closer to game time in stages: unit members see it first, then priority players, then regular players. Passwords appear on the mission page automatically for your category
 
 Passwords appear in the Server section of the mission page when they become available for your category. Server passwords are confidential — sharing them with unauthorized people is forbidden
 

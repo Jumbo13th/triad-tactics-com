@@ -162,6 +162,7 @@ export function SlotCell({
 	onClaim,
 	onSwitch,
 	onLeave,
+	unitClaim,
 	t
 }: {
 	slot: CanonicalSlot;
@@ -175,10 +176,17 @@ export function SlotCell({
 	onClaim: () => void;
 	onSwitch: () => void;
 	onLeave: () => void;
+	unitClaim?: { canClaim: boolean; canRelease: boolean; isBusy: boolean; unitTag: string; onClaim: () => void; onRelease: () => void } | null;
 	t: ReturnType<typeof useTranslations<'games'>>;
 }) {
+	const isOwnUnit = unitClaim?.canRelease;
+
 	return (
-		<div className={`flex min-h-40 flex-col justify-between rounded-2xl border p-3 shadow-sm shadow-black/10 ${slotCellSurfaceClass(slot.access)}`}>
+		<div className={`flex min-h-40 flex-col justify-between rounded-2xl border p-3 shadow-sm shadow-black/10 ${
+			isOwnUnit
+				? 'border-emerald-500/30 bg-emerald-950/40'
+				: slotCellSurfaceClass(slot.access)
+		}`}>
 			<div>
 				<p
 					className="whitespace-normal break-words text-xs font-semibold leading-snug text-neutral-50 [overflow-wrap:anywhere]"
@@ -193,6 +201,11 @@ export function SlotCell({
 					{isHeldByViewer ? (
 						<span className="inline-flex items-center rounded-full border border-[color:var(--accent)]/25 bg-[color:var(--accent)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--accent)]">
 							{t('yourSlot')}
+						</span>
+					) : null}
+					{isOwnUnit ? (
+						<span className="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400">
+							{unitClaim!.unitTag}
 						</span>
 					) : null}
 				</div>
@@ -231,6 +244,28 @@ export function SlotCell({
 					className="mt-2 inline-flex w-fit items-center whitespace-nowrap rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-100 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					{isLeaveBusy ? t('actionWorking') : t('leaveSlot')}
+				</button>
+			) : null}
+
+			{unitClaim?.canClaim ? (
+				<button
+					type="button"
+					disabled={disableActions}
+					onClick={unitClaim.onClaim}
+					className="mt-2 inline-flex w-fit items-center whitespace-nowrap rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					{unitClaim.isBusy ? t('actionWorking') : t('unitSlottingClaim', { tag: unitClaim.unitTag })}
+				</button>
+			) : null}
+
+			{unitClaim?.canRelease ? (
+				<button
+					type="button"
+					disabled={disableActions}
+					onClick={unitClaim.onRelease}
+					className="mt-2 inline-flex w-fit items-center whitespace-nowrap rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-100 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					{unitClaim.isBusy ? t('actionWorking') : t('unitSlottingRelease')}
 				</button>
 			) : null}
 		</div>

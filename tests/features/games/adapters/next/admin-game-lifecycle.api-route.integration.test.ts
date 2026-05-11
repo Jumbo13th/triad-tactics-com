@@ -206,46 +206,6 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 		expect(json.error).toBe('settings_revision_conflict');
 	});
 
-	it('blocks regular join enablement when the mission has no regular slots', async () => {
-		const { dbOperations, PUT, NextRequest } = await loadAdminGameLifecycleHarness();
-		const missionId = insertDraftMission(createSlottingShape({ includePriority: true }));
-		const adminSid = createSteamSession(dbOperations, {
-			steamid64: ADMIN_STEAM_ID,
-			redirectPath: '/en/admin/games'
-		});
-
-		const res = await PUT(
-			new NextRequest(`http://localhost/api/admin/games/${missionId}/settings`, {
-				method: 'PUT',
-				headers: {
-					origin: 'http://localhost',
-					'content-type': 'application/json',
-					cookie: `tt_steam_session=${adminSid}`
-				},
-				body: JSON.stringify({
-					settingsRevision: 1,
-					title: 'No Regulars',
-						description: { en: '', ru: '', uk: '', ar: '' },
-					shortCode: null,
-					startsAt: null,
-					serverName: '',
-					serverHost: '',
-					serverPort: null,
-					priorityClaimOpensAt: null,
-					priorityClaimManualState: 'default',
-					regularJoinEnabled: true,
-					serverDetailsHidden: false,
-					priorityBadgeTypeIds: []
-				})
-			}),
-			missionRouteContext(missionId)
-		);
-
-		expect(res.status).toBe(409);
-		const json = await res.json();
-		expect(json.error).toBe('regular_join_requires_regular_slots');
-	});
-
 	it('returns detailed validation errors for invalid settings payloads', async () => {
 		const { dbOperations, PUT, NextRequest } = await loadAdminGameLifecycleHarness();
 		const missionId = insertDraftMission(createSlottingShape({ includeRegular: true }));

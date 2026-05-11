@@ -14,4 +14,5 @@ export { default as AdminBadgesPage } from '../AdminBadgesPage';
 export { default as AdminMailingPage } from '../AdminMailingPage';
 export { default as AdminUsersPage } from '../AdminUsersPage';
 export { default as AdminRenameRequestsPage } from '../AdminRenameRequestsPage';
+export { default as AdminMaintenancePage } from '../AdminMaintenancePage';
 export { default as AdminNav } from '../AdminNav';

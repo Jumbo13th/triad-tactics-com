@@ -47,7 +47,7 @@ services:
       - |
         apk add --no-cache curl;
         while true; do
-          curl -fsS -H "Authorization: Bearer $${OUTBOX_CRON_SECRET}" http://app:3000/api/cron/outbox >/dev/null || true;
+          curl -fsS -H "Authorization: Bearer $${OUTBOX_CRON_SECRET}" http://app:3000/api/cron >/dev/null || true;
           sleep "$${CRON_INTERVAL_SECONDS}";
         done
     restart: unless-stopped

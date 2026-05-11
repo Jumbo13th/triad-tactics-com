@@ -5,12 +5,12 @@ import {
 	cancelGameRequestSchema,
 	createMissionUpdateRequestSchema,
 	deleteArchivedMissionRequestSchema,
-	importGameSlottingRequestSchema,
 	publishGameRequestSchema,
 	shortCodeSchema,
 	updateMissionUpdateRequestSchema,
 	updateGameSettingsRequestSchema,
-	updateGameSlottingRequestSchema
+	updateGameSlottingRequestSchema,
+	updateUnitAssignmentsRequestSchema
 } from '@/features/games/domain/requests';
 import {
 	archiveGameDeps,
@@ -21,13 +21,15 @@ import {
 	getMissionAuditDeps,
 	hidePriorityGameplayDeps,
 	hideRegularGameplayDeps,
-	importGameSlottingDeps,
+	hideUnitGameplayDeps,
 	publishGameDeps,
 	releasePriorityGameplayDeps,
 	releaseRegularGameplayDeps,
+	releaseUnitGameplayDeps,
 	updateMissionUpdateDeps,
 	updateGameSettingsDeps,
-	updateGameSlottingDeps
+	updateGameSlottingDeps,
+	updateUnitAssignmentsDeps
 } from '@/features/games/deps';
 import { archiveGame } from '@/features/games/useCases/archiveGame';
 import { cancelGame } from '@/features/games/useCases/cancelGame';
@@ -37,13 +39,15 @@ import { getAdminGameMission } from '@/features/games/useCases/getAdminGameMissi
 import { getMissionAuditHistory } from '@/features/games/useCases/getMissionAuditHistory';
 import { hidePriorityGameplay } from '@/features/games/useCases/hidePriorityGameplay';
 import { hideRegularGameplay } from '@/features/games/useCases/hideRegularGameplay';
-import { importGameSlotting } from '@/features/games/useCases/importGameSlotting';
 import { publishGame } from '@/features/games/useCases/publishGame';
 import { releasePriorityGameplay } from '@/features/games/useCases/releasePriorityGameplay';
+import { releaseUnitGameplay } from '@/features/games/useCases/releaseUnitGameplay';
+import { hideUnitGameplay } from '@/features/games/useCases/hideUnitGameplay';
 import { releaseRegularGameplay } from '@/features/games/useCases/releaseRegularGameplay';
 import { updateMissionUpdate } from '@/features/games/useCases/updateMissionUpdate';
 import { updateGameSettings } from '@/features/games/useCases/updateGameSettings';
 import { updateGameSlotting } from '@/features/games/useCases/updateGameSlotting';
+import { updateUnitAssignments } from '@/features/games/useCases/updateUnitAssignments';
 import { DISCORD_BOT_TOKEN } from '@/platform/env';
 import { errorToLogObject, logger } from '@/platform/logger';
 import type { ZodIssue } from 'zod';
@@ -297,48 +301,6 @@ export async function putAdminGameSlottingRoute(
 	}
 }
 
-export async function postAdminGameSlottingImportRoute(
-	request: NextRequest,
-	context: AdminGameMissionRouteContext
-): Promise<NextResponse> {
-	try {
-		const admin = requireAdmin(request);
-		if (!admin.ok) return admin.response;
-
-		const missionId = await readMissionId(context);
-		if (!missionId) {
-			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
-		}
-
-		let body: unknown;
-		try {
-			body = await readRequestBody(request);
-		} catch {
-			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
-		}
-
-		const parsed = importGameSlottingRequestSchema.safeParse(body);
-		if (!parsed.success) {
-			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
-		}
-
-		const imported = importGameSlotting(importGameSlottingDeps, {
-			...parsed.data,
-			missionId,
-			updatedBySteamId64: admin.identity.steamid64
-		});
-
-		if (!imported.ok) {
-			return mapSlottingMutationError(imported);
-		}
-
-		return NextResponse.json({ success: true, mission: imported.mission });
-	} catch (error: unknown) {
-		logger.error({ ...errorToLogObject(error) }, 'admin_game_slotting_import_failed');
-		return NextResponse.json({ error: 'server_error' }, { status: 500 });
-	}
-}
-
 export async function postAdminGamePublishRoute(
 	request: NextRequest,
 	context: AdminGameMissionRouteContext
@@ -387,6 +349,64 @@ export async function postAdminGamePublishRoute(
 		return NextResponse.json({ success: true, mission: published.mission });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_game_publish_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminGameReleaseUnitRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const released = releaseUnitGameplay(releaseUnitGameplayDeps, {
+			missionId,
+			releasedBySteamId64: admin.identity.steamid64
+		});
+
+		if (!released.ok) {
+			return mapGameplayReleaseError(released);
+		}
+
+		return NextResponse.json({ success: true, mission: released.mission });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_release_unit_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminGameHideUnitRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const hidden = hideUnitGameplay(hideUnitGameplayDeps, {
+			missionId,
+			hiddenBySteamId64: admin.identity.steamid64
+		});
+
+		if (!hidden.ok) {
+			return mapGameplayReleaseError(hidden);
+		}
+
+		return NextResponse.json({ success: true, mission: hidden.mission });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_hide_unit_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }
@@ -761,6 +781,52 @@ export async function deleteAdminArchivedMissionRoute(
 		return NextResponse.json({ success: true });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_archived_game_delete_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function putAdminGameUnitAssignmentsRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		let body: unknown;
+		try {
+			body = await readRequestBody(request);
+		} catch {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const parsed = updateUnitAssignmentsRequestSchema.safeParse(body);
+		if (!parsed.success) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const result = updateUnitAssignments(updateUnitAssignmentsDeps, {
+			...parsed.data,
+			missionId,
+			updatedBySteamId64: admin.identity.steamid64
+		});
+
+		if (!result.ok) {
+			if (result.error === 'not_found') {
+				return NextResponse.json({ error: result.error }, { status: 404 });
+			}
+			const status = result.error === 'database_error' ? 500 : 400;
+			return NextResponse.json({ error: result.error }, { status });
+		}
+
+		return NextResponse.json({ success: true, mission: result.mission });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_unit_assignments_update_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }

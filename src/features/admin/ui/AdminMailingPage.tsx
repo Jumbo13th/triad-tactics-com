@@ -28,8 +28,6 @@ export default function AdminMailingPage() {
 	const redirectPath = useMemo(() => buildLocalizedPath(locale, pathname), [locale, pathname]);
 
 	const [status, setStatus] = useState<AdminStatus | null>(null);
-	const [outboxStatus, setOutboxStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle');
-	const [outboxMessage, setOutboxMessage] = useState<string | null>(null);
 	const [subjectEn, setSubjectEn] = useState('');
 	const [bodyEn, setBodyEn] = useState('');
 	const [subjectRu, setSubjectRu] = useState('');
@@ -129,20 +127,6 @@ export default function AdminMailingPage() {
 			cancelled = true;
 		};
 	}, [status]);
-
-	const handleRunOutbox = async () => {
-		try {
-			setOutboxStatus('running');
-			setOutboxMessage(null);
-			const res = await fetch('/api/admin/outbox', { method: 'POST' });
-			if (!res.ok) throw new Error('outbox_failed');
-			setOutboxStatus('success');
-			setOutboxMessage(ta('outboxRunSuccess'));
-		} catch {
-			setOutboxStatus('error');
-			setOutboxMessage(ta('outboxRunError'));
-		}
-	};
 
 	const variableExampleParams = useMemo(
 		() => ({
@@ -431,26 +415,6 @@ export default function AdminMailingPage() {
 						</form>
 					</div>
 
-					<div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 shadow-sm shadow-black/20">
-						<div className="flex flex-wrap items-center justify-between gap-3">
-							<div>
-								<p className="text-sm font-semibold text-neutral-100">{ta('outboxTitle')}</p>
-								<p className="text-xs text-neutral-400">{ta('outboxHelp')}</p>
-							</div>
-							<AdminButton
-								variant="secondary"
-								className="h-9 whitespace-nowrap"
-								onClick={(e) => {
-									e.preventDefault();
-									void handleRunOutbox();
-								}}
-								disabled={outboxStatus === 'running'}
-							>
-								{outboxStatus === 'running' ? ta('outboxRunning') : ta('outboxRun')}
-							</AdminButton>
-						</div>
-						{outboxMessage ? <p className="mt-3 text-sm text-neutral-300">{outboxMessage}</p> : null}
-					</div>
 				</div>
 				{confirmOpen && typeof document !== 'undefined'
 					? createPortal(

@@ -32,6 +32,7 @@ import {
 	SyncedHorizontalScroll
 } from './missionPageComponents';
 import { useMissionGuide, MissionGuideModal } from './MissionGuideModal';
+import { useSlottingSSE } from './useSlottingSSE';
 
 export default function GameMissionPage({ mission }: { mission: GameMissionDetail }) {
 	const t = useTranslations('games');
@@ -41,6 +42,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 	const { actionError, clearActionError, pendingActionId, busy, runAction } = useMissionActions(t);
 	const [pendingConfirm, setPendingConfirm] = useState<{ kind: 'switch' | 'leave-slot' | 'leave-regular'; action: () => void } | null>(null);
 	const guide = useMissionGuide();
+	useSlottingSSE(mission.shortCode, mission.slottingRevision);
 
 	const startDate = mission.startsAt ? parseDateTimeValue(mission.startsAt) : null;
 	const startValid = startDate !== null && !Number.isNaN(startDate.getTime());
@@ -770,6 +772,8 @@ function SlottingSection({
 	t: ReturnType<typeof useTranslations<'games'>>;
 }) {
 	const router = useRouter();
+	const locale = useLocale();
+	const { timeZone, hourCycle } = useViewerDateTimePreferences();
 	const [isRefreshing, startRefresh] = useTransition();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
 	const canLeavePrioritySlot = mission.status === 'published' && mission.viewer.heldSlotAccess === 'priority';
@@ -852,6 +856,49 @@ function SlottingSection({
 					) : null}
 				</div>
 			</div>
+
+			{mission.status === 'published' ? (
+				<div className="mt-4 grid gap-2">
+					{mission.unitSlottingOpen ? (
+						<div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5">
+							<p className="text-xs text-emerald-200">{t('slottingPhaseUnit')}</p>
+						</div>
+					) : null}
+					{mission.priorityClaimOpen ? (
+						<div className="rounded-xl border border-[color:var(--accent)]/20 bg-[color:var(--accent)]/5 px-4 py-2.5">
+							<p className="text-xs text-[color:var(--accent)]">{t('slottingPhasePriorityOpen', { count: mission.availablePrioritySlotCount })}</p>
+						</div>
+					) : mission.priorityClaimOpensAt && !mission.priorityGameplayReleasedAt ? (
+						<div className="rounded-xl border border-neutral-800 bg-white/[0.02] px-4 py-2.5">
+							<p className="text-xs text-neutral-400">{t('slottingPhasePriorityScheduled', { date: formatViewerDate(mission.priorityClaimOpensAt, locale, timeZone, hourCycle) ?? mission.priorityClaimOpensAt })}</p>
+						</div>
+					) : null}
+					{mission.regularJoinOpen ? (
+						<div className="rounded-xl border border-neutral-800 bg-white/[0.02] px-4 py-2.5">
+							<p className="text-xs text-neutral-400">{t('slottingPhaseRegularOpen')}</p>
+						</div>
+					) : null}
+				</div>
+			) : null}
+
+			{mission.viewer.isUnitLeader && mission.viewer.unitTag && mission.unitSlottingOpen ? (
+				<div className="mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="space-y-1">
+							<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">{t('unitSlottingTitle')}</p>
+							<p className="text-sm text-emerald-100/80">
+								{t('unitSlottingSubtitle', {
+									unitTag: mission.viewer.unitTag,
+									sideName: (() => { const s = mission.slotting.sides.find((s) => s.id === mission.viewer.unitSideId); return s ? sideDisplayName(s) : ''; })()
+								})}
+							</p>
+						</div>
+						<span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-950/50 px-3 py-1.5 text-sm font-semibold text-emerald-300">
+							{t('unitSlottingSlotsCounter', { used: mission.viewer.unitSlotsUsed, total: mission.viewer.unitSlotsAllocated })}
+						</span>
+					</div>
+				</div>
+			) : null}
 
 			<SlottingBoards
 				mission={mission}
@@ -986,6 +1033,9 @@ function SlottingBoards({
 	t: ReturnType<typeof useTranslations<'games'>>;
 	className?: string;
 }) {
+	const viewer = mission.viewer;
+	const isUnitLeaderOnMission = viewer.isUnitLeader && viewer.unitSideId && mission.unitSlottingOpen;
+
 	return (
 		<div className={className}>
 			{mission.slotting.sides.map((side) => {
@@ -1044,24 +1094,60 @@ function SlottingBoards({
 													mission.status === 'published' &&
 													slot.access === 'priority' &&
 													slot.occupant === null &&
-													mission.viewer.canClaimPriority;
+													viewer.canClaimPriority;
 												const canSwitch =
 													mission.status === 'published' &&
 													slot.access === 'priority' &&
 													slot.occupant === null &&
-													mission.viewer.canSwitchPriority;
+													viewer.canSwitchPriority;
+
+												const isOwnUnit =
+													isUnitLeaderOnMission &&
+													slot.occupant?.type === 'placeholder' &&
+													slot.occupant.label.toLowerCase() === (viewer.unitTag ?? '').toLowerCase();
+												const canUnitClaim =
+													isUnitLeaderOnMission &&
+													slot.access === 'unit' &&
+													slot.occupant === null &&
+													side.id === viewer.unitSideId &&
+													viewer.canClaimUnitSlot;
+												const canUnitRelease =
+													isUnitLeaderOnMission &&
+													slot.access === 'unit' &&
+													isOwnUnit;
+
+												const unitClaimProps = (canUnitClaim || canUnitRelease) ? {
+													canClaim: !!canUnitClaim,
+													canRelease: !!canUnitRelease,
+													isBusy: busy && (pendingActionId === `unit-claim-${slot.id}` || pendingActionId === `unit-release-${slot.id}`),
+													unitTag: viewer.unitTag ?? '',
+													onClaim: () => {
+														void runAction({
+															id: `unit-claim-${slot.id}`,
+															path: `/api/games/${mission.shortCode}/claim-unit`,
+															body: { slotId: slot.id }
+														});
+													},
+													onRelease: () => {
+														void runAction({
+															id: `unit-release-${slot.id}`,
+															path: `/api/games/${mission.shortCode}/release-unit`,
+															body: { slotId: slot.id }
+														});
+													}
+												} : null;
 
 												return (
 													<td key={slot.id} className="border-t border-neutral-800 p-2 align-top">
 														<SlotCell
 															slot={slot}
-															isHeldByViewer={mission.viewer.heldSlotId === slot.id}
+															isHeldByViewer={viewer.heldSlotId === slot.id}
 															canClaim={canClaim}
 															canSwitch={canSwitch}
 															canLeave={
 																mission.status === 'published' &&
-																mission.viewer.heldSlotAccess === 'priority' &&
-																mission.viewer.heldSlotId === slot.id
+																viewer.heldSlotAccess === 'priority' &&
+																viewer.heldSlotId === slot.id
 															}
 															isBusy={busy && pendingActionId === slot.id}
 															isLeaveBusy={busy && pendingActionId === 'leave-slot'}
@@ -1092,6 +1178,7 @@ function SlottingBoards({
 																	})
 																});
 															}}
+															unitClaim={unitClaimProps}
 															t={t}
 														/>
 													</td>

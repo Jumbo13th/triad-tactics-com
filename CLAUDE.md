@@ -212,6 +212,5 @@ See `DEPLOYMENT.md` for complete deployment instructions.
 ## Special Files
 
 - **instrumentation.ts**: Process-level error handlers (Edge-compatible)
-- **SLOTTING_AGENT_INSTRUCTIONS.md**: Instructions for AI-assisted mission slotting (specific to this project's domain)
 - **ARCHITECTURE.md**: Detailed architecture documentation
 - **tests/E2E.md**: E2E testing patterns and templates

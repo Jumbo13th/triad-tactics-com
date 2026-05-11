@@ -646,5 +646,41 @@ export const migrations: Migration[] = [
 
 			CREATE INDEX IF NOT EXISTS idx_unit_events_unit ON unit_events(unit_id, created_at DESC);
 		`
+	},
+	{
+		id: 12,
+		name: 'unit_slotting',
+		up: `
+			ALTER TABLE missions ADD COLUMN unit_slotting_manual_state TEXT NOT NULL DEFAULT 'open'
+				CHECK(unit_slotting_manual_state IN ('closed', 'open'));
+
+			CREATE TABLE IF NOT EXISTS mission_unit_assignments (
+				mission_id INTEGER NOT NULL,
+				unit_id INTEGER NOT NULL,
+				side_id TEXT NOT NULL,
+				assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				assigned_by_steamid64 TEXT,
+				PRIMARY KEY (mission_id, unit_id),
+				FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_mua_mission ON mission_unit_assignments(mission_id);
+		`
+	},
+	{
+		id: 13,
+		name: 'unit_gameplay_release',
+		up: `
+			ALTER TABLE missions ADD COLUMN unit_gameplay_released_at DATETIME;
+			ALTER TABLE missions ADD COLUMN unit_gameplay_ever_released INTEGER NOT NULL DEFAULT 0;
+		`
+	},
+	{
+		id: 14,
+		name: 'auto_convert_flag',
+		up: `
+			ALTER TABLE missions ADD COLUMN unit_slots_auto_converted INTEGER NOT NULL DEFAULT 0;
+		`
 	}
 ];
