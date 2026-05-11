@@ -1,6 +1,7 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { CanonicalSlotting, CanonicalSlot } from '@/features/games/domain/slotting';
 import { parseAdminGameMissionResponse } from '@/features/games/domain/api';
 import type { AdminGameMissionDetail } from '@/features/games/domain/api';
@@ -16,11 +17,7 @@ import {
 } from './missionPageUtils';
 import { SyncedHorizontalScroll } from './missionPageComponents';
 
-const ACCESS_OPTIONS: Array<{ value: CanonicalSlot['access']; label: string }> = [
-	{ value: 'unit', label: 'Unit' },
-	{ value: 'priority', label: 'Priority' },
-	{ value: 'regular', label: 'Regular' }
-];
+const ACCESS_VALUES: Array<CanonicalSlot['access']> = ['unit', 'priority', 'regular'];
 
 type Props = {
 	slotting: CanonicalSlotting;
@@ -31,6 +28,7 @@ type Props = {
 };
 
 export function SlottingEditor({ slotting, slottingRevision, unitAssignments, missionId, onSaved }: Props) {
+	const tg = useTranslations('games');
 	const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 	const [savingSlotId, setSavingSlotId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -67,7 +65,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 				onSaved(parsed.mission);
 			}
 		} catch {
-			setError('Network error');
+			setError(tg('adminSlottingEditorNetworkError'));
 		} finally {
 			setSavingSlotId(null);
 		}
@@ -78,7 +76,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 			{error ? (
 				<div className="flex items-center justify-between rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
 					<span>{error}</span>
-					<button type="button" onClick={() => setError(null)} className="text-xs font-semibold text-red-300 hover:text-red-100">Dismiss</button>
+					<button type="button" onClick={() => setError(null)} className="text-xs font-semibold text-red-300 hover:text-red-100">{tg('adminSlottingEditorDismiss')}</button>
 				</div>
 			) : null}
 
@@ -160,7 +158,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 															<p className="mt-1.5 truncate text-sm font-medium text-neutral-400">
 																{slot.occupant
 																	? slot.occupant.type === 'user' ? slot.occupant.callsign : slot.occupant.label
-																	: 'Unclaimed'}
+																	: tg('slotUnclaimed')}
 															</p>
 
 															{isEditing ? (
@@ -170,28 +168,28 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 																>
 																	<div className="grid gap-3">
 																		<div>
-																			<label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">Access</label>
+																			<label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">{tg('adminSlottingEditorAccessLabel')}</label>
 																			<div className="mt-1.5 flex flex-wrap gap-1.5">
-																				{ACCESS_OPTIONS.map((opt) => (
+																				{ACCESS_VALUES.map((accessValue) => (
 																					<button
-																						key={opt.value}
+																						key={accessValue}
 																						type="button"
 																						disabled={isSaving}
 																						onClick={() => {
 																							void saveSlotChange(slot.id, (s) => {
-																								s.access = opt.value;
-																								if (opt.value !== 'unit' && s.occupant?.type === 'placeholder') {
+																								s.access = accessValue;
+																								if (accessValue !== 'unit' && s.occupant?.type === 'placeholder') {
 																									s.occupant = null;
 																								}
 																							});
 																						}}
 																						className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase transition ${
-																							slot.access === opt.value
+																							slot.access === accessValue
 																								? 'bg-[color:var(--accent)] text-neutral-950'
 																								: 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
 																						}`}
 																					>
-																						{opt.label}
+																						{tg(`slotAccess${accessValue.charAt(0).toUpperCase() + accessValue.slice(1)}` as 'slotAccessUnit' | 'slotAccessPriority' | 'slotAccessRegular')}
 																					</button>
 																				))}
 																			</div>
@@ -199,7 +197,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 
 																		{slot.access === 'unit' ? (
 																			<div>
-																				<label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">Unit</label>
+																				<label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">{tg('adminSlottingEditorUnitLabel')}</label>
 																				<select
 																					disabled={isSaving}
 																					value={slot.occupant?.type === 'placeholder' ? slot.occupant.label : ''}
@@ -211,7 +209,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 																					}}
 																					className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-200"
 																				>
-																					<option value="">Select unit...</option>
+																					<option value="">{tg('adminSlottingEditorSelectUnit')}</option>
 																					{unitAssignments
 																						.filter((ua) => ua.sideId === side.id)
 																						.map((ua) => (
@@ -234,7 +232,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 																				}}
 																				className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
 																			>
-																				Clear occupant
+																				{tg('adminSlottingEditorClearOccupant')}
 																			</button>
 																		) : null}
 																	</div>

@@ -933,19 +933,19 @@ export default function AdminGameMissionPage() {
 
 												<div className={`${editorCardClass} grid gap-4`}>
 													<div>
-														<p className="text-sm font-semibold text-neutral-200">Slotting phases</p>
-														<p className="mt-1 text-xs text-neutral-500">Controls the slotting lifecycle. Unit slotting opens first, then priority (which auto-converts unclaimed slots), then regular join.</p>
+														<p className="text-sm font-semibold text-neutral-200">{ta('slottingPhasesTitle')}</p>
+														<p className="mt-1 text-xs text-neutral-500">{ta('slottingPhasesDescription')}</p>
 													</div>
 
 													<div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-3">
 														<div className="flex flex-wrap items-center justify-between gap-3">
 															<div>
-																<p className="text-xs font-semibold text-emerald-300">1. Unit slotting</p>
-																<p className="mt-0.5 text-[11px] text-emerald-200/60">Unit leaders claim slots for their units. Open by default on publish.</p>
+																<p className="text-xs font-semibold text-emerald-300">{ta('slottingPhaseUnitTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-emerald-200/60">{ta('slottingPhaseUnitDescription')}</p>
 															</div>
 															<select value={settingsForm.unitSlottingManualState} onChange={(event) => setSettingsForm({ ...settingsForm, unitSlottingManualState: event.target.value as SettingsFormState['unitSlottingManualState'] })} className={`w-28 ${editorInputClass}`}>
-																<option value="open">Open</option>
-																<option value="closed">Closed</option>
+																<option value="open">{ta('slottingPhaseOpen')}</option>
+																<option value="closed">{ta('slottingPhaseClosed')}</option>
 															</select>
 														</div>
 													</div>
@@ -953,17 +953,17 @@ export default function AdminGameMissionPage() {
 													<div className="rounded-xl border border-[color:var(--accent)]/15 bg-[color:var(--accent)]/5 p-3">
 														<div className="flex flex-wrap items-center justify-between gap-3">
 															<div>
-																<p className="text-xs font-semibold text-[color:var(--accent)]">2. Priority slotting</p>
-																<p className="mt-0.5 text-[11px] text-neutral-400">When opened, unclaimed unit slots auto-convert to priority/regular (2:1). Use scheduled time or force open.</p>
+																<p className="text-xs font-semibold text-[color:var(--accent)]">{ta('slottingPhasePriorityTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-neutral-400">{ta('slottingPhasePriorityDescription')}</p>
 															</div>
 															<select value={settingsForm.priorityClaimManualState} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimManualState: event.target.value as SettingsFormState['priorityClaimManualState'] })} className={`w-28 ${editorInputClass}`}>
-																<option value="default">Scheduled</option>
-																<option value="open">Force open</option>
-																<option value="closed">Force closed</option>
+																<option value="default">{ta('slottingPhasePriorityScheduled')}</option>
+																<option value="open">{ta('slottingPhasePriorityForceOpen')}</option>
+																<option value="closed">{ta('slottingPhasePriorityForceClosed')}</option>
 															</select>
 														</div>
 														<div className="mt-2">
-															<label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Opens at</label>
+															<label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">{ta('slottingPhasePriorityOpensAt')}</label>
 															<input type="datetime-local" value={settingsForm.priorityClaimOpensAt} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimOpensAt: event.target.value })} className={`mt-1 ${editorDateTimeClass}`} />
 														</div>
 													</div>
@@ -971,17 +971,17 @@ export default function AdminGameMissionPage() {
 													<div className="rounded-xl border border-neutral-800 bg-white/[0.02] p-3">
 														<div className="flex flex-wrap items-center justify-between gap-3">
 															<div>
-																<p className="text-xs font-semibold text-neutral-300">3. Regular join</p>
-																<p className="mt-0.5 text-[11px] text-neutral-500">Players without unit slots or priority badges join the regular list. Open by default.</p>
+																<p className="text-xs font-semibold text-neutral-300">{ta('slottingPhaseRegularTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-neutral-500">{ta('slottingPhaseRegularDescription')}</p>
 															</div>
 															<select value={settingsForm.regularJoinEnabled ? 'open' : 'closed'} onChange={(event) => setSettingsForm({ ...settingsForm, regularJoinEnabled: event.target.value === 'open' })} className={`w-28 ${editorInputClass}`}>
-																<option value="open">Open</option>
-																<option value="closed">Closed</option>
+																<option value="open">{ta('slottingPhaseOpen')}</option>
+																<option value="closed">{ta('slottingPhaseClosed')}</option>
 															</select>
 														</div>
 													</div>
 
-													<p className="text-[11px] text-neutral-500">Note: releasing any password automatically closes unit slotting. Admin can reopen it manually.</p>
+													<p className="text-[11px] text-neutral-500">{ta('slottingPhasesNote')}</p>
 												</div>
 
 												<div className={`${editorCardClass} grid gap-3`}>
@@ -1094,7 +1094,7 @@ export default function AdminGameMissionPage() {
 										<section className={editorSectionClass}>
 											<AdminDisclosure
 												summaryLeft={
-													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">Unit Assignments</h2>
+													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminUnitAssignmentsTitle')}</h2>
 												}
 											>
 												<UnitAssignmentsPanel missionId={mission.id} slotting={mission.slotting} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse} />
@@ -1104,7 +1104,7 @@ export default function AdminGameMissionPage() {
 										<section className={editorSectionClass}>
 											<AdminDisclosure
 												summaryLeft={
-													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">Visual Slotting Editor</h2>
+													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminSlottingEditorTitle')}</h2>
 												}
 											>
 												<SlottingEditor
@@ -1407,13 +1407,18 @@ function UnitAssignmentsPanel({
 	currentAssignments: import('@/features/games/domain/types').GameUnitAssignment[];
 	onSaved: (mission: AdminGameMissionDetail) => void;
 }) {
+	const tg = useTranslations('games');
 	const [assignments, setAssignments] = useState<Array<{ unitId: number; unitTag: string; unitName: string; sideId: string }>>(() =>
 		currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId }))
 	);
 	const [availableUnits, setAvailableUnits] = useState<Array<{ id: number; tag: string; name: string; slotsAllocated: number }>>([]);
 	const [loadingUnits, setLoadingUnits] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [feedback, setFeedback] = useState<string | null>(null);
+	const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	useEffect(() => {
+		setAssignments(currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId })));
+	}, [currentAssignments]);
 
 	useEffect(() => {
 		void (async () => {
@@ -1457,13 +1462,14 @@ function UnitAssignmentsPanel({
 			const json: unknown = await res.json();
 			const parsed = parseAdminGameMissionResponse(json);
 			if (parsed && !('error' in parsed)) {
-				setFeedback('Assignments saved');
+				setFeedback({ type: 'success', text: tg('adminUnitAssignmentsSaved') });
 				onSaved(parsed.mission);
 			} else {
-				setFeedback(`Error: ${parsed && 'error' in parsed ? parsed.error : 'Unknown error'}`);
+				const code = parsed && 'error' in parsed ? parsed.error : 'unknown';
+				setFeedback({ type: 'error', text: tg('adminUnitAssignmentsErrorPrefix', { error: code }) });
 			}
 		} catch {
-			setFeedback('Network error');
+			setFeedback({ type: 'error', text: tg('adminUnitAssignmentsNetworkError') });
 		} finally {
 			setSaving(false);
 		}
@@ -1473,7 +1479,7 @@ function UnitAssignmentsPanel({
 
 	return (
 		<div className="grid gap-4">
-			<p className="text-sm text-neutral-400">Assign verified units with allocated slots to a side for this mission.</p>
+			<p className="text-sm text-neutral-400">{tg('adminUnitAssignmentsSubtitle')}</p>
 
 			{assignments.length > 0 ? (
 				<div className="grid gap-2">
@@ -1495,20 +1501,20 @@ function UnitAssignmentsPanel({
 								onClick={() => removeUnit(a.unitId)}
 								className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 transition hover:bg-red-500/20"
 							>
-								Remove
+								{tg('adminUnitAssignmentsRemove')}
 							</button>
 						</div>
 					))}
 				</div>
 			) : (
-				<p className="text-sm text-neutral-500">No units assigned yet.</p>
+				<p className="text-sm text-neutral-500">{tg('adminUnitAssignmentsNoneAssigned')}</p>
 			)}
 
 			{unassignedUnits.length > 0 ? (
 				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-xs text-neutral-400">Add unit:</span>
+					<span className="text-xs text-neutral-400">{tg('adminUnitAssignmentsAddUnit')}</span>
 					{loadingUnits ? (
-						<span className="text-xs text-neutral-500">Loading...</span>
+						<span className="text-xs text-neutral-500">{tg('adminUnitAssignmentsLoading')}</span>
 					) : (
 						<select
 							value=""
@@ -1518,7 +1524,7 @@ function UnitAssignmentsPanel({
 							}}
 							className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
 						>
-							<option value="">Select unit...</option>
+							<option value="">{tg('adminSlottingEditorSelectUnit')}</option>
 							{unassignedUnits.map((u) => (
 								<option key={u.id} value={u.id}>{u.tag} ({u.name}) - {u.slotsAllocated} slots</option>
 							))}
@@ -1528,7 +1534,7 @@ function UnitAssignmentsPanel({
 			) : null}
 
 			{feedback ? (
-				<p className={`text-sm ${feedback.startsWith('Error') ? 'text-red-300' : 'text-emerald-300'}`}>{feedback}</p>
+				<p className={`text-sm ${feedback.type === 'error' ? 'text-red-300' : 'text-emerald-300'}`}>{feedback.text}</p>
 			) : null}
 
 			<div>
@@ -1538,7 +1544,7 @@ function UnitAssignmentsPanel({
 					disabled={saving}
 					className="rounded-lg bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
 				>
-					{saving ? 'Saving...' : 'Save Assignments'}
+					{saving ? tg('adminUnitAssignmentsSaving') : tg('adminUnitAssignmentsSave')}
 				</button>
 			</div>
 		</div>

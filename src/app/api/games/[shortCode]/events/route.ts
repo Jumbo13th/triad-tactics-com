@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { withApiGuards } from '@/platform/apiGates';
 import { slottingEventBus } from '@/platform/sse/eventBus';
 
 export const runtime = 'nodejs';
@@ -8,7 +9,7 @@ type EventsRouteContext = {
 	params: Promise<{ shortCode: string }>;
 };
 
-export async function GET(request: NextRequest, context: EventsRouteContext): Promise<Response> {
+async function getEventsRoute(request: NextRequest, context: EventsRouteContext): Promise<Response> {
 	const { shortCode } = await context.params;
 	const normalizedCode = shortCode.trim().toLowerCase();
 	if (!normalizedCode) {
@@ -16,36 +17,32 @@ export async function GET(request: NextRequest, context: EventsRouteContext): Pr
 	}
 
 	const encoder = new TextEncoder();
+	let cleanup = () => {};
 	const stream = new ReadableStream({
 		start(controller) {
 			const unsubscribe = slottingEventBus.subscribe((event) => {
 				if (event.shortCode.toLowerCase() !== normalizedCode) return;
 				try {
 					controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
-				} catch {
-					// Stream closed
-				}
+				} catch { /* stream closed */ }
 			});
 
-			// Keepalive every 30s
 			const keepalive = setInterval(() => {
 				try {
 					controller.enqueue(encoder.encode(': keepalive\n\n'));
-				} catch {
-					// Stream closed
-				}
+				} catch { /* stream closed */ }
 			}, 30_000);
 
-			// Cleanup on abort
-			request.signal.addEventListener('abort', () => {
+			cleanup = () => {
 				unsubscribe();
 				clearInterval(keepalive);
-				try {
-					controller.close();
-				} catch {
-					// Already closed
-				}
-			});
+				try { controller.close(); } catch { /* already closed */ }
+			};
+
+			request.signal.addEventListener('abort', cleanup);
+		},
+		cancel() {
+			cleanup();
 		}
 	});
 
@@ -58,3 +55,8 @@ export async function GET(request: NextRequest, context: EventsRouteContext): Pr
 		}
 	});
 }
+
+export const GET = withApiGuards(getEventsRoute, {
+	name: 'api.games.events',
+	logSteamId: true
+});

@@ -101,8 +101,8 @@ export function claimPrioritySlot(input: {
 			const updatedInfo = updateMissionSlotting.run(
 				JSON.stringify(updatedSlotting),
 				input.steamId64,
-				row.id,
-				row.slotting_revision
+				currentRow.id,
+				currentRow.slotting_revision
 			);
 
 			if (updatedInfo.changes === 0) {
@@ -127,7 +127,7 @@ export function claimPrioritySlot(input: {
 				return { success: false, error: 'claim_conflict' };
 			}
 
-			deleteRegularJoin.run(row.id, user.id);
+			deleteRegularJoin.run(currentRow.id, user.id);
 
 			insertAudit.run(
 				row.id,
@@ -229,8 +229,8 @@ export function switchPrioritySlot(input: {
 			const updatedInfo = updateMissionSlotting.run(
 				JSON.stringify(updatedSlotting),
 				input.steamId64,
-				row.id,
-				row.slotting_revision
+				currentRow.id,
+				currentRow.slotting_revision
 			);
 
 			if (updatedInfo.changes === 0) {
@@ -259,7 +259,7 @@ export function switchPrioritySlot(input: {
 				return { success: false, error: 'switch_conflict' };
 			}
 
-			deleteRegularJoin.run(row.id, user.id);
+			deleteRegularJoin.run(currentRow.id, user.id);
 
 			insertAudit.run(
 				row.id,

@@ -19,6 +19,7 @@ export function useSlottingSSE(shortCode: string, currentRevision: number) {
 			try {
 				const data = JSON.parse(event.data as string) as { type: string; slottingRevision?: number };
 				if (data.type === 'slotting_updated' && typeof data.slottingRevision === 'number' && data.slottingRevision > revisionRef.current) {
+					revisionRef.current = data.slottingRevision;
 					startTransition(() => router.refresh());
 				}
 			} catch {

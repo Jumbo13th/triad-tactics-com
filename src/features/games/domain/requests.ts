@@ -60,7 +60,7 @@ export const updateGameSettingsRequestSchema = z.object({
 	finalPassword: optionalNullableTrimmedString(200),
 	priorityClaimOpensAt: nullableDateTimeSchema,
 	priorityClaimManualState: z.enum(['default', 'open', 'closed']),
-	unitSlottingManualState: z.enum(['closed', 'open']).default('open'),
+	unitSlottingManualState: z.enum(['closed', 'open']),
 	regularJoinEnabled: z.boolean(),
 	serverDetailsHidden: z.boolean(),
 	priorityBadgeTypeIds: z.array(z.number().int().positive()).max(100).transform((ids) => [...new Set(ids)])
