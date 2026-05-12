@@ -8,9 +8,8 @@ const ADMIN_STEAM_ID = '76561198012345678';
 async function loadAdminGameSlottingHarness() {
 	const { dbOperations } = await import('../../../../fixtures/dbOperations');
 	const { PUT } = await import('@/app/api/admin/games/[missionId]/slotting/route');
-	const { POST } = await import('@/app/api/admin/games/[missionId]/slotting-import/route');
 	const { NextRequest } = await import('next/server');
-	return { dbOperations, PUT, POST, NextRequest };
+	return { dbOperations, PUT, NextRequest };
 }
 
 function missionRouteContext(missionId: number | string) {
@@ -359,62 +358,4 @@ describe('Admin game slotting endpoints (integration)', () => {
 		expect(json.mission.slotting.sides[0].squads[0].slots).toHaveLength(2);
 	});
 
-	it('legacy import preserves slot ids by ordinal and carries matched priority claims', async () => {
-		const { dbOperations, POST, NextRequest } = await loadAdminGameSlottingHarness();
-		const missionId = insertMission({
-			status: 'draft',
-			slotting: createCanonicalSlotting({ includePriorityUser: true, repeatedPriorityRoles: true })
-		});
-		const adminSid = createSteamSession(dbOperations, {
-			steamid64: ADMIN_STEAM_ID,
-			redirectPath: '/en/admin/games'
-		});
-
-		const legacyJson = JSON.stringify({
-			sides: [
-				{
-					name: 'USK',
-					squads: [
-						{
-							name: '1-1',
-							slots: [
-								{ role: 'Squad Leader', access: 'unit', placeholder: 'Alpha Squad' },
-								{ role: 'Machine Gunner', access: 'priority' },
-								{ role: 'Machine Gunner', access: 'priority' },
-								{ role: 'Rifleman', access: 'regular' }
-							]
-						}
-					]
-				}
-			]
-		});
-
-		const res = await POST(
-			new NextRequest(`http://localhost/api/admin/games/${missionId}/slotting-import`, {
-				method: 'POST',
-				headers: {
-					origin: 'http://localhost',
-					'content-type': 'application/json',
-					cookie: `tt_steam_session=${adminSid}`
-				},
-				body: JSON.stringify({ slottingRevision: 1, legacyJson })
-			}),
-			missionRouteContext(missionId)
-		);
-
-		expect(res.status).toBe(200);
-		const json = await res.json();
-		expect(json.success).toBe(true);
-		const slots = json.mission.slotting.sides[0].squads[0].slots;
-		expect(slots.map((slot: { id: string }) => slot.id)).toEqual([
-			'slot-squad',
-			'slot-mg-1',
-			'slot-mg-2',
-			'slot-regular'
-		]);
-		expect(slots[1].occupant).toEqual(
-			expect.objectContaining({ type: 'user', userId: 44, callsign: 'Nomad' })
-		);
-		expect(slots[2].occupant).toBeNull();
-	});
 });

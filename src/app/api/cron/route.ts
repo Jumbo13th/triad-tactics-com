@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { runEmailOutboxOnce } from '@/platform/outbox/emailOutboxWorker';
+import { pruneOldAuditEvents } from '@/features/games/infra/sqliteGames';
+import { logger } from '@/platform/logger';
 
 export const runtime = 'nodejs';
 
@@ -20,5 +22,11 @@ export async function GET(request: NextRequest) {
 	}
 
 	await runEmailOutboxOnce();
+
+	const auditDeleted = pruneOldAuditEvents(30);
+	if (auditDeleted > 0) {
+		logger.info({ deleted: auditDeleted }, 'audit_events_pruned');
+	}
+
 	return new Response('OK', { status: 200 });
 }

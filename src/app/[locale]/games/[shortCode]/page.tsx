@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import GameMissionPage from '@/features/games/ui/GameMissionPage';

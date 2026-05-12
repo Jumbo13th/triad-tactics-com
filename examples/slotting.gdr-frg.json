@@ -1,0 +1,908 @@
+{
+  "sides": [
+    {
+      "id": "side-1-gdr",
+      "name": "GDR",
+      "displayName": "NVA",
+      "color": "#3B82F6",
+      "squads": [
+        {
+          "id": "side-1-squad-1-a-11",
+          "name": "A-11",
+          "slots": [
+            {
+              "id": "side-1-squad-1-slot-1-platoon-leader",
+              "role": "Platoon Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-1-slot-2-deputy-platoon-leader",
+              "role": "Deputy Platoon Leader",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-2-b-11",
+          "name": "B-11",
+          "slots": [
+            {
+              "id": "side-1-squad-2-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-2-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-3-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-4-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-5-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-6-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-7-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-8-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-9-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-2-slot-10-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-3-b-12",
+          "name": "B-12",
+          "slots": [
+            {
+              "id": "side-1-squad-3-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-2-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-3-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-4-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-5-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-6-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-7-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-8-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-9-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-3-slot-10-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-4-b-13",
+          "name": "B-13",
+          "slots": [
+            {
+              "id": "side-1-squad-4-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-4-slot-2-sergeant",
+              "role": "Sergeant",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-4-slot-3-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-4-slot-4-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-4-slot-5-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-5-k-11",
+          "name": "K-11",
+          "slots": [
+            {
+              "id": "side-1-squad-5-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-2-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-3-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-4-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-5-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-6-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-7-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-8-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-5-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-6-k-12",
+          "name": "K-12",
+          "slots": [
+            {
+              "id": "side-1-squad-6-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-2-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-3-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-4-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-5-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-6-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-7-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-8-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-6-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-7-k-13",
+          "name": "K-13",
+          "slots": [
+            {
+              "id": "side-1-squad-7-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-2-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-3-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-4-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-5-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-6-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-7-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-8-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-7-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-8-k-14",
+          "name": "K-14",
+          "slots": [
+            {
+              "id": "side-1-squad-8-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-2-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-3-rifleman",
+              "role": "Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-4-senior-rifleman",
+              "role": "Senior Rifleman",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-5-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-6-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-7-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-8-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-8-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-9-d-11",
+          "name": "D-11",
+          "slots": [
+            {
+              "id": "side-1-squad-9-slot-1-pilot",
+              "role": "Pilot",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-9-slot-2-heli-crew",
+              "role": "Heli Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-10-e-11",
+          "name": "E-11",
+          "slots": [
+            {
+              "id": "side-1-squad-10-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-10-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-11-e-12",
+          "name": "E-12",
+          "slots": [
+            {
+              "id": "side-1-squad-11-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-11-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-12-e-13",
+          "name": "E-13",
+          "slots": [
+            {
+              "id": "side-1-squad-12-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-12-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-1-squad-13-e-14",
+          "name": "E-14",
+          "slots": [
+            {
+              "id": "side-1-squad-13-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-1-squad-13-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "side-2-frg",
+      "name": "FRG",
+      "displayName": "Bundeswehr",
+      "color": "#3B82F6",
+      "squads": [
+        {
+          "id": "side-2-squad-1-a-1",
+          "name": "A-1",
+          "slots": [
+            {
+              "id": "side-2-squad-1-slot-1-platoon-leader",
+              "role": "Platoon Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-1-slot-2-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-2-b-1",
+          "name": "B-1",
+          "slots": [
+            {
+              "id": "side-2-squad-2-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-2-team-leader",
+              "role": "Team Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-3-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-4-scout",
+              "role": "Scout",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-5-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-6-light-anti-tank",
+              "role": "Light Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-7-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-8-sniper",
+              "role": "Sniper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-2-slot-9-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-3-b-2",
+          "name": "B-2",
+          "slots": [
+            {
+              "id": "side-2-squad-3-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-2-team-leader",
+              "role": "Team Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-3-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-4-scout",
+              "role": "Scout",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-5-sapper",
+              "role": "Sapper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-6-light-anti-tank",
+              "role": "Light Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-7-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-8-sniper",
+              "role": "Sniper",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-3-slot-9-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-4-h-1",
+          "name": "H-1",
+          "slots": [
+            {
+              "id": "side-2-squad-4-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-2-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-3-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-4-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-5-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-6-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-7-assistant-machine-gunner",
+              "role": "Assistant Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-8-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-4-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-5-h-2",
+          "name": "H-2",
+          "slots": [
+            {
+              "id": "side-2-squad-5-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-2-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-3-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-4-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-5-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-6-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-7-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-8-assistant-machine-gunner",
+              "role": "Assistant Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-5-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-6-h-3",
+          "name": "H-3",
+          "slots": [
+            {
+              "id": "side-2-squad-6-slot-1-squad-leader",
+              "role": "Squad Leader",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-2-grenadier",
+              "role": "Grenadier",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-3-medic",
+              "role": "Medic",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-4-sharpshooter",
+              "role": "Sharpshooter",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-5-anti-tank",
+              "role": "Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-6-machine-gunner",
+              "role": "Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-7-assistant-anti-tank",
+              "role": "Assistant Anti-Tank",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-8-assistant-machine-gunner",
+              "role": "Assistant Machine Gunner",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-6-slot-9-radio-operator",
+              "role": "Radio Operator",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-7-d-1",
+          "name": "D-1",
+          "slots": [
+            {
+              "id": "side-2-squad-7-slot-1-pilot",
+              "role": "Pilot",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-7-slot-2-heli-crew",
+              "role": "Heli Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-8-d-2",
+          "name": "D-2",
+          "slots": [
+            {
+              "id": "side-2-squad-8-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-8-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        },
+        {
+          "id": "side-2-squad-9-d-3",
+          "name": "D-3",
+          "slots": [
+            {
+              "id": "side-2-squad-9-slot-1-commander",
+              "role": "Commander",
+              "access": "unit",
+              "occupant": null
+            },
+            {
+              "id": "side-2-squad-9-slot-2-crew",
+              "role": "Crew",
+              "access": "unit",
+              "occupant": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

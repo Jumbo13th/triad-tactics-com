@@ -8,7 +8,9 @@
     "start": "node scripts/checkRequiredEnv.mjs && next start",
     "lint": "eslint",
     "test": "vitest run",
-    "canary:email": "tsx scripts/canaryEmail.ts"
+    "canary:email": "tsx scripts/canaryEmail.ts",
+    "slotting:excel:export": "node scripts/slottingExportExcel.mjs",
+    "slotting:excel:import": "node scripts/slottingImportExcel.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",
@@ -26,6 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "pino-pretty": "^13.1.3",

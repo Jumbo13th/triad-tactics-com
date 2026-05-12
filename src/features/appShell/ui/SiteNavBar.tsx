@@ -130,7 +130,8 @@ export default function SiteNavBar() {
 										{ href: '/admin/rename-requests', label: ta('navRenameRequests') },
 										{ href: '/admin/mailing', label: ta('navMailing') },
 										{ href: '/admin/games', label: ta('navGames') },
-									{ href: '/admin/units', label: ta('navUnits') }
+									{ href: '/admin/units', label: ta('navUnits') },
+										{ href: '/admin/maintenance', label: 'Maintenance' }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);
 									return items.map((item) => (

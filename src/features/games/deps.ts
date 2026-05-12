@@ -2,7 +2,10 @@ import {
 	archiveGame,
 	cancelGame,
 	claimPrioritySlot,
+	claimUnitSlot,
 	createMissionUpdate,
+	releaseUnitGameplay,
+	hideUnitGameplay,
 	updateMissionUpdate,
 	createDraft,
 	deleteArchivedMission,
@@ -15,16 +18,17 @@ import {
 	getMissionAuditHistory,
 	hidePriorityGameplay,
 	hideRegularGameplay,
-	importSlotting,
 	joinRegularGame,
 	leavePrioritySlot,
 	leaveRegularGame,
 	publishMission,
 	releasePriorityGameplay,
 	releaseRegularGameplay,
+	releaseUnitSlot,
 	switchPrioritySlot,
 	updateSlotting,
-	updateSettings
+	updateSettings,
+	updateUnitAssignments
 } from './infra/sqliteGames';
 import type {
 	ArchiveGameDeps,
@@ -42,7 +46,6 @@ import type {
 	GetMissionAuditDeps,
 	HidePriorityGameplayDeps,
 	HideRegularGameplayDeps,
-	ImportGameSlottingDeps,
 	JoinRegularGameDeps,
 	LeavePrioritySlotDeps,
 	LeaveRegularGameDeps,
@@ -52,7 +55,12 @@ import type {
 	SwitchPrioritySlotDeps,
 	UpdateGameSlottingDeps,
 	UpdateGameSettingsDeps,
-	UpdateMissionUpdateDeps
+	UpdateMissionUpdateDeps,
+	UpdateUnitAssignmentsDeps,
+	ClaimUnitSlotDeps,
+	ReleaseUnitSlotDeps,
+	ReleaseUnitGameplayDeps,
+	HideUnitGameplayDeps
 } from './ports';
 
 export const getAdminGamesOverviewDeps: GetAdminGamesOverviewDeps = {
@@ -157,12 +165,6 @@ export const updateGameSlottingDeps: UpdateGameSlottingDeps = {
 	}
 };
 
-export const importGameSlottingDeps: ImportGameSlottingDeps = {
-	repo: {
-		importSlotting
-	}
-};
-
 export const getCurrentGameDeps: GetCurrentGameDeps = {
 	repo: {
 		getCurrentPublishedSummary
@@ -208,5 +210,35 @@ export const joinRegularGameDeps: JoinRegularGameDeps = {
 export const leaveRegularGameDeps: LeaveRegularGameDeps = {
 	repo: {
 		leaveRegularGame
+	}
+};
+
+export const updateUnitAssignmentsDeps: UpdateUnitAssignmentsDeps = {
+	repo: {
+		updateUnitAssignments
+	}
+};
+
+export const claimUnitSlotDeps: ClaimUnitSlotDeps = {
+	repo: {
+		claimUnitSlot
+	}
+};
+
+export const releaseUnitSlotDeps: ReleaseUnitSlotDeps = {
+	repo: {
+		releaseUnitSlot
+	}
+};
+
+export const releaseUnitGameplayDeps: ReleaseUnitGameplayDeps = {
+	repo: {
+		releaseUnitGameplay
+	}
+};
+
+export const hideUnitGameplayDeps: HideUnitGameplayDeps = {
+	repo: {
+		hideUnitGameplay
 	}
 };

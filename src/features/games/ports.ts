@@ -14,10 +14,10 @@ import type {
 	CancelGameRequest,
 	CreateMissionUpdateRequest,
 	DeleteArchivedMissionRequest,
-	ImportGameSlottingRequest,
 	PublishGameRequest,
 	UpdateGameSettingsRequest,
-	UpdateGameSlottingRequest
+	UpdateGameSlottingRequest,
+	UpdateUnitAssignmentsRequest
 } from './domain/requests';
 
 export type CreateGameDraftRepoResult =
@@ -158,20 +158,6 @@ export type UpdateGameSlottingRepoResult =
 			destructiveChanges?: GameSlottingDestructiveChange[];
 	  };
 
-export type ImportGameSlottingRepoResult =
-	| { success: true; mission: GameAdminMission }
-	| {
-			success: false;
-			error:
-				| 'not_found'
-				| 'legacy_slotting_invalid'
-				| 'slotting_revision_conflict'
-				| 'regular_join_requires_regular_slots'
-				| 'destructive_change_requires_confirmation'
-				| 'database_error';
-			destructiveChanges?: GameSlottingDestructiveChange[];
-	  };
-
 export type ClaimPrioritySlotRepoResult =
 	| { success: true }
 	| {
@@ -263,7 +249,6 @@ export type GamesDraftRepo = {
 	createMissionUpdate: (input: CreateMissionUpdateRequest & { missionId: number; createdBySteamId64: string }) => CreateMissionUpdateRepoResult;
 	updateMissionUpdate: (input: CreateMissionUpdateRequest & { missionId: number; updateId: number; updatedBySteamId64: string }) => UpdateMissionUpdateRepoResult;
 	updateSlotting: (input: UpdateGameSlottingRequest & { missionId: number; updatedBySteamId64: string }) => UpdateGameSlottingRepoResult;
-	importSlotting: (input: ImportGameSlottingRequest & { missionId: number; updatedBySteamId64: string }) => ImportGameSlottingRepoResult;
 };
 
 export type GamesCurrentRepo = {
@@ -348,10 +333,6 @@ export type UpdateGameSlottingDeps = {
 	repo: Pick<GamesDraftRepo, 'updateSlotting'>;
 };
 
-export type ImportGameSlottingDeps = {
-	repo: Pick<GamesDraftRepo, 'importSlotting'>;
-};
-
 export type GetCurrentGameDeps = {
 	repo: Pick<GamesCurrentRepo, 'getCurrentPublishedSummary'>;
 };
@@ -382,4 +363,85 @@ export type JoinRegularGameDeps = {
 
 export type LeaveRegularGameDeps = {
 	repo: Pick<GamesParticipationRepo, 'leaveRegularGame'>;
+};
+
+export type UpdateUnitAssignmentsRepoResult =
+	| { success: true; mission: GameAdminMission }
+	| {
+			success: false;
+			error: 'not_found' | 'invalid_side_id' | 'invalid_unit' | 'database_error';
+	  };
+
+export type ClaimUnitSlotRepoResult =
+	| { success: true }
+	| {
+			success: false;
+			error:
+				| 'mission_not_found'
+				| 'unit_slotting_closed'
+				| 'not_unit_leader'
+				| 'unit_not_assigned'
+				| 'slot_not_found'
+				| 'wrong_side'
+				| 'slot_taken'
+				| 'slots_exhausted'
+				| 'claim_conflict'
+				| 'database_error';
+	  };
+
+export type ReleaseUnitSlotRepoResult =
+	| { success: true }
+	| {
+			success: false;
+			error:
+				| 'mission_not_found'
+				| 'unit_slotting_closed'
+				| 'not_unit_leader'
+				| 'slot_not_found'
+				| 'not_your_unit_slot'
+				| 'release_conflict'
+				| 'database_error';
+	  };
+
+export type GamesUnitAssignmentRepo = {
+	updateUnitAssignments: (input: UpdateUnitAssignmentsRequest & { missionId: number; updatedBySteamId64: string }) => UpdateUnitAssignmentsRepoResult;
+};
+
+export type GamesUnitSlottingRepo = {
+	claimUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string }) => ClaimUnitSlotRepoResult;
+	releaseUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string }) => ReleaseUnitSlotRepoResult;
+};
+
+export type UpdateUnitAssignmentsDeps = {
+	repo: Pick<GamesUnitAssignmentRepo, 'updateUnitAssignments'>;
+};
+
+export type ClaimUnitSlotDeps = {
+	repo: Pick<GamesUnitSlottingRepo, 'claimUnitSlot'>;
+};
+
+export type ReleaseUnitSlotDeps = {
+	repo: Pick<GamesUnitSlottingRepo, 'releaseUnitSlot'>;
+};
+
+export type ReleaseUnitGameplayRepoResult =
+	| { success: true; mission: GameAdminMission }
+	| {
+			success: false;
+			error: 'not_found' | 'not_published' | 'final_password_required' | 'already_released' | 'database_error';
+	  };
+
+export type HideUnitGameplayRepoResult =
+	| { success: true; mission: GameAdminMission }
+	| {
+			success: false;
+			error: 'not_found' | 'not_published' | 'priority_release_hide_required' | 'already_hidden' | 'database_error';
+	  };
+
+export type ReleaseUnitGameplayDeps = {
+	repo: { releaseUnitGameplay: (input: { missionId: number; releasedBySteamId64: string }) => ReleaseUnitGameplayRepoResult };
+};
+
+export type HideUnitGameplayDeps = {
+	repo: { hideUnitGameplay: (input: { missionId: number; hiddenBySteamId64: string }) => HideUnitGameplayRepoResult };
 };

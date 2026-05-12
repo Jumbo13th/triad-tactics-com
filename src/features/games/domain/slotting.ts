@@ -49,24 +49,6 @@ export type CanonicalSlotOccupant = z.infer<typeof slotOccupantSchema>;
 type CanonicalSide = CanonicalSlotting['sides'][number];
 type CanonicalSquad = CanonicalSide['squads'][number];
 
-type LegacySlotSource = {
-	role: string;
-	access: z.infer<typeof slotAccessSchema>;
-	placeholderLabel: string | null;
-};
-
-type LegacySquadSource = {
-	name: string;
-	slots: LegacySlotSource[];
-};
-
-type LegacySideSource = {
-	name: string;
-	displayName: string | undefined;
-	color: string;
-	squads: LegacySquadSource[];
-};
-
 export type SlottingDestructiveChangeReason =
 	| 'occupied_slot_removed'
 	| 'occupied_slot_access_changed'
@@ -88,8 +70,6 @@ export const emptyCanonicalSlotting: CanonicalSlotting = {
 export function sideDisplayName(side: { name: string; displayName?: string }): string {
 	return side.displayName ?? side.name;
 }
-
-const legacyDefaultColors = ['#3B82F6', '#EF4444', '#22C55E', '#F59E0B', '#8B5CF6', '#14B8A6'];
 
 export function parseCanonicalSlotting(input: unknown): CanonicalSlotting {
 	const parsed = typeof input === 'string' ? (JSON.parse(input) as unknown) : input;
@@ -119,195 +99,6 @@ export function hasSlotAccess(slotting: CanonicalSlotting, access: z.infer<typeo
 
 export function hasPrioritySlots(slotting: CanonicalSlotting): boolean {
 	return hasSlotAccess(slotting, 'priority');
-}
-
-export function hasRegularSlots(slotting: CanonicalSlotting): boolean {
-	return hasSlotAccess(slotting, 'regular');
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readRequiredString(value: unknown, fieldName: string): string {
-	if (typeof value !== 'string') {
-		throw new Error(`${fieldName}_invalid`);
-	}
-	const trimmed = value.trim();
-	if (!trimmed) {
-		throw new Error(`${fieldName}_invalid`);
-	}
-	return trimmed;
-}
-
-function slugifySegment(value: string, fallback: string): string {
-	const normalized = value
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-	return normalized || fallback;
-}
-
-function normalizeNaturalKey(value: string): string {
-	return value.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function normalizeLegacyColor(value: unknown, sideIndex: number): string {
-	if (typeof value === 'string') {
-		const trimmed = value.trim();
-		if (/^#[0-9A-Fa-f]{6}$/.test(trimmed)) return trimmed;
-	}
-	return legacyDefaultColors[sideIndex % legacyDefaultColors.length];
-}
-
-function parseLegacyAccess(value: unknown): z.infer<typeof slotAccessSchema> {
-	if (typeof value !== 'string') return 'regular';
-	const normalized = value.trim().toLowerCase();
-	if (normalized === 'unit' || normalized === 'squad' || normalized === 'reserved') return 'unit';
-	if (normalized === 'priority' || normalized === 'badge') return 'priority';
-	if (normalized === 'regular' || normalized === 'open') return 'regular';
-	throw new Error('legacy_slot_access_invalid');
-}
-
-function parseLegacySlot(value: unknown): LegacySlotSource {
-	if (typeof value === 'string') {
-		return {
-			role: readRequiredString(value, 'legacy_slot_role'),
-			access: 'regular',
-			placeholderLabel: null
-		};
-	}
-
-	if (!isRecord(value)) {
-		throw new Error('legacy_slot_invalid');
-	}
-
-	const roleSource = value.role ?? value.name ?? value.label;
-	const role = readRequiredString(roleSource, 'legacy_slot_role');
-	const access = parseLegacyAccess(value.access ?? value.type ?? value.kind);
-	const placeholderSource =
-		value.placeholder ?? value.placeholderLabel ?? value.squad ?? value.squadLabel ?? value.occupantLabel;
-
-	return {
-		role,
-		access,
-		placeholderLabel:
-			access === 'unit'
-				? typeof placeholderSource === 'string' && placeholderSource.trim()
-					? placeholderSource.trim()
-					: role
-				: null
-	};
-}
-
-function parseLegacySource(input: unknown): LegacySideSource[] {
-	const parsed = typeof input === 'string' ? (JSON.parse(input) as unknown) : input;
-	const sidesSource = Array.isArray(parsed)
-		? parsed
-		: isRecord(parsed) && Array.isArray(parsed.sides)
-			? parsed.sides
-			: null;
-
-	if (!sidesSource) {
-		throw new Error('legacy_slotting_invalid');
-	}
-
-	return sidesSource.map((sideValue, sideIndex) => {
-		if (!isRecord(sideValue)) {
-			throw new Error('legacy_side_invalid');
-		}
-
-		const squadsSource = sideValue.squads;
-		if (!Array.isArray(squadsSource)) {
-			throw new Error('legacy_side_squads_invalid');
-		}
-
-		return {
-			name: readRequiredString(sideValue.name, 'legacy_side_name'),
-			displayName: typeof sideValue.displayName === 'string' && sideValue.displayName.trim() ? sideValue.displayName.trim() : undefined,
-			color: normalizeLegacyColor(sideValue.color, sideIndex),
-			squads: squadsSource.map((squadValue) => {
-				if (!isRecord(squadValue) || !Array.isArray(squadValue.slots)) {
-					throw new Error('legacy_squad_invalid');
-				}
-
-				return {
-					name: readRequiredString(squadValue.name, 'legacy_squad_name'),
-					slots: squadValue.slots.map((slotValue) => parseLegacySlot(slotValue))
-				};
-			})
-		};
-	});
-}
-
-function buildSlotNaturalKey(sideName: string, squadName: string, role: string, ordinal: number): string {
-	return [normalizeNaturalKey(sideName), normalizeNaturalKey(squadName), normalizeNaturalKey(role), String(ordinal)].join('|');
-}
-
-function buildCanonicalSlotMap(slotting: CanonicalSlotting): Map<string, CanonicalSlot> {
-	const slotMap = new Map<string, CanonicalSlot>();
-
-	for (const side of slotting.sides) {
-		for (const squad of side.squads) {
-			const roleCounts = new Map<string, number>();
-			for (const slot of squad.slots) {
-				const roleKey = normalizeNaturalKey(slot.role);
-				const ordinal = (roleCounts.get(roleKey) ?? 0) + 1;
-				roleCounts.set(roleKey, ordinal);
-				slotMap.set(buildSlotNaturalKey(side.name, squad.name, slot.role, ordinal), slot);
-			}
-		}
-	}
-
-	return slotMap;
-}
-
-export function normalizeLegacySlotting(
-	input: unknown,
-	options?: { existing?: CanonicalSlotting }
-): CanonicalSlotting {
-	const legacySides = parseLegacySource(input);
-	const existingSlotMap = options?.existing ? buildCanonicalSlotMap(options.existing) : new Map<string, CanonicalSlot>();
-
-	return {
-		sides: legacySides.map((side, sideIndex) => ({
-			id:
-				options?.existing?.sides.find((existingSide) => normalizeNaturalKey(existingSide.name) === normalizeNaturalKey(side.name))?.id ??
-				`side-${sideIndex + 1}-${slugifySegment(side.name, 'side')}`,
-			name: side.name,
-			...(side.displayName ? { displayName: side.displayName } : {}),
-			color: side.color,
-			squads: side.squads.map((squad, squadIndex) => ({
-				id:
-					options?.existing?.sides
-						.find((existingSide) => normalizeNaturalKey(existingSide.name) === normalizeNaturalKey(side.name))
-						?.squads.find((existingSquad) => normalizeNaturalKey(existingSquad.name) === normalizeNaturalKey(squad.name))?.id ??
-					`side-${sideIndex + 1}-squad-${squadIndex + 1}-${slugifySegment(squad.name, 'squad')}`,
-				name: squad.name,
-				slots: squad.slots.map((slot, slotIndex) => {
-					const roleOrdinal =
-						squad.slots.slice(0, slotIndex + 1).filter((candidate) => normalizeNaturalKey(candidate.role) === normalizeNaturalKey(slot.role)).length;
-					const matched = existingSlotMap.get(buildSlotNaturalKey(side.name, squad.name, slot.role, roleOrdinal));
-					const preservedOccupant =
-						slot.access === 'priority' && matched?.occupant?.type === 'user' && matched.access === 'priority'
-							? matched.occupant
-							: null;
-
-					return {
-						id:
-							matched?.id ??
-							`side-${sideIndex + 1}-squad-${squadIndex + 1}-slot-${slotIndex + 1}-${slugifySegment(slot.role, 'slot')}`,
-						role: slot.role,
-						access: slot.access,
-						occupant:
-							slot.access === 'unit'
-								? { type: 'placeholder' as const, label: slot.placeholderLabel ?? slot.role }
-								: preservedOccupant
-					};
-				})
-			}))
-		}))
-	};
 }
 
 function findCanonicalSlotContext(slotting: CanonicalSlotting, slotId: string): {
@@ -390,4 +181,118 @@ export function detectDestructiveSlottingChanges(
 	}
 
 	return changes;
+}
+
+/**
+ * Reconcile slot access types based on unit allocations.
+ *
+ * Target: exactly `pool = totalSlots - totalUnitAllocated` slots should be priority/regular.
+ * The rest should be unit access.
+ *
+ * Rules:
+ * - Never touch slots with occupants (claimed unit slots stay unit, claimed priority stays priority)
+ * - If too few priority/regular slots: convert unclaimed unit slots (top slots first — Squad Leaders get priority)
+ * - If too many priority/regular slots: convert unclaimed priority/regular back to unit (bottom slots first)
+ * - Split priority:regular 2:1 among the converted slots
+ *
+ * Returns a new slotting object (does not mutate the input).
+ * Returns null if no changes were needed.
+ */
+export function autoConvertUnclaimedSlots(
+	slotting: CanonicalSlotting,
+	totalUnitAllocated: number
+): CanonicalSlotting | null {
+	const result = structuredClone(slotting);
+
+	let totalSlots = 0;
+	for (const side of result.sides) {
+		for (const squad of side.squads) {
+			totalSlots += squad.slots.length;
+		}
+	}
+
+	const targetNonUnit = Math.max(0, totalSlots - totalUnitAllocated);
+
+	// Count current non-unit slots that have no occupant (can be reshuffled)
+	// and those with occupants (locked in place)
+	let currentNonUnitUnoccupied = 0;
+	let currentNonUnitOccupied = 0;
+	for (const side of result.sides) {
+		for (const squad of side.squads) {
+			for (const slot of squad.slots) {
+				if (slot.access !== 'unit') {
+					if (slot.occupant === null) currentNonUnitUnoccupied++;
+					else currentNonUnitOccupied++;
+				}
+			}
+		}
+	}
+
+	const currentNonUnit = currentNonUnitUnoccupied + currentNonUnitOccupied;
+	if (currentNonUnit === targetNonUnit) return null;
+
+	type SlotRef = { slot: CanonicalSlot; squadIndex: number; slotIndex: number };
+
+	if (currentNonUnit < targetNonUnit) {
+		// Need more non-unit slots → convert unclaimed unit slots
+		const needed = targetNonUnit - currentNonUnit;
+		const unclaimed: SlotRef[] = [];
+		for (const side of result.sides) {
+			for (let si = 0; si < side.squads.length; si++) {
+				for (let sli = 0; sli < side.squads[si].slots.length; sli++) {
+					const slot = side.squads[si].slots[sli];
+					if (slot.access === 'unit' && slot.occupant === null) {
+						unclaimed.push({ slot, squadIndex: si, slotIndex: sli });
+					}
+				}
+			}
+		}
+		// Top slots first (lower index = higher rank)
+		unclaimed.sort((a, b) => a.slotIndex - b.slotIndex || a.squadIndex - b.squadIndex);
+		const toConvert = unclaimed.slice(0, needed);
+		const priorityCount = Math.round(toConvert.length * 2 / 3);
+		for (let i = 0; i < toConvert.length; i++) {
+			toConvert[i].slot.access = i < priorityCount ? 'priority' : 'regular';
+		}
+	} else {
+		// Too many non-unit slots → convert unoccupied priority/regular back to unit
+		const excess = currentNonUnit - targetNonUnit;
+		const convertible: SlotRef[] = [];
+		for (const side of result.sides) {
+			for (let si = 0; si < side.squads.length; si++) {
+				for (let sli = 0; sli < side.squads[si].slots.length; sli++) {
+					const slot = side.squads[si].slots[sli];
+					if (slot.access !== 'unit' && slot.occupant === null) {
+						convertible.push({ slot, squadIndex: si, slotIndex: sli });
+					}
+				}
+			}
+		}
+		// Bottom slots first (higher index = lower rank — give those back to units)
+		convertible.sort((a, b) => b.slotIndex - a.slotIndex || b.squadIndex - a.squadIndex);
+		const toRevert = convertible.slice(0, excess);
+		for (const ref of toRevert) {
+			ref.slot.access = 'unit';
+		}
+	}
+
+	return result;
+}
+
+export function countUnitSlotsUsed(slotting: CanonicalSlotting, unitTag: string): number {
+	const normalizedTag = unitTag.toLowerCase();
+	let count = 0;
+	for (const side of slotting.sides) {
+		for (const squad of side.squads) {
+			for (const slot of squad.slots) {
+				if (
+					slot.occupant?.type === 'placeholder' &&
+					slot.occupant.label.toLowerCase() === normalizedTag
+				) {
+					count++;
+				}
+			}
+		}
+	}
+	return count;
 }

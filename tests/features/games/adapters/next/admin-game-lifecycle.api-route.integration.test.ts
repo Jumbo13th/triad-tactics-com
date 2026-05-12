@@ -137,6 +137,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					finalPassword: 'live-pass',
 					priorityClaimOpensAt: '2026-03-20T18:00:00.000Z',
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]
@@ -193,6 +194,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: null,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: false,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: []
@@ -204,46 +206,6 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 		expect(res.status).toBe(409);
 		const json = await res.json();
 		expect(json.error).toBe('settings_revision_conflict');
-	});
-
-	it('blocks regular join enablement when the mission has no regular slots', async () => {
-		const { dbOperations, PUT, NextRequest } = await loadAdminGameLifecycleHarness();
-		const missionId = insertDraftMission(createSlottingShape({ includePriority: true }));
-		const adminSid = createSteamSession(dbOperations, {
-			steamid64: ADMIN_STEAM_ID,
-			redirectPath: '/en/admin/games'
-		});
-
-		const res = await PUT(
-			new NextRequest(`http://localhost/api/admin/games/${missionId}/settings`, {
-				method: 'PUT',
-				headers: {
-					origin: 'http://localhost',
-					'content-type': 'application/json',
-					cookie: `tt_steam_session=${adminSid}`
-				},
-				body: JSON.stringify({
-					settingsRevision: 1,
-					title: 'No Regulars',
-						description: { en: '', ru: '', uk: '', ar: '' },
-					shortCode: null,
-					startsAt: null,
-					serverName: '',
-					serverHost: '',
-					serverPort: null,
-					priorityClaimOpensAt: null,
-					priorityClaimManualState: 'default',
-					regularJoinEnabled: true,
-					serverDetailsHidden: false,
-					priorityBadgeTypeIds: []
-				})
-			}),
-			missionRouteContext(missionId)
-		);
-
-		expect(res.status).toBe(409);
-		const json = await res.json();
-		expect(json.error).toBe('regular_join_requires_regular_slots');
 	});
 
 	it('returns detailed validation errors for invalid settings payloads', async () => {
@@ -273,6 +235,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: 70000,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: []
@@ -361,6 +324,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					earlyPassword: 'briefing',
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]
@@ -410,6 +374,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: 2001,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]

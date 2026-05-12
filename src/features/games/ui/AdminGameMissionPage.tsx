@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -20,7 +20,7 @@ import type { GameAuditEvent, GamePublishValidationError, GameSlottingDestructiv
 import { sideDisplayName } from '@/features/games/domain/slotting';
 import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
-import { SlottingPreview } from './SlottingPreview';
+import { SlottingEditor } from './SlottingEditor';
 import { formatMissionUpdateMessage } from './missionPageUtils';
 
 type SettingsFormState = {
@@ -38,6 +38,7 @@ type SettingsFormState = {
 	finalPassword: string;
 	priorityClaimOpensAt: string;
 	priorityClaimManualState: 'default' | 'open' | 'closed';
+	unitSlottingManualState: 'closed' | 'open';
 	regularJoinEnabled: boolean;
 	serverDetailsHidden: boolean;
 	priorityBadgeTypeIds: number[];
@@ -156,6 +157,7 @@ function missionToSettingsForm(mission: AdminGameMissionDetail): SettingsFormSta
 		finalPassword: mission.finalPassword ?? '',
 		priorityClaimOpensAt: toLocalInputValue(mission.priorityClaimOpensAt),
 		priorityClaimManualState: mission.priorityClaimManualState,
+		unitSlottingManualState: mission.unitSlottingManualState,
 		regularJoinEnabled: mission.regularJoinEnabled,
 		serverDetailsHidden: mission.serverDetailsHidden,
 		priorityBadgeTypeIds: mission.priorityBadgeTypeIds
@@ -220,7 +222,6 @@ export default function AdminGameMissionPage() {
 	const [missionState, setMissionState] = useState<'loading' | 'ready' | 'not_found' | 'error'>('loading');
 	const [settingsForm, setSettingsForm] = useState<SettingsFormState | null>(null);
 	const [slottingText, setSlottingText] = useState('');
-	const [legacyImportText, setLegacyImportText] = useState('');
 	const [winnerSideId, setWinnerSideId] = useState('');
 	const [sideScores, setSideScores] = useState<Record<string, string>>({});
 	const [cancelReason, setCancelReason] = useState('');
@@ -276,6 +277,12 @@ export default function AdminGameMissionPage() {
 
 	const syncMissionLifecycle = (nextMission: AdminGameMissionDetail) => {
 		setMission(nextMission);
+		setSettingsForm((prev) => prev ? {
+			...prev,
+			priorityClaimManualState: nextMission.priorityClaimManualState,
+			unitSlottingManualState: nextMission.unitSlottingManualState,
+			regularJoinEnabled: nextMission.regularJoinEnabled
+		} : prev);
 	};
 
 	const syncSlottingResponse = (nextMission: AdminGameMissionDetail) => {
@@ -309,6 +316,43 @@ export default function AdminGameMissionPage() {
 			setMissionState('error');
 		}
 	};
+
+	// SSE: auto-refresh slotting when it changes externally (e.g. unit leader claims a slot)
+	const slottingRevisionRef = useRef(mission?.slottingRevision ?? 0);
+	useEffect(() => {
+		slottingRevisionRef.current = mission?.slottingRevision ?? 0;
+	}, [mission?.slottingRevision]);
+
+	useEffect(() => {
+		const shortCode = mission?.shortCode;
+		if (!shortCode) return;
+
+		const source = new EventSource(`/api/games/${encodeURIComponent(shortCode)}/events`);
+
+		source.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data as string) as { type: string; slottingRevision?: number };
+				if (data.type === 'slotting_updated' && typeof data.slottingRevision === 'number' && data.slottingRevision > slottingRevisionRef.current) {
+					void (async () => {
+						try {
+							const res = await fetch(`/api/admin/games/${missionId}`, { cache: 'no-store' });
+							const json: unknown = await res.json();
+							const parsed = parseAdminGameMissionResponse(json);
+							if (parsed && !('error' in parsed)) {
+								syncSlottingResponse(parsed.mission);
+							}
+						} catch {
+							// Silently ignore — next SSE event will retry
+						}
+					})();
+				}
+			} catch {
+				// Ignore parse errors
+			}
+		};
+
+		return () => source.close();
+	}, [mission?.shortCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const loadAudit = async () => {
 		if (!Number.isSafeInteger(missionId) || missionId < 1) return;
@@ -498,6 +542,7 @@ export default function AdminGameMissionPage() {
 					finalPassword: finalPassword.length > 0 ? finalPassword : null,
 					priorityClaimOpensAt,
 					priorityClaimManualState: settingsForm.priorityClaimManualState,
+					unitSlottingManualState: settingsForm.unitSlottingManualState,
 					regularJoinEnabled: settingsForm.regularJoinEnabled,
 					serverDetailsHidden: settingsForm.serverDetailsHidden,
 					priorityBadgeTypeIds: settingsForm.priorityBadgeTypeIds
@@ -562,47 +607,6 @@ export default function AdminGameMissionPage() {
 			});
 		} catch {
 			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesSaveSlottingAction')}: server error` });
-		} finally {
-			setActiveAction(null);
-		}
-	};
-
-	const handleImportLegacy = async (confirmDestructive = false) => {
-		if (!mission || !legacyImportText.trim()) {
-			setFeedback({ tone: 'error', message: ta('gamesLegacyImportEmpty') });
-			return;
-		}
-
-		try {
-			setFeedback(null);
-			setActiveAction('import');
-			const res = await fetch(`/api/admin/games/${mission.id}/slotting-import`, {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({
-					slottingRevision: mission.slottingRevision,
-					legacyJson: legacyImportText,
-					confirmDestructive
-				})
-			});
-			const json: unknown = (await res.json()) as unknown;
-			await applySlottingResponse(res, json, ta('gamesImportLegacyAction'), async (errorPayload) => {
-				if (errorPayload.error !== 'destructive_change_requires_confirmation' || !errorPayload.destructiveChanges?.length) {
-					return false;
-				}
-
-				const details = errorPayload.destructiveChanges.slice(0, 5).map(formatDestructiveChange).join('\n');
-				setPendingDestructiveChanges({
-					details,
-					onConfirm: () => {
-						setPendingDestructiveChanges(null);
-						void handleImportLegacy(true);
-					}
-				});
-				return true;
-			});
-		} catch {
-			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesImportLegacyAction')}: server error` });
 		} finally {
 			setActiveAction(null);
 		}
@@ -749,7 +753,6 @@ export default function AdminGameMissionPage() {
 			const json: unknown = (await res.json()) as unknown;
 			const ok = await applyLifecycleResponse(res, json, ta('gamesArchiveAction'));
 			if (ok) {
-				setLegacyImportText('');
 			}
 		} catch {
 			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesArchiveAction')}: server error` });
@@ -776,7 +779,6 @@ export default function AdminGameMissionPage() {
 			const json: unknown = (await res.json()) as unknown;
 			const ok = await applyLifecycleResponse(res, json, ta('gamesCancelAction'));
 			if (ok) {
-				setLegacyImportText('');
 			}
 		} catch {
 			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesCancelAction')}: server error` });
@@ -912,9 +914,6 @@ export default function AdminGameMissionPage() {
 													<Field label={ta('gamesFieldStartsAt')}>
 														<input type="datetime-local" value={settingsForm.startsAt} onChange={(event) => setSettingsForm({ ...settingsForm, startsAt: event.target.value })} className={editorDateTimeClass} />
 													</Field>
-													<Field label={ta('gamesFieldPriorityOpensAt')}>
-														<input type="datetime-local" value={settingsForm.priorityClaimOpensAt} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimOpensAt: event.target.value })} className={editorDateTimeClass} />
-													</Field>
 													<Field label={ta('gamesFieldServerName')}>
 														<input value={settingsForm.serverName} onChange={(event) => setSettingsForm({ ...settingsForm, serverName: event.target.value })} className={editorInputClass} />
 													</Field>
@@ -930,13 +929,59 @@ export default function AdminGameMissionPage() {
 													<Field label={ta('gamesFieldFinalPassword')}>
 														<input value={settingsForm.finalPassword} onChange={(event) => setSettingsForm({ ...settingsForm, finalPassword: event.target.value })} className={editorInputClass} />
 													</Field>
-													<Field label={ta('gamesFieldPriorityState')}>
-														<select value={settingsForm.priorityClaimManualState} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimManualState: event.target.value as SettingsFormState['priorityClaimManualState'] })} className={editorInputClass}>
-															<option value="default">{ta('gamesPriorityState.default')}</option>
-															<option value="open">{ta('gamesPriorityState.open')}</option>
-															<option value="closed">{ta('gamesPriorityState.closed')}</option>
-														</select>
-													</Field>
+												</div>
+
+												<div className={`${editorCardClass} grid gap-4`}>
+													<div>
+														<p className="text-sm font-semibold text-neutral-200">{ta('slottingPhasesTitle')}</p>
+														<p className="mt-1 text-xs text-neutral-500">{ta('slottingPhasesDescription')}</p>
+													</div>
+
+													<div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-3">
+														<div className="flex flex-wrap items-center justify-between gap-3">
+															<div>
+																<p className="text-xs font-semibold text-emerald-300">{ta('slottingPhaseUnitTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-emerald-200/60">{ta('slottingPhaseUnitDescription')}</p>
+															</div>
+															<select value={settingsForm.unitSlottingManualState} onChange={(event) => setSettingsForm({ ...settingsForm, unitSlottingManualState: event.target.value as SettingsFormState['unitSlottingManualState'] })} className={`w-28 ${editorInputClass}`}>
+																<option value="open">{ta('slottingPhaseOpen')}</option>
+																<option value="closed">{ta('slottingPhaseClosed')}</option>
+															</select>
+														</div>
+													</div>
+
+													<div className="rounded-xl border border-[color:var(--accent)]/15 bg-[color:var(--accent)]/5 p-3">
+														<div className="flex flex-wrap items-center justify-between gap-3">
+															<div>
+																<p className="text-xs font-semibold text-[color:var(--accent)]">{ta('slottingPhasePriorityTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-neutral-400">{ta('slottingPhasePriorityDescription')}</p>
+															</div>
+															<select value={settingsForm.priorityClaimManualState} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimManualState: event.target.value as SettingsFormState['priorityClaimManualState'] })} className={`w-28 ${editorInputClass}`}>
+																<option value="default">{ta('slottingPhasePriorityScheduled')}</option>
+																<option value="open">{ta('slottingPhasePriorityForceOpen')}</option>
+																<option value="closed">{ta('slottingPhasePriorityForceClosed')}</option>
+															</select>
+														</div>
+														<div className="mt-2">
+															<label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">{ta('slottingPhasePriorityOpensAt')}</label>
+															<input type="datetime-local" value={settingsForm.priorityClaimOpensAt} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimOpensAt: event.target.value })} className={`mt-1 ${editorDateTimeClass}`} />
+														</div>
+													</div>
+
+													<div className="rounded-xl border border-neutral-800 bg-white/[0.02] p-3">
+														<div className="flex flex-wrap items-center justify-between gap-3">
+															<div>
+																<p className="text-xs font-semibold text-neutral-300">{ta('slottingPhaseRegularTitle')}</p>
+																<p className="mt-0.5 text-[11px] text-neutral-500">{ta('slottingPhaseRegularDescription')}</p>
+															</div>
+															<select value={settingsForm.regularJoinEnabled ? 'open' : 'closed'} onChange={(event) => setSettingsForm({ ...settingsForm, regularJoinEnabled: event.target.value === 'open' })} className={`w-28 ${editorInputClass}`}>
+																<option value="open">{ta('slottingPhaseOpen')}</option>
+																<option value="closed">{ta('slottingPhaseClosed')}</option>
+															</select>
+														</div>
+													</div>
+
+													<p className="text-[11px] text-neutral-500">{ta('slottingPhasesNote')}</p>
 												</div>
 
 												<div className={`${editorCardClass} grid gap-3`}>
@@ -993,10 +1038,6 @@ export default function AdminGameMissionPage() {
 														</Link>
 													</p>
 													<label className="flex items-center gap-3 text-sm text-neutral-200">
-														<input type="checkbox" checked={settingsForm.regularJoinEnabled} onChange={(event) => setSettingsForm({ ...settingsForm, regularJoinEnabled: event.target.checked })} className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-[color:var(--accent)] focus:ring-[color:var(--accent)]" />
-														<span>{ta('gamesFieldRegularJoinEnabled')}</span>
-													</label>
-													<label className="flex items-center gap-3 text-sm text-neutral-200">
 														<input type="checkbox" checked={settingsForm.serverDetailsHidden} onChange={(event) => setSettingsForm({ ...settingsForm, serverDetailsHidden: event.target.checked })} className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-[color:var(--accent)] focus:ring-[color:var(--accent)]" />
 														<span>{ta('gamesFieldServerDetailsHidden')}</span>
 													</label>
@@ -1023,6 +1064,20 @@ export default function AdminGameMissionPage() {
 												<div className={`${editorCardClass} grid gap-3`}>
 													<label className="text-sm font-medium text-neutral-200">{ta('gamesFieldSlottingJson')}</label>
 													<textarea value={slottingText} onChange={(event) => setSlottingText(event.target.value)} rows={20} spellCheck={false} className={editorMonoTextAreaClass} />
+													{(() => {
+														try {
+															const parsed = JSON.parse(slottingText) as { sides?: Array<{ squads?: Array<{ slots?: Array<{ access?: string }> }> }> };
+															const hasNonUnit = parsed?.sides?.some(s => s.squads?.some(sq => sq.slots?.some(sl => sl.access !== 'unit')));
+															if (hasNonUnit) {
+																return (
+																	<p className="text-xs text-amber-300">
+																		Some slots have non-unit access. Before priority opens, all slots should typically be set to &quot;unit&quot; access. The system will auto-assign priority and regular slots when the priority phase opens.
+																	</p>
+																);
+															}
+														} catch { /* invalid JSON, ignore */ }
+														return null;
+													})()}
 													<div className="flex flex-wrap items-center gap-3">
 														<AdminButton variant="primary" onClick={() => void handleSaveSlotting()} disabled={activeAction !== null}>
 															{activeAction === 'slotting' ? ta('gamesSavingSlotting') : ta('gamesSaveSlottingAction')}
@@ -1033,29 +1088,32 @@ export default function AdminGameMissionPage() {
 													</div>
 												</div>
 
-												<div className={`${editorCardClass} grid gap-3`}>
-													<label className="text-sm font-medium text-neutral-200">{ta('gamesFieldLegacyImport')}</label>
-													<textarea value={legacyImportText} onChange={(event) => setLegacyImportText(event.target.value)} rows={16} spellCheck={false} className={editorMonoTextAreaClass} />
-													<p className="text-xs text-neutral-500">{ta('gamesLegacyImportHelp')}</p>
-													<div className="flex flex-wrap items-center gap-3">
-														<AdminButton variant="secondary" onClick={() => void handleImportLegacy()} disabled={activeAction !== null}>
-															{activeAction === 'import' ? ta('gamesImportingLegacy') : ta('gamesImportLegacyAction')}
-														</AdminButton>
-														<AdminButton variant="secondary" onClick={() => setLegacyImportText('')} disabled={activeAction !== null}>
-															{ta('gamesClearLegacyImportAction')}
-														</AdminButton>
-													</div>
-												</div>
 											</div>
 										</section>
 
 										<section className={editorSectionClass}>
 											<AdminDisclosure
 												summaryLeft={
-													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{ta('gamesSlottingPreviewTitle')}</h2>
+													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminUnitAssignmentsTitle')}</h2>
 												}
 											>
-												<SlottingPreview slotting={mission.slotting} />
+												<UnitAssignmentsPanel missionId={mission.id} slotting={mission.slotting} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse} />
+											</AdminDisclosure>
+										</section>
+
+										<section className={editorSectionClass}>
+											<AdminDisclosure
+												summaryLeft={
+													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminSlottingEditorTitle')}</h2>
+												}
+											>
+												<SlottingEditor
+													slotting={mission.slotting}
+													slottingRevision={mission.slottingRevision}
+													unitAssignments={mission.unitAssignments}
+													missionId={mission.id}
+													onSaved={syncSlottingResponse}
+												/>
 											</AdminDisclosure>
 										</section>
 
@@ -1075,6 +1133,12 @@ export default function AdminGameMissionPage() {
 
 													<ActionCard title={ta('gamesReleaseCardTitle')} description={ta('gamesReleaseCardText')}>
 														<div className="flex flex-wrap gap-3">
+															<AdminButton variant="secondary" onClick={() => void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-unit`, 'gamesReleaseUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !!mission.unitGameplayReleasedAt}>
+																{activeAction === 'gamesReleaseUnitAction' ? ta('gamesReleasingUnit') : ta('gamesReleaseUnitAction')}
+															</AdminButton>
+															<AdminButton variant="secondary" onClick={() => void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-unit`, 'gamesHideUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !mission.unitGameplayReleasedAt || !!mission.priorityGameplayReleasedAt}>
+																{activeAction === 'gamesHideUnitAction' ? ta('gamesHidingUnit') : ta('gamesHideUnitAction')}
+															</AdminButton>
 															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleasePriorityTitle'), description: ta('gamesConfirmReleasePriorityText'), confirmLabel: ta('gamesReleasePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-priority`, 'gamesReleasePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published'}>
 																{activeAction === 'gamesReleasePriorityAction' ? ta('gamesReleasingPriority') : ta('gamesReleasePriorityAction')}
 															</AdminButton>
@@ -1224,6 +1288,9 @@ export default function AdminGameMissionPage() {
 											}
 										>
 											<div className="mt-4 grid gap-3">
+												{mission.status === 'archived' ? (
+													<p className="text-xs text-neutral-500">Audit events older than 30 days are automatically removed.</p>
+												) : null}
 												{auditState === 'loading' || auditState === 'idle' ? (
 													<p className="text-sm text-neutral-300">{ta('gamesAuditLoading')}</p>
 												) : auditState === 'error' ? (
@@ -1325,6 +1392,161 @@ function ActionCard({ title, description, children }: { title: string; descripti
 			<h3 className="text-sm font-semibold text-neutral-50">{title}</h3>
 			<p className="mt-1 text-sm text-neutral-400">{description}</p>
 			<div className="mt-3">{children}</div>
+		</div>
+	);
+}
+
+function UnitAssignmentsPanel({
+	missionId,
+	slotting,
+	currentAssignments,
+	onSaved
+}: {
+	missionId: number;
+	slotting: import('@/features/games/domain/slotting').CanonicalSlotting;
+	currentAssignments: import('@/features/games/domain/types').GameUnitAssignment[];
+	onSaved: (mission: AdminGameMissionDetail) => void;
+}) {
+	const tg = useTranslations('games');
+	const [assignments, setAssignments] = useState<Array<{ unitId: number; unitTag: string; unitName: string; sideId: string }>>(() =>
+		currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId }))
+	);
+	const [availableUnits, setAvailableUnits] = useState<Array<{ id: number; tag: string; name: string; slotsAllocated: number }>>([]);
+	const [loadingUnits, setLoadingUnits] = useState(true);
+	const [saving, setSaving] = useState(false);
+	const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	useEffect(() => {
+		setAssignments(currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId })));
+	}, [currentAssignments]);
+
+	useEffect(() => {
+		void (async () => {
+			try {
+				const res = await fetch('/api/admin/units?status=verified&hasSlots=true&limit=100', { cache: 'no-store' });
+				const json = await res.json() as { units?: Array<{ id: number; tag: string; name: string; slotsAllocated: number }> };
+				setAvailableUnits(json.units ?? []);
+			} catch {
+				setAvailableUnits([]);
+			} finally {
+				setLoadingUnits(false);
+			}
+		})();
+	}, []);
+
+	const addUnit = (unitId: number) => {
+		const unit = availableUnits.find((u) => u.id === unitId);
+		if (!unit || assignments.some((a) => a.unitId === unitId)) return;
+		setAssignments([...assignments, { unitId: unit.id, unitTag: unit.tag, unitName: unit.name, sideId: slotting.sides[0]?.id ?? '' }]);
+	};
+
+	const removeUnit = (unitId: number) => {
+		setAssignments(assignments.filter((a) => a.unitId !== unitId));
+	};
+
+	const updateSide = (unitId: number, sideId: string) => {
+		setAssignments(assignments.map((a) => (a.unitId === unitId ? { ...a, sideId } : a)));
+	};
+
+	const handleSave = async () => {
+		setSaving(true);
+		setFeedback(null);
+		try {
+			const res = await fetch(`/api/admin/games/${missionId}/unit-assignments`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					assignments: assignments.map((a) => ({ unitId: a.unitId, sideId: a.sideId }))
+				})
+			});
+			const json: unknown = await res.json();
+			const parsed = parseAdminGameMissionResponse(json);
+			if (parsed && !('error' in parsed)) {
+				setFeedback({ type: 'success', text: tg('adminUnitAssignmentsSaved') });
+				onSaved(parsed.mission);
+			} else {
+				const code = parsed && 'error' in parsed ? parsed.error : 'unknown';
+				setFeedback({ type: 'error', text: tg('adminUnitAssignmentsErrorPrefix', { error: code }) });
+			}
+		} catch {
+			setFeedback({ type: 'error', text: tg('adminUnitAssignmentsNetworkError') });
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const unassignedUnits = availableUnits.filter((u) => !assignments.some((a) => a.unitId === u.id));
+
+	return (
+		<div className="grid gap-4">
+			<p className="text-sm text-neutral-400">{tg('adminUnitAssignmentsSubtitle')}</p>
+
+			{assignments.length > 0 ? (
+				<div className="grid gap-2">
+					{assignments.map((a) => (
+						<div key={a.unitId} className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-950/70 px-3 py-2">
+							<span className="text-sm font-semibold text-neutral-100">{a.unitTag}</span>
+							<span className="text-xs text-neutral-400">({a.unitName})</span>
+							<select
+								value={a.sideId}
+								onChange={(e) => updateSide(a.unitId, e.target.value)}
+								className="ml-auto rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
+							>
+								{slotting.sides.map((side) => (
+									<option key={side.id} value={side.id}>{sideDisplayName(side)}</option>
+								))}
+							</select>
+							<button
+								type="button"
+								onClick={() => removeUnit(a.unitId)}
+								className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 transition hover:bg-red-500/20"
+							>
+								{tg('adminUnitAssignmentsRemove')}
+							</button>
+						</div>
+					))}
+				</div>
+			) : (
+				<p className="text-sm text-neutral-500">{tg('adminUnitAssignmentsNoneAssigned')}</p>
+			)}
+
+			{unassignedUnits.length > 0 ? (
+				<div className="flex flex-wrap items-center gap-2">
+					<span className="text-xs text-neutral-400">{tg('adminUnitAssignmentsAddUnit')}</span>
+					{loadingUnits ? (
+						<span className="text-xs text-neutral-500">{tg('adminUnitAssignmentsLoading')}</span>
+					) : (
+						<select
+							value=""
+							onChange={(e) => {
+								const id = Number(e.target.value);
+								if (id) addUnit(id);
+							}}
+							className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
+						>
+							<option value="">{tg('adminSlottingEditorSelectUnit')}</option>
+							{unassignedUnits.map((u) => (
+								<option key={u.id} value={u.id}>{u.tag} ({u.name}) - {u.slotsAllocated} slots</option>
+							))}
+						</select>
+					)}
+				</div>
+			) : null}
+
+			{feedback ? (
+				<p className={`text-sm ${feedback.type === 'error' ? 'text-red-300' : 'text-emerald-300'}`}>{feedback.text}</p>
+			) : null}
+
+			<div>
+				<button
+					type="button"
+					onClick={() => { void handleSave(); }}
+					disabled={saving}
+					className="rounded-lg bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{saving ? tg('adminUnitAssignmentsSaving') : tg('adminUnitAssignmentsSave')}
+				</button>
+			</div>
 		</div>
 	);
 }

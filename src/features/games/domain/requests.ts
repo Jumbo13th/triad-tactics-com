@@ -60,6 +60,7 @@ export const updateGameSettingsRequestSchema = z.object({
 	finalPassword: optionalNullableTrimmedString(200),
 	priorityClaimOpensAt: nullableDateTimeSchema,
 	priorityClaimManualState: z.enum(['default', 'open', 'closed']),
+	unitSlottingManualState: z.enum(['closed', 'open']),
 	regularJoinEnabled: z.boolean(),
 	serverDetailsHidden: z.boolean(),
 	priorityBadgeTypeIds: z.array(z.number().int().positive()).max(100).transform((ids) => [...new Set(ids)])
@@ -72,12 +73,6 @@ export const publishGameRequestSchema = z.object({
 export const updateGameSlottingRequestSchema = z.object({
 	slottingRevision: z.number().int().positive(),
 	slotting: canonicalSlottingSchema,
-	confirmDestructive: z.boolean().optional().default(false)
-});
-
-export const importGameSlottingRequestSchema = z.object({
-	slottingRevision: z.number().int().positive(),
-	legacyJson: z.string().trim().min(1),
 	confirmDestructive: z.boolean().optional().default(false)
 });
 
@@ -172,10 +167,28 @@ export const updateMissionUpdateRequestSchema = z.object({
 export type UpdateGameSettingsRequest = z.infer<typeof updateGameSettingsRequestSchema>;
 export type PublishGameRequest = z.infer<typeof publishGameRequestSchema>;
 export type UpdateGameSlottingRequest = z.infer<typeof updateGameSlottingRequestSchema>;
-export type ImportGameSlottingRequest = z.infer<typeof importGameSlottingRequestSchema>;
 export type ClaimPrioritySlotRequest = z.infer<typeof claimPrioritySlotRequestSchema>;
 export type ArchiveGameRequest = z.infer<typeof archiveGameRequestSchema>;
 export type CancelGameRequest = z.infer<typeof cancelGameRequestSchema>;
 export type DeleteArchivedMissionRequest = z.infer<typeof deleteArchivedMissionRequestSchema>;
 export type CreateMissionUpdateRequest = z.infer<typeof createMissionUpdateRequestSchema>;
 export type UpdateMissionUpdateRequest = z.infer<typeof updateMissionUpdateRequestSchema>;
+
+export const updateUnitAssignmentsRequestSchema = z.object({
+	assignments: z.array(z.object({
+		unitId: z.number().int().positive(),
+		sideId: z.string().trim().min(1)
+	})).max(50)
+});
+
+export const claimUnitSlotRequestSchema = z.object({
+	slotId: z.string().trim().min(1)
+});
+
+export const releaseUnitSlotRequestSchema = z.object({
+	slotId: z.string().trim().min(1)
+});
+
+export type UpdateUnitAssignmentsRequest = z.infer<typeof updateUnitAssignmentsRequestSchema>;
+export type ClaimUnitSlotRequest = z.infer<typeof claimUnitSlotRequestSchema>;
+export type ReleaseUnitSlotRequest = z.infer<typeof releaseUnitSlotRequestSchema>;

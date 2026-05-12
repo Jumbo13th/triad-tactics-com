@@ -136,19 +136,19 @@
 ### 1.2 Taking Slots
 
 1.2.1. A player must:
-1.2.1.1. Follow the established slotting order.
+1.2.1.1. Follow the established slotting order: unit slotting first, then priority, then regular.
 1.2.1.2. Respect the established priorities: unit slots, priority slots, regular slots.
 1.2.1.3. Follow the administrator's instructions during slotting.
-1.2.1.4. During the unit and priority slotting phase, take only a slot allocated to your unit or a pre-assigned priority slot.
-1.2.1.5. Take a free slot of another unit only after agreement with that unit's leader.
-1.2.1.6. Take regular slots only after solo players are admitted and free slotting on equal terms has been announced.
+1.2.1.4. Unit leaders of units with allocated slots claim slots for their unit on their assigned side using the slotting board on the mission page. Each unit can claim up to their allocated slot count.
+1.2.1.5. Priority players claim open priority slots on the slotting board after the priority phase opens.
+1.2.1.6. Regular players, including members of units without allocated slots, join the regular list using the Join mission button.
 1.2.2. A player is prohibited from:
-1.2.2.1. Taking slots assigned to other participants or units, except in cases where the slot has been transferred to that player by its original holder.
+1.2.2.1. Taking slots assigned to other units, except in cases agreed with that unit's leader and the administration.
 1.2.2.2. Ignoring administrative instructions.
 1.2.2.3. Changing slots after the beginning of the briefing or preparation phase.
 1.2.2.4. Kicking another player from a slot. This functionality is not used on our server.
-1.2.2.5. Taking regular slots before solo players are admitted and free slotting has been announced.
-1.2.3. Information about which slots are assigned to whom is available in the slotting section on the main page and on the mission page if the mission is published.
+1.2.3. When the priority phase opens, unclaimed unit slots are automatically converted to priority and regular access. The system distributes these slots approximately 2:1 (priority:regular).
+1.2.4. Information about which slots are assigned to whom is available in the slotting section on the mission page.
 
 ---
 

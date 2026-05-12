@@ -6,6 +6,15 @@ export type LocalizedDescription = Record<AppLocale, string>;
 export type GameStatus = 'draft' | 'published' | 'archived';
 export type GameArchiveStatus = 'completed' | 'canceled';
 export type GamePriorityClaimManualState = 'default' | 'open' | 'closed';
+export type GameUnitSlottingManualState = 'closed' | 'open';
+
+export type GameUnitAssignment = {
+	unitId: number;
+	unitTag: string;
+	unitName: string;
+	sideId: string;
+	slotsAllocated: number;
+};
 export type GameDraftCreateMode = 'blank' | 'duplicate_previous';
 export type GamePublishValidationError =
 	| 'slotting_invalid'
@@ -78,6 +87,7 @@ export type GameAdminMission = {
 	priorityClaimOpensAt: string | null;
 	priorityClaimManualState: GamePriorityClaimManualState;
 	regularJoinEnabled: boolean;
+	unitGameplayReleasedAt: string | null;
 	priorityGameplayReleasedAt: string | null;
 	regularGameplayReleasedAt: string | null;
 	publishedAt: string | null;
@@ -97,6 +107,8 @@ export type GameAdminMission = {
 	finalPassword: string | null;
 	serverDetailsHidden: boolean;
 	priorityBadgeTypeIds: number[];
+	unitSlottingManualState: GameUnitSlottingManualState;
+	unitAssignments: GameUnitAssignment[];
 	updates: GameMissionUpdate[];
 	slotting: CanonicalSlotting;
 };
@@ -153,6 +165,13 @@ export type GameMissionViewer = {
 	canSwitchPriority: boolean;
 	canJoinRegular: boolean;
 	canLeaveRegular: boolean;
+	unitId: number | null;
+	unitTag: string | null;
+	unitSideId: string | null;
+	isUnitLeader: boolean;
+	canClaimUnitSlot: boolean;
+	unitSlotsUsed: number;
+	unitSlotsAllocated: number;
 };
 
 export type GameMissionDetail = {
@@ -168,10 +187,13 @@ export type GameMissionDetail = {
 	priorityClaimOpensAt: string | null;
 	priorityClaimManualState: GamePriorityClaimManualState;
 	priorityClaimOpen: boolean;
+	unitGameplayReleasedAt: string | null;
 	priorityGameplayReleasedAt: string | null;
 	regularJoinEnabled: boolean;
 	regularJoinOpen: boolean;
 	regularGameplayReleasedAt: string | null;
+	unitSlottingOpen: boolean;
+	slottingRevision: number;
 	archivedAt: string | null;
 	archiveStatus: GameArchiveStatus | null;
 	archiveReason: string | null;

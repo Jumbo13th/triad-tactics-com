@@ -53,3 +53,6 @@ next-env.d.ts
 /.playwright-mcp
 scripts/seed-units.js
 .claude/settings.local.json
+
+# slotting templates
+/slotting-templates/

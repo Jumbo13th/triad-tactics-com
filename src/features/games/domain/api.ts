@@ -32,6 +32,7 @@ const adminGameMissionOverviewSchema = z.object({
 	priorityClaimOpensAt: z.string().nullable(),
 	priorityClaimManualState: z.enum(['default', 'open', 'closed']),
 	regularJoinEnabled: z.boolean(),
+	unitGameplayReleasedAt: z.string().nullable(),
 	priorityGameplayReleasedAt: z.string().nullable(),
 	regularGameplayReleasedAt: z.string().nullable(),
 	publishedAt: z.string().nullable(),
@@ -47,6 +48,14 @@ const adminGameMissionOverviewSchema = z.object({
 	finalPassword: z.string().nullable(),
 	serverDetailsHidden: z.boolean(),
 	priorityBadgeTypeIds: z.array(z.number().int().positive()),
+	unitSlottingManualState: z.enum(['closed', 'open']),
+	unitAssignments: z.array(z.object({
+		unitId: z.number().int().positive(),
+		unitTag: z.string(),
+		unitName: z.string(),
+		sideId: z.string(),
+		slotsAllocated: z.number().int()
+	})),
 	updates: z.array(
 		z.object({
 			id: z.number().int().positive(),
