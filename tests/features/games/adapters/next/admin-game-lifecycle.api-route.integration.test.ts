@@ -137,6 +137,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					finalPassword: 'live-pass',
 					priorityClaimOpensAt: '2026-03-20T18:00:00.000Z',
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]
@@ -193,6 +194,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: null,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: false,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: []
@@ -233,6 +235,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: 70000,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: []
@@ -321,6 +324,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					earlyPassword: 'briefing',
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]
@@ -370,6 +374,7 @@ describe('Admin game lifecycle endpoints (integration)', () => {
 					serverPort: 2001,
 					priorityClaimOpensAt: null,
 					priorityClaimManualState: 'default',
+					unitSlottingManualState: 'open',
 					regularJoinEnabled: true,
 					serverDetailsHidden: false,
 					priorityBadgeTypeIds: [badgeId]
