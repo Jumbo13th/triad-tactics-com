@@ -152,11 +152,12 @@ export function useEpisodeSlotting(mission: GameMissionDetail): EpisodeSlottingS
 			}
 		}
 		prevEpisodeFullRef.current = currentEpisodeIsFull;
-	});
+	}, [currentEpisodeIsFull, unclaimedEpisodes.length, reminderDismissKey]);
 
 	useEffect(() => {
 		prevEpisodeFullRef.current = false;
-		requestAnimationFrame(() => setReminderTriggered(false));
+		const id = requestAnimationFrame(() => setReminderTriggered(false));
+		return () => cancelAnimationFrame(id);
 	}, [selectedEpisode]);
 
 	const showEpisodeReminder = reminderTriggered && unclaimedEpisodes.length > 0;

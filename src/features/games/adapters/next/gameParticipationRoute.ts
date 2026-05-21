@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { claimPrioritySlotRequestSchema, claimUnitSlotRequestSchema, releaseUnitSlotRequestSchema } from '@/features/games/domain/requests';
+import { claimPrioritySlotRequestSchema, claimUnitSlotRequestSchema, leavePrioritySlotRequestSchema, releaseUnitSlotRequestSchema } from '@/features/games/domain/requests';
 import {
 	claimPrioritySlotDeps,
 	claimUnitSlotDeps,
@@ -200,18 +200,22 @@ export async function postGameLeaveSlotRoute(
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
 
-		let episodeNumber = 1;
+		let body: unknown;
 		try {
-			const body = await readRequestBody(request);
-			if (body && typeof body === 'object' && 'episodeNumber' in body && typeof (body as Record<string, unknown>).episodeNumber === 'number') {
-				episodeNumber = (body as Record<string, unknown>).episodeNumber as number;
-			}
-		} catch { /* empty body */ }
+			body = await readRequestBody(request);
+		} catch {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const parsed = leavePrioritySlotRequestSchema.safeParse(body ?? {});
+		if (!parsed.success) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
 
 		const left = leavePrioritySlot(leavePrioritySlotDeps, {
 			shortCode,
 			steamId64: member.steamId64,
-			episodeNumber
+			episodeNumber: parsed.data.episodeNumber
 		});
 
 		if (!left.ok) {

@@ -61,7 +61,7 @@ export const updateGameSettingsRequestSchema = z.object({
 	priorityClaimOpensAt: nullableDateTimeSchema,
 	priorityClaimManualState: z.enum(['default', 'open', 'closed']),
 	unitSlottingManualState: z.enum(['closed', 'open']),
-	regularJoinEnabled: z.boolean().optional().default(true),
+	regularJoinEnabled: z.boolean(),
 	serverDetailsHidden: z.boolean(),
 	priorityBadgeTypeIds: z.array(z.number().int().positive()).max(100).transform((ids) => [...new Set(ids)])
 });
@@ -79,6 +79,10 @@ export const updateGameSlottingRequestSchema = z.object({
 
 export const claimPrioritySlotRequestSchema = z.object({
 	slotId: z.string().trim().min(1),
+	episodeNumber: z.number().int().min(1).default(1)
+});
+
+export const leavePrioritySlotRequestSchema = z.object({
 	episodeNumber: z.number().int().min(1).default(1)
 });
 

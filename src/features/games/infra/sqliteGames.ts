@@ -733,7 +733,11 @@ export function deleteEpisodeSlotting(input: {
 			return { success: true, mission: mapMissionRow(db, updated) };
 		});
 
-		return run();
+		const result = run();
+		if (result.success) {
+			emitSlottingUpdated(result.mission.shortCode, result.mission.slottingRevision, input.episodeNumber);
+		}
+		return result;
 	} catch {
 		return { success: false, error: 'database_error' };
 	}
