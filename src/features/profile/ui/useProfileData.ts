@@ -52,6 +52,8 @@ export const useProfileData = (): ProfileData => {
                 value: yesNo(status.renameRequired),
             }
         ],
+        armaGuid: status.armaGuid ?? null,
+        armaGuidLabel: t('fields.armaGuid'),
         badges: status.badges ?? []
     }
 }

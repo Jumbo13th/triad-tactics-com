@@ -686,6 +686,7 @@
       "invalidAge": "Please enter a valid age",
       "ageMin": "We only accept 18+ applications",
       "callsignInvalidChars": "Only letters (A-Z), digits (0-9), and underscore (_) are allowed",
+      "armaGuidInvalidFormat": "Please enter a valid ARMA ID (e.g. a1b2c3d4-5678-9abc-def0-1234567890ab)",
       "minLength": "Please provide more details (minimum {min} characters)",
       "maxLength": "Please keep it under {max} characters",
       "invalidSteamUrl": "Please enter a valid Steam profile URL",
@@ -741,7 +742,8 @@
       "playerConfirmed": "Player confirmed",
       "application": "Application",
       "renameRequired": "Rename required",
-      "pendingRename": "Pending rename request"
+      "pendingRename": "Pending rename request",
+      "armaGuid": "ARMA ID"
     },
     "values": {
       "yes": "Yes",
@@ -758,6 +760,35 @@
       "admin": "Admin"
     },
     "badgesLabel": "Badges"
+  },
+  "armaId": {
+    "title": "ARMA ID required",
+    "subtitle": "To continue using the website, please enter your ARMA Reforger player ID (GUID).",
+    "signedInAs": "Signed in as {name}",
+    "formTitle": "Enter your ARMA ID",
+    "formText": "You can find your ARMA ID in the Arma Reforger profile settings. It looks like: a1b2c3d4-5678-9abc-def0-1234567890ab",
+    "fieldLabel": "ARMA ID (GUID)",
+    "fieldPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "fieldHint": "Format: 8-4-4-4-12 hex characters (UUID)",
+    "submit": "Save ARMA ID",
+    "submitting": "Saving...",
+    "successText": "Your ARMA ID has been saved successfully.",
+    "successLinkLabel": "Continue to home page",
+    "errorNotSignedIn": "You need to sign in with Steam to set your ARMA ID.",
+    "errorDuplicate": "This ARMA ID is already in use by another player.",
+    "errorServer": "Something went wrong. Please try again.",
+    "edit": "Change",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "confirmTitle": "Change ARMA ID?",
+    "confirmText": "An incorrect ARMA ID will break your access to the game server. The change may take some time to apply.",
+    "confirmProceed": "I understand, continue",
+    "confirmCancel": "Cancel",
+    "screenshot1Alt": "Where to find your ARMA ID",
+    "screenshot1Caption": "Step 1: Open your profile settings in Arma Reforger",
+    "screenshot2Alt": "How to copy your ARMA ID",
+    "screenshot2Caption": "Step 2: Copy your player ID (GUID)"
   },
   "games": {
     "hubEyebrow": "Operations",

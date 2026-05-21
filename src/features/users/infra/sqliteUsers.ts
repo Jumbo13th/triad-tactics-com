@@ -12,6 +12,7 @@ type UserRow = {
 	rename_required_reason: string | null;
 	rename_required_by_steamid64: string | null;
 	discord_id: string | null;
+	arma_guid: string | null;
 };
 
 export function getOrCreateUserBySteamId64(input: { steamid64: string }) {
@@ -20,7 +21,7 @@ export function getOrCreateUserBySteamId64(input: { steamid64: string }) {
 	const fallbackCallsign = `Steam_${steamid64}`;
 	const select = db.prepare(`
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-			u.current_callsign, u.discord_id,
+			u.current_callsign, u.discord_id, u.arma_guid,
 			rr.required_at as rename_required_at,
 			rr.reason as rename_required_reason,
 			rr.required_by_steamid64 as rename_required_by_steamid64
@@ -69,7 +70,7 @@ export function getUserBySteamId64(steamid64: string): User | null {
 	const db = getDb();
 	const stmt = db.prepare(`
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
-			u.current_callsign, u.discord_id,
+			u.current_callsign, u.discord_id, u.arma_guid,
 			rr.required_at as rename_required_at,
 			rr.reason as rename_required_reason,
 			rr.required_by_steamid64 as rename_required_by_steamid64
@@ -122,6 +123,50 @@ export function getBadgeLabelsByUserId(userId: number): { label: string }[] {
 		ORDER BY LOWER(bt.label) ASC
 	`);
 	return stmt.all(userId) as { label: string }[];
+}
+
+export function setArmaGuidByUserId(input: {
+	userId: number;
+	armaGuid: string;
+}): { success: true } | { success: false; error: 'not_found' | 'duplicate' | 'database_error' } {
+	const db = getDb();
+	const stmt = db.prepare(`
+		UPDATE users
+		SET arma_guid = ?
+		WHERE id = ?
+	`);
+	try {
+		const info = stmt.run(input.armaGuid, input.userId);
+		if (info.changes === 0) return { success: false, error: 'not_found' };
+		return { success: true };
+	} catch (error: unknown) {
+		const code =
+			typeof error === 'object' && error !== null && 'code' in error
+				? (error as { code: string }).code
+				: '';
+		if (code === 'SQLITE_CONSTRAINT_UNIQUE') {
+			return { success: false, error: 'duplicate' };
+		}
+		return { success: false, error: 'database_error' };
+	}
+}
+
+export function isArmaGuidTaken(armaGuid: string, excludeUserId?: number): boolean {
+	const db = getDb();
+	if (excludeUserId != null) {
+		const stmt = db.prepare(`
+			SELECT 1 FROM users
+			WHERE LOWER(arma_guid) = LOWER(?) AND id != ?
+			LIMIT 1
+		`);
+		return !!stmt.get(armaGuid, excludeUserId);
+	}
+	const stmt = db.prepare(`
+		SELECT 1 FROM users
+		WHERE LOWER(arma_guid) = LOWER(?)
+		LIMIT 1
+	`);
+	return !!stmt.get(armaGuid);
 }
 
 export function setDiscordIdentityByUserId(input: {

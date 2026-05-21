@@ -74,26 +74,52 @@ export default function AdminMailingPage() {
 		(async () => {
 			try {
 				setApprovedStatus('loading');
-				const [appsRes, usersRes] = await Promise.all([
-					fetch('/api/admin?status=archived', { cache: 'no-store' }),
-					fetch('/api/admin/users?status=confirmed', { cache: 'no-store' })
+
+				const fetchAllPages = async <T,>(
+					baseUrl: string,
+					parse: (json: unknown) => { totalPages: number; items: T[] } | null
+				): Promise<T[]> => {
+					const firstRes = await fetch(`${baseUrl}&page=1`, { cache: 'no-store' });
+					const firstJson: unknown = (await firstRes.json()) as unknown;
+					const first = parse(firstJson);
+					if (!first) throw new Error('load_failed');
+					const all = [...first.items];
+					const remaining = Array.from({ length: first.totalPages - 1 }, (_, i) => i + 2);
+					const rest = await Promise.all(
+						remaining.map(async (p) => {
+							const res = await fetch(`${baseUrl}&page=${p}`, { cache: 'no-store' });
+							const json: unknown = (await res.json()) as unknown;
+							const parsed = parse(json);
+							if (!parsed) throw new Error('load_failed');
+							return parsed.items;
+						})
+					);
+					for (const items of rest) all.push(...items);
+					return all;
+				};
+
+				const [allApps, allUsers] = await Promise.all([
+					fetchAllPages('/api/admin?status=archived', (json) => {
+						const parsed = parseAdminApplicationsResponse(json);
+						if (!parsed || 'error' in parsed) return null;
+						return { totalPages: parsed.totalPages, items: parsed.applications };
+					}),
+					fetchAllPages('/api/admin/users?status=confirmed', (json) => {
+						const parsed = parseAdminUsersResponse(json);
+						if (!parsed || 'error' in parsed) return null;
+						return { totalPages: parsed.totalPages, items: parsed.users };
+					})
 				]);
-				const appsJson: unknown = (await appsRes.json()) as unknown;
-				const usersJson: unknown = (await usersRes.json()) as unknown;
-				const appsParsed = parseAdminApplicationsResponse(appsJson);
-				const usersParsed = parseAdminUsersResponse(usersJson);
-				if (!appsParsed || 'error' in appsParsed) throw new Error('load_failed');
-				if (!usersParsed || 'error' in usersParsed) throw new Error('load_failed');
 
 				const appById = new Map<number, { email: string; confirmedAt: string | null }>();
-				for (const app of appsParsed.applications) {
+				for (const app of allApps) {
 					if (!app.id) continue;
 					if (!app.email?.trim()) continue;
 					if (!app.confirmed_at) continue;
 					appById.set(app.id, { email: app.email, confirmedAt: app.confirmed_at ?? null });
 				}
 
-				const rows = usersParsed.users
+				const rows = allUsers
 					.map((user) => {
 						const applicationId = user.confirmed_application_id ?? null;
 						if (!applicationId) return null;
