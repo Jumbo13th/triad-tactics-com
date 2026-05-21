@@ -67,6 +67,11 @@ export function ArmaGuidEditField({ label, currentValue, onSaved }: Props) {
 
 			const result = parseArmaIdSubmitResponse(await res.json().catch(() => null));
 
+			if (res.status === 401) {
+				setError(t('errorNotSignedIn'));
+				return;
+			}
+
 			if (res.ok && result?.kind === 'success') {
 				setEditing(false);
 				onSaved();
@@ -146,7 +151,7 @@ export function ArmaGuidEditField({ label, currentValue, onSaved }: Props) {
 					type="text"
 					value={value}
 					onChange={(e) => { setValue(e.target.value); setError(null); }}
-					placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+					placeholder={t('fieldPlaceholder')}
 					className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-50 placeholder:text-neutral-500 focus:border-[color:var(--accent)] focus:outline-none focus:ring-1 focus:ring-[color:var(--accent)]"
 					autoComplete="off"
 					spellCheck={false}

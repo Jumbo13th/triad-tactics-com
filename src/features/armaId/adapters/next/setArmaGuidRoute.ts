@@ -15,7 +15,12 @@ export async function postSetArmaGuidRoute(request: NextRequest): Promise<NextRe
 			return NextResponse.json({ ok: false, error: 'not_authenticated' }, { status: 401 });
 		}
 
-		const body: unknown = await request.json();
+		let body: unknown;
+		try {
+			body = await request.json();
+		} catch {
+			return NextResponse.json({ ok: false, error: 'invalid_request' }, { status: 400 });
+		}
 		const parsed = setArmaGuidRequestSchema.safeParse(body);
 		if (!parsed.success) {
 			return NextResponse.json({ ok: false, error: 'invalid_request' }, { status: 400 });
