@@ -29,12 +29,17 @@ export function getUserStatus(deps: SteamAuthDeps, sid: string | null): UserStat
 		? deps.users.getBadgeLabelsByUserId(user.id)
 		: [];
 
+	const armaGuid = user?.arma_guid ?? null;
+	const isConfirmed = !!user?.player_confirmed_at;
+	const armaGuidRequired = isConfirmed && !armaGuid;
+
 	return {
 		connected: true,
 		steamid64: identity.steamid64,
 		personaName: identity.personaName,
 		currentCallsign: user?.current_callsign ?? null,
 		discordId: user?.discord_id ?? null,
+		armaGuid,
 		hasExisting: !!existing,
 		submittedAt: existing?.created_at ?? null,
 		renameRequired,
@@ -42,6 +47,7 @@ export function getUserStatus(deps: SteamAuthDeps, sid: string | null): UserStat
 		renameRequiredReason: latestDeclineReason ?? user?.rename_required_reason ?? null,
 		renameRequiredBySteamId64,
 		renameRequiredByCallsign,
+		armaGuidRequired,
 		accessLevel,
 		badges
 	};

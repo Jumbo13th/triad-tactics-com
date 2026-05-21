@@ -718,5 +718,16 @@ export const migrations: Migration[] = [
 
 			CREATE INDEX IF NOT EXISTS idx_mua_mission ON mission_unit_assignments(mission_id);
 		`
+	},
+	{
+		id: 14,
+		name: 'arma_guid',
+		up: `
+			ALTER TABLE users ADD COLUMN arma_guid TEXT;
+
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_users_arma_guid_unique
+				ON users(LOWER(arma_guid))
+				WHERE arma_guid IS NOT NULL AND TRIM(arma_guid) != '';
+		`
 	}
 ];

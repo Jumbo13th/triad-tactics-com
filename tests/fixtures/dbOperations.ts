@@ -3,7 +3,7 @@ import { insertApplication, getBySteamId64, deleteBySteamId64 } from '@/features
 import { setUserRenameRequiredBySteamId64, confirmApplication } from '@/features/admin/infra/sqliteAdmin';
 import { createRenameRequest, hasPendingRenameRequestByUserId } from '@/features/rename/infra/sqliteRenameRequests';
 import { createSteamSession, setSteamSessionIdentity } from '@/features/steamAuth/infra/sqliteSessions';
-import { getOrCreateUserBySteamId64, getUserBySteamId64 } from '@/features/users/infra/sqliteUsers';
+import { getOrCreateUserBySteamId64, getUserBySteamId64, setArmaGuidByUserId, isArmaGuidTaken } from '@/features/users/infra/sqliteUsers';
 
 export const dbOperations = {
 	getOrCreateUserBySteamId64,
@@ -17,6 +17,8 @@ export const dbOperations = {
 	hasPendingRenameRequestByUserId,
 	createRenameRequest,
 	confirmApplication,
+	setArmaGuidByUserId,
+	isArmaGuidTaken,
 	clearAll: () => {
 		const db = getDb();
 		try {

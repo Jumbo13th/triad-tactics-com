@@ -15,6 +15,10 @@ export function getUserFlowRedirect(locale: string, status: UserStatus): string 
 		return `/${locale}/apply`;
 	}
 
+	if (status.armaGuidRequired) {
+		return `/${locale}/arma-id`;
+	}
+
 	return null;
 }
 

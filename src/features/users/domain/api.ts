@@ -13,6 +13,7 @@ const userStatusConnectedSchema = z.object({
 	personaName: z.string().nullable(),
 	currentCallsign: z.string().nullable(),
 	discordId: z.string().nullable(),
+	armaGuid: z.string().nullable(),
 	hasExisting: sqliteBoolean,
 	submittedAt: z.string().nullable(),
 	renameRequired: sqliteBoolean,
@@ -20,6 +21,7 @@ const userStatusConnectedSchema = z.object({
 	renameRequiredReason: z.string().nullable(),
 	renameRequiredBySteamId64: z.string().nullable(),
 	renameRequiredByCallsign: z.string().nullable(),
+	armaGuidRequired: sqliteBoolean,
 	accessLevel: z.enum(['guest', 'player', 'admin']),
 	badges: z.array(z.object({ label: z.string() })).optional()
 });
@@ -32,6 +34,7 @@ export type UserStatus =
 			personaName: string | null;
 			currentCallsign: string | null;
 			discordId: string | null;
+			armaGuid: string | null;
 			hasExisting: boolean;
 			submittedAt: string | null;
 			renameRequired: boolean;
@@ -39,6 +42,7 @@ export type UserStatus =
 			renameRequiredReason: string | null;
 			renameRequiredBySteamId64: string | null;
 			renameRequiredByCallsign: string | null;
+			armaGuidRequired: boolean;
 			accessLevel: UserAccessLevel;
 			badges?: { label: string }[];
 	  };

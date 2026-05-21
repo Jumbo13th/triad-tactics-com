@@ -686,6 +686,7 @@
       "invalidAge": "Пожалуйста, введите корректный возраст",
       "ageMin": "Мы принимаем заявки только от 18+",
       "callsignInvalidChars": "Допустимы только латинские буквы (A-Z), цифры (0-9) и подчёркивание (_)",
+      "armaGuidInvalidFormat": "Введите корректный ARMA ID (например: a1b2c3d4-5678-9abc-def0-1234567890ab)",
       "minLength": "Пожалуйста, предоставьте больше информации (минимум {min} символов)",
       "maxLength": "Пожалуйста, сократите текст (максимум {max} символов)",
       "invalidSteamUrl": "Пожалуйста, укажите корректную ссылку на Steam профиль",
@@ -741,7 +742,8 @@
       "playerConfirmed": "Игрок подтвержден",
       "application": "Заявка",
       "renameRequired": "Нужна смена позывного",
-      "pendingRename": "Запрос на смену позывного"
+      "pendingRename": "Запрос на смену позывного",
+      "armaGuid": "ARMA ID"
     },
     "values": {
       "yes": "Да",
@@ -758,6 +760,35 @@
       "admin": "Админ"
     },
     "badgesLabel": "Значки"
+  },
+  "armaId": {
+    "title": "Требуется ARMA ID",
+    "subtitle": "Для продолжения работы с сайтом, пожалуйста, укажите ваш ARMA Reforger ID (GUID).",
+    "signedInAs": "Вы вошли как {name}",
+    "formTitle": "Введите ваш ARMA ID",
+    "formText": "Вы можете найти свой ARMA ID в настройках профиля Arma Reforger. Он выглядит так: a1b2c3d4-5678-9abc-def0-1234567890ab",
+    "fieldLabel": "ARMA ID (GUID)",
+    "fieldPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "fieldHint": "Формат: 8-4-4-4-12 шестнадцатеричных символов (UUID)",
+    "submit": "Сохранить ARMA ID",
+    "submitting": "Сохранение...",
+    "successText": "Ваш ARMA ID успешно сохранён.",
+    "successLinkLabel": "Перейти на главную",
+    "errorNotSignedIn": "Для установки ARMA ID необходимо войти через Steam.",
+    "errorDuplicate": "Этот ARMA ID уже используется другим игроком.",
+    "errorServer": "Произошла ошибка. Попробуйте ещё раз.",
+    "edit": "Изменить",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "cancel": "Отмена",
+    "confirmTitle": "Изменить ARMA ID?",
+    "confirmText": "Неправильный ARMA ID приведёт к потере доступа к игровому серверу. Изменение может занять некоторое время.",
+    "confirmProceed": "Понимаю, продолжить",
+    "confirmCancel": "Отмена",
+    "screenshot1Alt": "Где найти ваш ARMA ID",
+    "screenshot1Caption": "Шаг 1: Откройте настройки профиля в Arma Reforger",
+    "screenshot2Alt": "Как скопировать ваш ARMA ID",
+    "screenshot2Caption": "Шаг 2: Скопируйте ваш ID игрока (GUID)"
   },
   "games": {
     "hubEyebrow": "Операции",

@@ -6,6 +6,7 @@ import { ProfileField } from "@/features/profile/ui/ProfileField";
 import { ProfileLoading } from "@/features/profile/ui/ProfileLoading";
 import { ProfileNotAuthorized } from "@/features/profile/ui/ProfileNotAuthorized";
 import { useProfileData } from "@/features/profile/ui/useProfileData";
+import { ArmaGuidEditField } from "@/features/armaId/ui/root";
 import { useTranslations } from "next-intl";
 import { Link } from '@/i18n/routing';
 
@@ -47,6 +48,13 @@ export default function ProfilePage() {
 
 				<div className="mt-6 grid gap-4 sm:grid-cols-2">
 					{profileData.items && profileData.items.map((item) => <ProfileField label={item.label} value={item.value} key={item.label} />)}
+					{profileData.armaGuidLabel ? (
+						<ArmaGuidEditField
+							label={profileData.armaGuidLabel}
+							currentValue={profileData.armaGuid ?? null}
+							onSaved={() => window.location.reload()}
+						/>
+					) : null}
 				</div>
 
 				{profileData.badges && profileData.badges.length > 0 ? (

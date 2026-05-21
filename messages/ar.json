@@ -686,6 +686,7 @@
       "invalidAge": "يرجى إدخال عمر صحيح",
       "ageMin": "نقبل الطلبات من عمر 18+ فقط",
       "callsignInvalidChars": "المسموح فقط: أحرف لاتينية (A-Z)، أرقام (0-9)، وشرطة سفلية (_)",
+      "armaGuidInvalidFormat": "أدخل معرّف ARMA صالح (مثال: a1b2c3d4-5678-9abc-def0-1234567890ab)",
       "minLength": "يرجى تقديم المزيد من التفاصيل (الحد الأدنى {min} حرفاً)",
       "maxLength": "يرجى تقصير النص (الحد الأقصى {max} حرفاً)",
       "invalidSteamUrl": "يرجى إدخال رابط صحيح لملف Steam الشخصي",
@@ -741,7 +742,8 @@
       "playerConfirmed": "تم تأكيد اللاعب",
       "application": "الطلب",
       "renameRequired": "مطلوب تغيير نداء",
-      "pendingRename": "طلب تغيير النداء"
+      "pendingRename": "طلب تغيير النداء",
+      "armaGuid": "ARMA ID"
     },
     "values": {
       "yes": "نعم",
@@ -758,6 +760,35 @@
       "admin": "مشرف"
     },
     "badgesLabel": "الشارات"
+  },
+  "armaId": {
+    "title": "معرّف ARMA مطلوب",
+    "subtitle": "للمتابعة في استخدام الموقع، يرجى إدخال معرّف ARMA Reforger الخاص بك (GUID).",
+    "signedInAs": "تم تسجيل الدخول كـ {name}",
+    "formTitle": "أدخل معرّف ARMA الخاص بك",
+    "formText": "يمكنك العثور على معرّف ARMA في إعدادات ملف Arma Reforger. يبدو هكذا: a1b2c3d4-5678-9abc-def0-1234567890ab",
+    "fieldLabel": "ARMA ID (GUID)",
+    "fieldPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "fieldHint": "الصيغة: 8-4-4-4-12 حرف سداسي عشري (UUID)",
+    "submit": "حفظ معرّف ARMA",
+    "submitting": "جاري الحفظ...",
+    "successText": "تم حفظ معرّف ARMA بنجاح.",
+    "successLinkLabel": "المتابعة إلى الصفحة الرئيسية",
+    "errorNotSignedIn": "يجب تسجيل الدخول عبر Steam لتعيين معرّف ARMA.",
+    "errorDuplicate": "معرّف ARMA هذا مستخدم بالفعل من قبل لاعب آخر.",
+    "errorServer": "حدث خطأ. يرجى المحاولة مرة أخرى.",
+    "edit": "تغيير",
+    "save": "حفظ",
+    "saving": "جاري الحفظ...",
+    "cancel": "إلغاء",
+    "confirmTitle": "تغيير معرّف ARMA؟",
+    "confirmText": "معرّف ARMA غير صحيح سيؤدي إلى فقدان الوصول إلى خادم اللعبة. قد يستغرق التغيير بعض الوقت.",
+    "confirmProceed": "أفهم، المتابعة",
+    "confirmCancel": "إلغاء",
+    "screenshot1Alt": "أين تجد معرّف ARMA الخاص بك",
+    "screenshot1Caption": "الخطوة 1: افتح إعدادات الملف الشخصي في Arma Reforger",
+    "screenshot2Alt": "كيفية نسخ معرّف ARMA الخاص بك",
+    "screenshot2Caption": "الخطوة 2: انسخ معرّف اللاعب (GUID)"
   },
   "games": {
     "hubEyebrow": "العمليات",
