@@ -11,8 +11,10 @@ import {
 	findSlotById,
 	getMissionParticipationUser,
 	mapMissionRow,
+	selectEpisodeSlotting,
 	selectMissionColumns,
 	selectMissionUnitAssignments,
+	syncMissionsTableForEp1,
 	type MissionRow
 } from './sqliteGamesShared';
 
@@ -29,11 +31,11 @@ export function updateUnitAssignments(
 		LIMIT 1
 	`);
 	const deleteAssignments = db.prepare(`
-		DELETE FROM mission_unit_assignments WHERE mission_id = ?
+		DELETE FROM mission_unit_assignments WHERE mission_id = ? AND episode_number = ?
 	`);
 	const insertAssignment = db.prepare(`
-		INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, assigned_by_steamid64)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64)
+		VALUES (?, ?, ?, ?, ?)
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_steamid64, event_type, payload)
@@ -47,7 +49,8 @@ export function updateUnitAssignments(
 				return { success: false, error: 'not_found' };
 			}
 
-			const slotting = parseCanonicalSlotting(row.slotting_json);
+			const episode = selectEpisodeSlotting(db, input.missionId, input.episodeNumber);
+			const slotting = episode ? episode.slotting : parseCanonicalSlotting(row.slotting_json);
 			const validSideIds = new Set(slotting.sides.map((side) => side.id));
 			for (const assignment of input.assignments) {
 				if (!validSideIds.has(assignment.sideId)) {
@@ -61,17 +64,17 @@ export function updateUnitAssignments(
 				}
 			}
 
-			const before = selectMissionUnitAssignments(db, input.missionId);
-			deleteAssignments.run(input.missionId);
+			const before = selectMissionUnitAssignments(db, input.missionId, input.episodeNumber);
+			deleteAssignments.run(input.missionId, input.episodeNumber);
 			for (const assignment of input.assignments) {
-				insertAssignment.run(input.missionId, assignment.unitId, assignment.sideId, input.updatedBySteamId64);
+				insertAssignment.run(input.missionId, assignment.unitId, assignment.sideId, input.episodeNumber, input.updatedBySteamId64);
 			}
-			const after = selectMissionUnitAssignments(db, input.missionId);
+			const after = selectMissionUnitAssignments(db, input.missionId, input.episodeNumber);
 
 			insertAudit.run(
 				input.missionId,
 				input.updatedBySteamId64,
-				JSON.stringify({ before, after })
+				JSON.stringify({ episodeNumber: input.episodeNumber, before, after })
 			);
 
 			const updated = selectMission.get(input.missionId) as MissionRow | undefined;
@@ -93,6 +96,7 @@ export function claimUnitSlot(input: {
 	shortCode: string;
 	slotId: string;
 	steamId64: string;
+	episodeNumber: number;
 }): ClaimUnitSlotRepoResult {
 	const db = getDb();
 	const selectMission = db.prepare(`
@@ -101,13 +105,11 @@ export function claimUnitSlot(input: {
 		WHERE status = 'published' AND short_code IS NOT NULL AND LOWER(short_code) = LOWER(?)
 		LIMIT 1
 	`);
-	const updateMissionSlotting = db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_user_id, actor_steamid64, event_type, payload)
@@ -144,14 +146,19 @@ export function claimUnitSlot(input: {
 
 			const assignment = db.prepare(`
 				SELECT side_id FROM mission_unit_assignments
-				WHERE mission_id = ? AND unit_id = ?
-			`).get(row.id, unitRow.unit_id) as { side_id: string } | undefined;
+				WHERE mission_id = ? AND unit_id = ? AND episode_number = ?
+			`).get(row.id, unitRow.unit_id, input.episodeNumber) as { side_id: string } | undefined;
 
 			if (!assignment) {
 				return { success: false, error: 'unit_not_assigned' };
 			}
 
-			const slotting = parseCanonicalSlotting(row.slotting_json);
+			const episode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'slot_not_found' };
+			}
+
+			const slotting = episode.slotting;
 			const slotContext = findSlotById(slotting, input.slotId);
 			if (!slotContext || slotContext.slot.access !== 'unit') {
 				return { success: false, error: 'slot_not_found' };
@@ -172,22 +179,25 @@ export function claimUnitSlot(input: {
 
 			slotContext.slot.occupant = { type: 'placeholder', label: unitRow.tag };
 
-			const updatedInfo = updateMissionSlotting.run(
-				JSON.stringify(slotting),
-				input.steamId64,
+			const updatedSlottingJson = JSON.stringify(slotting);
+			const updatedInfo = updateEpisodeSlotting.run(
+				updatedSlottingJson,
 				row.id,
-				row.slotting_revision
+				input.episodeNumber,
+				episode.slottingRevision
 			);
 
 			if (updatedInfo.changes === 0) {
 				return { success: false, error: 'claim_conflict' };
 			}
 
+			syncMissionsTableForEp1(db, row.id, input.episodeNumber, updatedSlottingJson, input.steamId64);
+
 			insertAudit.run(
 				row.id,
 				user.id,
 				input.steamId64,
-				JSON.stringify({ slotId: input.slotId, unitTag: unitRow.tag, shortCode: row.short_code ?? null })
+				JSON.stringify({ slotId: input.slotId, episodeNumber: input.episodeNumber, unitTag: unitRow.tag, shortCode: row.short_code ?? null })
 			);
 
 			return { success: true };
@@ -195,9 +205,9 @@ export function claimUnitSlot(input: {
 
 		const result = run();
 		if (result.success) {
-			// Emit after transaction commits so SSE subscribers read committed data
 			const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (fresh) emitSlottingUpdated(fresh.short_code, fresh.slotting_revision);
+			const freshEpisode = fresh ? selectEpisodeSlotting(db, fresh.id, input.episodeNumber) : null;
+			if (fresh) emitSlottingUpdated(fresh.short_code, freshEpisode?.slottingRevision ?? fresh.slotting_revision, input.episodeNumber);
 		}
 		return result;
 	} catch {
@@ -211,6 +221,7 @@ export function releaseUnitSlot(input: {
 	shortCode: string;
 	slotId: string;
 	steamId64: string;
+	episodeNumber: number;
 }): ReleaseUnitSlotRepoResult {
 	const db = getDb();
 	const selectMission = db.prepare(`
@@ -219,13 +230,11 @@ export function releaseUnitSlot(input: {
 		WHERE status = 'published' AND short_code IS NOT NULL AND LOWER(short_code) = LOWER(?)
 		LIMIT 1
 	`);
-	const updateMissionSlotting = db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_user_id, actor_steamid64, event_type, payload)
@@ -260,7 +269,12 @@ export function releaseUnitSlot(input: {
 				return { success: false, error: 'not_unit_leader' };
 			}
 
-			const slotting = parseCanonicalSlotting(row.slotting_json);
+			const episode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'slot_not_found' };
+			}
+
+			const slotting = episode.slotting;
 			const slotContext = findSlotById(slotting, input.slotId);
 			if (!slotContext || slotContext.slot.access !== 'unit') {
 				return { success: false, error: 'slot_not_found' };
@@ -275,22 +289,25 @@ export function releaseUnitSlot(input: {
 
 			slotContext.slot.occupant = null;
 
-			const updatedInfo = updateMissionSlotting.run(
-				JSON.stringify(slotting),
-				input.steamId64,
+			const updatedSlottingJson = JSON.stringify(slotting);
+			const updatedInfo = updateEpisodeSlotting.run(
+				updatedSlottingJson,
 				row.id,
-				row.slotting_revision
+				input.episodeNumber,
+				episode.slottingRevision
 			);
 
 			if (updatedInfo.changes === 0) {
 				return { success: false, error: 'release_conflict' };
 			}
 
+			syncMissionsTableForEp1(db, row.id, input.episodeNumber, updatedSlottingJson, input.steamId64);
+
 			insertAudit.run(
 				row.id,
 				user.id,
 				input.steamId64,
-				JSON.stringify({ slotId: input.slotId, unitTag: unitRow.tag, shortCode: row.short_code ?? null })
+				JSON.stringify({ slotId: input.slotId, episodeNumber: input.episodeNumber, unitTag: unitRow.tag, shortCode: row.short_code ?? null })
 			);
 
 			return { success: true };
@@ -299,7 +316,8 @@ export function releaseUnitSlot(input: {
 		const result = run();
 		if (result.success) {
 			const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (fresh) emitSlottingUpdated(fresh.short_code, fresh.slotting_revision);
+			const freshEpisode = fresh ? selectEpisodeSlotting(db, fresh.id, input.episodeNumber) : null;
+			if (fresh) emitSlottingUpdated(fresh.short_code, freshEpisode?.slottingRevision ?? fresh.slotting_revision, input.episodeNumber);
 		}
 		return result;
 	} catch {

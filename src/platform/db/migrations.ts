@@ -669,5 +669,54 @@ export const migrations: Migration[] = [
 
 			CREATE INDEX IF NOT EXISTS idx_mua_mission ON mission_unit_assignments(mission_id);
 		`
+	},
+	{
+		id: 13,
+		name: 'episode_slotting',
+		up: `
+			CREATE TABLE IF NOT EXISTS mission_episode_slotting (
+				mission_id INTEGER NOT NULL,
+				episode_number INTEGER NOT NULL CHECK(episode_number >= 1),
+				slotting_json TEXT NOT NULL,
+				slotting_revision INTEGER NOT NULL DEFAULT 1,
+				PRIMARY KEY (mission_id, episode_number),
+				FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_mes_mission ON mission_episode_slotting(mission_id);
+
+			INSERT INTO mission_episode_slotting (mission_id, episode_number, slotting_json, slotting_revision)
+			SELECT id, 1, slotting_json, slotting_revision
+			FROM missions
+			WHERE slotting_json IS NOT NULL AND slotting_json != '';
+
+			CREATE TRIGGER IF NOT EXISTS trg_mission_episode_slotting_insert
+			AFTER INSERT ON missions
+			BEGIN
+				INSERT OR IGNORE INTO mission_episode_slotting (mission_id, episode_number, slotting_json, slotting_revision)
+				VALUES (NEW.id, 1, NEW.slotting_json, NEW.slotting_revision);
+			END;
+
+			CREATE TABLE IF NOT EXISTS mission_unit_assignments_new (
+				mission_id INTEGER NOT NULL,
+				unit_id INTEGER NOT NULL,
+				side_id TEXT NOT NULL,
+				episode_number INTEGER NOT NULL DEFAULT 1 CHECK(episode_number >= 1),
+				assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				assigned_by_steamid64 TEXT,
+				PRIMARY KEY (mission_id, episode_number, unit_id),
+				FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			INSERT OR IGNORE INTO mission_unit_assignments_new (mission_id, unit_id, side_id, episode_number, assigned_at, assigned_by_steamid64)
+			SELECT mission_id, unit_id, side_id, 1, assigned_at, assigned_by_steamid64
+			FROM mission_unit_assignments;
+
+			DROP TABLE mission_unit_assignments;
+			ALTER TABLE mission_unit_assignments_new RENAME TO mission_unit_assignments;
+
+			CREATE INDEX IF NOT EXISTS idx_mua_mission ON mission_unit_assignments(mission_id);
+		`
 	}
 ];

@@ -13,7 +13,7 @@ export function DropdownMenuPanel({
 		<div
 			role="menu"
 			className={
-				'absolute right-0 z-20 mt-3 min-w-52 rounded-2xl border border-neutral-800 bg-neutral-950 p-2 shadow-lg shadow-black/30 ' +
+				'absolute left-0 z-20 mt-3 min-w-52 rounded-2xl border border-neutral-800 bg-neutral-950 p-2 shadow-lg shadow-black/30 ' +
 				(className ?? '')
 			}
 		>

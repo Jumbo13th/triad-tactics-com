@@ -9,7 +9,7 @@ export type LeavePrioritySlotResult =
 
 export function leavePrioritySlot(
 	deps: LeavePrioritySlotDeps,
-	input: { shortCode: string; steamId64: string }
+	input: { shortCode: string; steamId64: string; episodeNumber: number }
 ): LeavePrioritySlotResult {
 	const result = deps.repo.leavePrioritySlot(input);
 	if (result.success) return { ok: true, left: result.left };

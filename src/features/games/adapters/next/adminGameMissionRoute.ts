@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { requireAdmin } from '@/features/admin/adapters/next/adminAuth';
 import {
 	archiveGameRequestSchema,
@@ -121,6 +122,7 @@ function mapSlottingMutationError(result: {
 		| 'slotting_revision_conflict'
 		| 'regular_join_requires_regular_slots'
 		| 'destructive_change_requires_confirmation'
+		| 'episode_not_found'
 		| 'database_error';
 	destructiveChanges?: unknown;
 }): NextResponse {
@@ -297,6 +299,62 @@ export async function putAdminGameSlottingRoute(
 		return NextResponse.json({ success: true, mission: updated.mission });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_game_slotting_update_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function deleteAdminGameEpisodeRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		let body: unknown;
+		try {
+			body = await readRequestBody(request);
+		} catch {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const parsed = z.object({
+			episodeNumber: z.number().int().min(1),
+			confirmOccupied: z.boolean().optional().default(false)
+		}).safeParse(body);
+		if (!parsed.success) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const { deleteEpisodeSlotting } = await import('@/features/games/infra/sqliteGames');
+		const result = deleteEpisodeSlotting({
+			missionId,
+			episodeNumber: parsed.data.episodeNumber,
+			confirmOccupied: parsed.data.confirmOccupied,
+			deletedBySteamId64: admin.identity.steamid64
+		});
+
+		if (!result.success) {
+			if (result.error === 'not_found' || result.error === 'episode_not_found') {
+				return NextResponse.json({ error: result.error }, { status: 404 });
+			}
+			if (result.error === 'cannot_delete_episode_1') {
+				return NextResponse.json({ error: result.error }, { status: 400 });
+			}
+			if (result.error === 'has_occupied_slots') {
+				return NextResponse.json({ error: result.error, occupiedCount: result.occupiedCount }, { status: 409 });
+			}
+			return NextResponse.json({ error: result.error }, { status: 500 });
+		}
+
+		return NextResponse.json({ success: true, mission: result.mission });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_episode_delete_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }

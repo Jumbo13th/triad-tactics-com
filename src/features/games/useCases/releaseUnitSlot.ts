@@ -16,7 +16,7 @@ export type ReleaseUnitSlotResult =
 
 export function releaseUnitSlot(
 	deps: ReleaseUnitSlotDeps,
-	input: { shortCode: string; slotId: string; steamId64: string }
+	input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }
 ): ReleaseUnitSlotResult {
 	const result = deps.repo.releaseUnitSlot(input);
 	if (result.success) return { ok: true };

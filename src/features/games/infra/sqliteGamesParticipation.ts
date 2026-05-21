@@ -17,8 +17,10 @@ import {
 	isPriorityClaimOpen,
 	isRegularJoinOpen,
 	releaseUserPrioritySlot,
+	selectEpisodeSlotting,
 	selectMissionColumns,
 	switchUserPrioritySlot,
+	syncMissionsTableForEp1,
 	userHasMissionPriorityBadge,
 	type MissionRow
 } from './sqliteGamesShared';
@@ -29,6 +31,7 @@ export function claimPrioritySlot(input: {
 	shortCode: string;
 	slotId: string;
 	steamId64: string;
+	episodeNumber: number;
 }): ClaimPrioritySlotRepoResult {
 	const db = getDb();
 	const selectMission = db.prepare(`
@@ -41,13 +44,11 @@ export function claimPrioritySlot(input: {
 		DELETE FROM mission_regular_joins
 		WHERE mission_id = ? AND user_id = ?
 	`);
-	const updateMissionSlotting = db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_user_id, actor_steamid64, event_type, payload)
@@ -66,15 +67,19 @@ export function claimPrioritySlot(input: {
 			}
 
 			// Lazy auto-conversion for scheduled priority open (priorityClaimOpensAt)
-			ensureAutoConversion(db, row);
-			const currentRow = (selectMission.get(input.shortCode) as MissionRow | undefined) ?? row;
+			ensureAutoConversion(db, row, input.episodeNumber);
 
 			const user = getMissionParticipationUser(db, input.steamId64);
 			if (!user) {
 				return { success: false, error: 'database_error' };
 			}
 
-			const slotting = parseCanonicalSlotting(currentRow.slotting_json);
+			const episode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'slot_not_found' };
+			}
+
+			const slotting = episode.slotting;
 			const slotContext = findSlotById(slotting, input.slotId);
 			if (!slotContext || slotContext.slot.access !== 'priority') {
 				return { success: false, error: 'slot_not_found' };
@@ -98,22 +103,20 @@ export function claimPrioritySlot(input: {
 				callsign: user.current_callsign?.trim() || `Steam_${input.steamId64}`
 			});
 
-			const updatedInfo = updateMissionSlotting.run(
-				JSON.stringify(updatedSlotting),
-				input.steamId64,
-				currentRow.id,
-				currentRow.slotting_revision
+			const updatedSlottingJson = JSON.stringify(updatedSlotting);
+			const updatedInfo = updateEpisodeSlotting.run(
+				updatedSlottingJson,
+				row.id,
+				input.episodeNumber,
+				episode.slottingRevision
 			);
 
 			if (updatedInfo.changes === 0) {
-				const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-				if (!fresh) {
+				const freshEpisode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+				if (!freshEpisode) {
 					return { success: false, error: 'mission_not_found' };
 				}
-				if (!isPriorityClaimOpen(fresh)) {
-					return { success: false, error: 'claim_closed' };
-				}
-				const freshSlotting = parseCanonicalSlotting(fresh.slotting_json);
+				const freshSlotting = freshEpisode.slotting;
 				const freshSlot = findSlotById(freshSlotting, input.slotId);
 				if (!freshSlot || freshSlot.slot.access !== 'priority') {
 					return { success: false, error: 'slot_not_found' };
@@ -127,13 +130,15 @@ export function claimPrioritySlot(input: {
 				return { success: false, error: 'claim_conflict' };
 			}
 
-			deleteRegularJoin.run(currentRow.id, user.id);
+			syncMissionsTableForEp1(db, row.id, input.episodeNumber, updatedSlottingJson, input.steamId64);
+
+			deleteRegularJoin.run(row.id, user.id);
 
 			insertAudit.run(
 				row.id,
 				user.id,
 				input.steamId64,
-				JSON.stringify({ slotId: input.slotId, shortCode: row.short_code ?? null })
+				JSON.stringify({ slotId: input.slotId, episodeNumber: input.episodeNumber, shortCode: row.short_code ?? null })
 			);
 
 			return { success: true };
@@ -141,8 +146,9 @@ export function claimPrioritySlot(input: {
 
 		const result = run();
 		if (result.success) {
+			const freshEpisode = selectEpisodeSlotting(db, (selectMission.get(input.shortCode) as MissionRow | undefined)?.id ?? 0, input.episodeNumber);
 			const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (fresh) emitSlottingUpdated(fresh.short_code, fresh.slotting_revision);
+			if (fresh) emitSlottingUpdated(fresh.short_code, freshEpisode?.slottingRevision ?? fresh.slotting_revision, input.episodeNumber);
 		}
 		return result;
 	} catch {
@@ -156,6 +162,7 @@ export function switchPrioritySlot(input: {
 	shortCode: string;
 	slotId: string;
 	steamId64: string;
+	episodeNumber: number;
 }): SwitchPrioritySlotRepoResult {
 	const db = getDb();
 	const selectMission = db.prepare(`
@@ -168,13 +175,11 @@ export function switchPrioritySlot(input: {
 		DELETE FROM mission_regular_joins
 		WHERE mission_id = ? AND user_id = ?
 	`);
-	const updateMissionSlotting = db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_user_id, actor_steamid64, event_type, payload)
@@ -192,15 +197,19 @@ export function switchPrioritySlot(input: {
 				return { success: false, error: 'claim_closed' };
 			}
 
-			ensureAutoConversion(db, row);
-			const currentRow = (selectMission.get(input.shortCode) as MissionRow | undefined) ?? row;
+			ensureAutoConversion(db, row, input.episodeNumber);
 
 			const user = getMissionParticipationUser(db, input.steamId64);
 			if (!user) {
 				return { success: false, error: 'database_error' };
 			}
 
-			const slotting = parseCanonicalSlotting(currentRow.slotting_json);
+			const episode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'slot_not_found' };
+			}
+
+			const slotting = episode.slotting;
 			const currentHeld = findUserHeldSlot(slotting, user.id);
 			if (!currentHeld || currentHeld.slot.access !== 'priority') {
 				return { success: false, error: 'no_current_slot' };
@@ -226,22 +235,20 @@ export function switchPrioritySlot(input: {
 				callsign: user.current_callsign?.trim() || `Steam_${input.steamId64}`
 			});
 
-			const updatedInfo = updateMissionSlotting.run(
-				JSON.stringify(updatedSlotting),
-				input.steamId64,
-				currentRow.id,
-				currentRow.slotting_revision
+			const updatedSlottingJson = JSON.stringify(updatedSlotting);
+			const updatedInfo = updateEpisodeSlotting.run(
+				updatedSlottingJson,
+				row.id,
+				input.episodeNumber,
+				episode.slottingRevision
 			);
 
 			if (updatedInfo.changes === 0) {
-				const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-				if (!fresh) {
+				const freshEpisode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+				if (!freshEpisode) {
 					return { success: false, error: 'mission_not_found' };
 				}
-				if (!isPriorityClaimOpen(fresh)) {
-					return { success: false, error: 'claim_closed' };
-				}
-				const freshSlotting = parseCanonicalSlotting(fresh.slotting_json);
+				const freshSlotting = freshEpisode.slotting;
 				const freshCurrentHeld = findUserHeldSlot(freshSlotting, user.id);
 				if (!freshCurrentHeld || freshCurrentHeld.slot.access !== 'priority') {
 					return { success: false, error: 'no_current_slot' };
@@ -259,7 +266,9 @@ export function switchPrioritySlot(input: {
 				return { success: false, error: 'switch_conflict' };
 			}
 
-			deleteRegularJoin.run(currentRow.id, user.id);
+			syncMissionsTableForEp1(db, row.id, input.episodeNumber, updatedSlottingJson, input.steamId64);
+
+			deleteRegularJoin.run(row.id, user.id);
 
 			insertAudit.run(
 				row.id,
@@ -268,6 +277,7 @@ export function switchPrioritySlot(input: {
 				JSON.stringify({
 					fromSlotId: currentHeld.slot.id,
 					toSlotId: input.slotId,
+					episodeNumber: input.episodeNumber,
 					shortCode: row.short_code ?? null
 				})
 			);
@@ -278,7 +288,8 @@ export function switchPrioritySlot(input: {
 		const result = run();
 		if (result.success) {
 			const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (fresh) emitSlottingUpdated(fresh.short_code, fresh.slotting_revision);
+			const freshEpisode = fresh ? selectEpisodeSlotting(db, fresh.id, input.episodeNumber) : null;
+			if (fresh) emitSlottingUpdated(fresh.short_code, freshEpisode?.slottingRevision ?? fresh.slotting_revision, input.episodeNumber);
 		}
 		return result;
 	} catch {
@@ -291,6 +302,7 @@ export function switchPrioritySlot(input: {
 export function leavePrioritySlot(input: {
 	shortCode: string;
 	steamId64: string;
+	episodeNumber: number;
 }): LeavePrioritySlotRepoResult {
 	const db = getDb();
 	const selectMission = db.prepare(`
@@ -299,13 +311,11 @@ export function leavePrioritySlot(input: {
 		WHERE status = 'published' AND short_code IS NOT NULL AND LOWER(short_code) = LOWER(?)
 		LIMIT 1
 	`);
-	const updateMissionSlotting = db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_user_id, actor_steamid64, event_type, payload)
@@ -324,7 +334,12 @@ export function leavePrioritySlot(input: {
 				return { success: false, error: 'database_error' };
 			}
 
-			const slotting = parseCanonicalSlotting(row.slotting_json);
+			const episode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'no_current_slot' };
+			}
+
+			const slotting = episode.slotting;
 			const currentHeld = findUserHeldSlot(slotting, user.id);
 			if (!currentHeld || currentHeld.slot.access !== 'priority') {
 				return { success: false, error: 'no_current_slot' };
@@ -335,19 +350,20 @@ export function leavePrioritySlot(input: {
 				userId: user.id
 			});
 
-			const updatedInfo = updateMissionSlotting.run(
-				JSON.stringify(updatedSlotting),
-				input.steamId64,
+			const updatedSlottingJson = JSON.stringify(updatedSlotting);
+			const updatedInfo = updateEpisodeSlotting.run(
+				updatedSlottingJson,
 				row.id,
-				row.slotting_revision
+				input.episodeNumber,
+				episode.slottingRevision
 			);
 
 			if (updatedInfo.changes === 0) {
-				const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
-				if (!fresh) {
+				const freshEpisode = selectEpisodeSlotting(db, row.id, input.episodeNumber);
+				if (!freshEpisode) {
 					return { success: false, error: 'mission_not_found' };
 				}
-				const freshSlotting = parseCanonicalSlotting(fresh.slotting_json);
+				const freshSlotting = freshEpisode.slotting;
 				const freshCurrentHeld = findUserHeldSlot(freshSlotting, user.id);
 				if (!freshCurrentHeld || freshCurrentHeld.slot.access !== 'priority') {
 					return { success: false, error: 'no_current_slot' };
@@ -355,12 +371,15 @@ export function leavePrioritySlot(input: {
 				return { success: false, error: 'leave_conflict' };
 			}
 
+			syncMissionsTableForEp1(db, row.id, input.episodeNumber, updatedSlottingJson, input.steamId64);
+
 			insertAudit.run(
 				row.id,
 				user.id,
 				input.steamId64,
 				JSON.stringify({
 					slotId: currentHeld.slot.id,
+					episodeNumber: input.episodeNumber,
 					shortCode: row.short_code ?? null
 				})
 			);
@@ -370,12 +389,9 @@ export function leavePrioritySlot(input: {
 
 		const result = run();
 		if (result.success) {
-			const fresh = db.prepare(`
-				SELECT short_code, slotting_revision FROM missions
-				WHERE status = 'published' AND short_code IS NOT NULL AND LOWER(short_code) = LOWER(?)
-				LIMIT 1
-			`).get(input.shortCode) as { short_code: string; slotting_revision: number } | undefined;
-			if (fresh) emitSlottingUpdated(fresh.short_code, fresh.slotting_revision);
+			const fresh = selectMission.get(input.shortCode) as MissionRow | undefined;
+			const freshEpisode = fresh ? selectEpisodeSlotting(db, fresh.id, input.episodeNumber) : null;
+			if (fresh) emitSlottingUpdated(fresh.short_code, freshEpisode?.slottingRevision ?? fresh.slotting_revision, input.episodeNumber);
 		}
 		return result;
 	} catch {

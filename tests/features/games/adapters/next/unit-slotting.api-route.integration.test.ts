@@ -227,7 +227,10 @@ describe('Unit slotting (integration)', () => {
 			const row = db.prepare('SELECT slotting_json FROM missions WHERE short_code = ?').get('test-unit') as { slotting_json: string };
 			const slotting = JSON.parse(row.slotting_json);
 			slotting.sides[0].squads[0].slots[0].occupant = { type: 'placeholder', label: 'OTHER' };
-			db.prepare('UPDATE missions SET slotting_json = ? WHERE short_code = ?').run(JSON.stringify(slotting), 'test-unit');
+			const updatedJson = JSON.stringify(slotting);
+			db.prepare('UPDATE missions SET slotting_json = ? WHERE short_code = ?').run(updatedJson, 'test-unit');
+			const missionRow = db.prepare('SELECT id FROM missions WHERE short_code = ?').get('test-unit') as { id: number };
+			db.prepare('UPDATE mission_episode_slotting SET slotting_json = ? WHERE mission_id = ? AND episode_number = 1').run(updatedJson, missionRow.id);
 
 			const res = await POST(
 				new NextRequest('http://localhost/api/games/test-unit/claim-unit', {
@@ -275,7 +278,10 @@ describe('Unit slotting (integration)', () => {
 			const row = db.prepare('SELECT slotting_json FROM missions WHERE short_code = ?').get('test-unit') as { slotting_json: string };
 			const slotting = JSON.parse(row.slotting_json);
 			slotting.sides[0].squads[0].slots[0].occupant = { type: 'placeholder', label: 'OTHER' };
-			db.prepare('UPDATE missions SET slotting_json = ? WHERE short_code = ?').run(JSON.stringify(slotting), 'test-unit');
+			const updatedJson = JSON.stringify(slotting);
+			db.prepare('UPDATE missions SET slotting_json = ? WHERE short_code = ?').run(updatedJson, 'test-unit');
+			const missionRow = db.prepare('SELECT id FROM missions WHERE short_code = ?').get('test-unit') as { id: number };
+			db.prepare('UPDATE mission_episode_slotting SET slotting_json = ? WHERE mission_id = ? AND episode_number = 1').run(updatedJson, missionRow.id);
 
 			const res = await releaseRoute.POST(
 				new NextRequest('http://localhost/api/games/test-unit/release-unit', {
@@ -400,7 +406,7 @@ describe('Unit slotting (integration)', () => {
 				}]
 			};
 
-			const result = autoConvertUnclaimedSlots(slotting, 6);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 6]]));
 			expect(result).not.toBeNull();
 
 			// 10 total - 6 allocated = 4 should convert
@@ -439,7 +445,7 @@ describe('Unit slotting (integration)', () => {
 				] }] }]
 			};
 			// 3 total, 1 allocated → 2 non-unit needed, 2 exist already → no changes
-			expect(autoConvertUnclaimedSlots(slotting, 1)).toBeNull();
+			expect(autoConvertUnclaimedSlots(slotting, new Map([['s1', 1]]))).toBeNull();
 		});
 
 		it('autoConvertUnclaimedSlots reverts excess non-unit slots back to unit', async () => {
@@ -453,7 +459,7 @@ describe('Unit slotting (integration)', () => {
 				] }] }]
 			};
 			// 4 total, 3 allocated → only 1 non-unit needed, but 3 exist → revert 2
-			const result = autoConvertUnclaimedSlots(slotting, 3);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 3]]));
 			expect(result).not.toBeNull();
 			const slots = result!.sides[0].squads[0].slots;
 			const nonUnit = slots.filter(s => s.access !== 'unit');

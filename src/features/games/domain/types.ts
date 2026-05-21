@@ -14,6 +14,7 @@ export type GameUnitAssignment = {
 	unitName: string;
 	sideId: string;
 	slotsAllocated: number;
+	episodeNumber: number;
 };
 export type GameDraftCreateMode = 'blank' | 'duplicate_previous';
 export type GamePublishValidationError =
@@ -74,6 +75,12 @@ export type GameArchiveResult = {
 	sideScores: GameArchiveSideScore[];
 };
 
+export type EpisodeSlotting = {
+	episodeNumber: number;
+	slotting: CanonicalSlotting;
+	slottingRevision: number;
+};
+
 export type GameAdminMission = {
 	id: number;
 	shortCode: string | null;
@@ -111,6 +118,7 @@ export type GameAdminMission = {
 	unitAssignments: GameUnitAssignment[];
 	updates: GameMissionUpdate[];
 	slotting: CanonicalSlotting;
+	episodeSlottings: EpisodeSlotting[];
 };
 
 export type AdminGamesOverview = {
@@ -168,6 +176,7 @@ export type GameMissionViewer = {
 	unitId: number | null;
 	unitTag: string | null;
 	unitSideId: string | null;
+	unitSideByEpisode: Record<number, string>;
 	isUnitLeader: boolean;
 	canClaimUnitSlot: boolean;
 	unitSlotsUsed: number;
@@ -201,6 +210,8 @@ export type GameMissionDetail = {
 	availablePrioritySlotCount: number;
 	updates: GameMissionUpdate[];
 	slotting: CanonicalSlotting;
+	episodeSlottings: EpisodeSlotting[];
+	activeEpisode: number;
 	regularJoiners: GameRegularJoinParticipant[];
 	password: GameMissionPassword;
 	viewer: GameMissionViewer;

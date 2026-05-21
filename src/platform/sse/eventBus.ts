@@ -2,6 +2,7 @@ export type SlottingUpdatedEvent = {
 	type: 'slotting_updated';
 	shortCode: string;
 	slottingRevision: number;
+	episodeNumber: number;
 	timestamp: string;
 };
 

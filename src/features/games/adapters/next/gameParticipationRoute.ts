@@ -53,7 +53,8 @@ export async function postGameClaimRoute(
 		const claimed = claimPrioritySlot(claimPrioritySlotDeps, {
 			shortCode,
 			slotId: parsed.data.slotId,
-			steamId64: member.steamId64
+			steamId64: member.steamId64,
+			episodeNumber: parsed.data.episodeNumber
 		});
 
 		if (!claimed.ok) {
@@ -135,7 +136,8 @@ export async function postGameSwitchSlotRoute(
 		const switched = switchPrioritySlot(switchPrioritySlotDeps, {
 			shortCode,
 			slotId: parsed.data.slotId,
-			steamId64: member.steamId64
+			steamId64: member.steamId64,
+			episodeNumber: parsed.data.episodeNumber
 		});
 
 		if (!switched.ok) {
@@ -198,9 +200,18 @@ export async function postGameLeaveSlotRoute(
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
 
+		let episodeNumber = 1;
+		try {
+			const body = await readRequestBody(request);
+			if (body && typeof body === 'object' && 'episodeNumber' in body && typeof (body as Record<string, unknown>).episodeNumber === 'number') {
+				episodeNumber = (body as Record<string, unknown>).episodeNumber as number;
+			}
+		} catch { /* empty body */ }
+
 		const left = leavePrioritySlot(leavePrioritySlotDeps, {
 			shortCode,
-			steamId64: member.steamId64
+			steamId64: member.steamId64,
+			episodeNumber
 		});
 
 		if (!left.ok) {
@@ -246,7 +257,8 @@ export async function postGameClaimUnitRoute(
 		const claimed = claimUnitSlot(claimUnitSlotDeps, {
 			shortCode,
 			slotId: parsed.data.slotId,
-			steamId64: member.steamId64
+			steamId64: member.steamId64,
+			episodeNumber: parsed.data.episodeNumber
 		});
 
 		if (!claimed.ok) {
@@ -295,7 +307,8 @@ export async function postGameReleaseUnitRoute(
 		const released = releaseUnitSlot(releaseUnitSlotDeps, {
 			shortCode,
 			slotId: parsed.data.slotId,
-			steamId64: member.steamId64
+			steamId64: member.steamId64,
+			episodeNumber: parsed.data.episodeNumber
 		});
 
 		if (!released.ok) {
