@@ -54,7 +54,8 @@ const adminGameMissionOverviewSchema = z.object({
 		unitTag: z.string(),
 		unitName: z.string(),
 		sideId: z.string(),
-		slotsAllocated: z.number().int()
+		slotsAllocated: z.number().int(),
+		episodeNumber: z.number().int().min(1).default(1)
 	})),
 	updates: z.array(
 		z.object({
@@ -73,12 +74,19 @@ const adminGameMissionOverviewSchema = z.object({
 	)
 });
 
+const episodeSlottingSchema = z.object({
+	episodeNumber: z.number().int().min(1),
+	slotting: canonicalSlottingSchema,
+	slottingRevision: z.number().int().positive()
+});
+
 const adminGameMissionDetailSchema = adminGameMissionOverviewSchema.extend({
 	createdBySteamId64: z.string().nullable(),
 	updatedBySteamId64: z.string().nullable(),
 	publishedBySteamId64: z.string().nullable(),
 	archivedBySteamId64: z.string().nullable(),
-	slotting: canonicalSlottingSchema
+	slotting: canonicalSlottingSchema,
+	episodeSlottings: z.array(episodeSlottingSchema).default([])
 });
 
 const publishValidationReasonSchema = z.enum([

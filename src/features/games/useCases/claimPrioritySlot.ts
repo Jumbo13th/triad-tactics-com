@@ -17,7 +17,7 @@ export type ClaimPrioritySlotResult =
 
 export function claimPrioritySlot(
 	deps: ClaimPrioritySlotDeps,
-	input: { shortCode: string; slotId: string; steamId64: string }
+	input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }
 ): ClaimPrioritySlotResult {
 	const result = deps.repo.claimPrioritySlot(input);
 	if (result.success) return { ok: true };

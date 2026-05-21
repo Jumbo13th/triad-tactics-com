@@ -30,7 +30,6 @@ export function releaseUnitGameplay(input: {
 	const releaseMission = db.prepare(`
 		UPDATE missions
 		SET unit_gameplay_released_at = CURRENT_TIMESTAMP,
-			unit_gameplay_ever_released = 1,
 			unit_slotting_manual_state = 'closed',
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?
@@ -168,10 +167,8 @@ export function releasePriorityGameplay(input: {
 	const releaseMission = db.prepare(`
 		UPDATE missions
 		SET priority_gameplay_released_at = CURRENT_TIMESTAMP,
-			priority_gameplay_ever_released = 1,
 			priority_claim_manual_state = 'closed',
 			unit_slotting_manual_state = 'closed',
-			regular_join_enabled = 0,
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?
 		WHERE id = ? AND priority_gameplay_released_at IS NULL
@@ -319,8 +316,11 @@ export function releaseRegularGameplay(input: {
 		WHERE id = ?
 		LIMIT 1
 	`);
+	const deleteOldSnapshot = db.prepare(`
+		DELETE FROM mission_regular_release_snapshot WHERE mission_id = ?
+	`);
 	const snapshotCurrentJoins = db.prepare(`
-		INSERT OR IGNORE INTO mission_regular_release_snapshot (mission_id, user_id, released_at)
+		INSERT INTO mission_regular_release_snapshot (mission_id, user_id, released_at)
 		SELECT mission_id, user_id, CURRENT_TIMESTAMP
 		FROM mission_regular_joins
 		WHERE mission_id = ?
@@ -328,7 +328,6 @@ export function releaseRegularGameplay(input: {
 	const releaseMission = db.prepare(`
 		UPDATE missions
 		SET regular_gameplay_released_at = CURRENT_TIMESTAMP,
-			regular_gameplay_ever_released = 1,
 			unit_slotting_manual_state = 'closed',
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?
@@ -362,6 +361,7 @@ export function releaseRegularGameplay(input: {
 				return { success: false, error: 'already_released' };
 			}
 
+			deleteOldSnapshot.run(input.missionId);
 			const snapshotInfo = snapshotCurrentJoins.run(input.missionId);
 			const updatedInfo = releaseMission.run(input.releasedBySteamId64, input.missionId);
 			if (updatedInfo.changes === 0) {

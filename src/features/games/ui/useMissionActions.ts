@@ -32,6 +32,20 @@ function mapActionError(code: string | null | undefined, actionId: string, t: Re
 			return t('actionSlotNotFound');
 		case 'mission_not_found':
 			return t('actionMissionNotFound');
+		case 'slots_exhausted':
+			return t('actionSlotsExhausted');
+		case 'unit_slotting_closed':
+			return t('actionUnitSlottingClosed');
+		case 'not_unit_leader':
+			return t('actionNotUnitLeader');
+		case 'unit_not_assigned':
+			return t('actionUnitNotAssigned');
+		case 'wrong_side':
+			return t('actionWrongSide');
+		case 'not_your_unit_slot':
+			return t('actionNotYourUnitSlot');
+		case 'release_conflict':
+			return t('actionReleaseConflict');
 		default:
 			return t('actionGenericError');
 	}

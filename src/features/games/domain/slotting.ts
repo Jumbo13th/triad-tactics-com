@@ -184,40 +184,35 @@ export function detectDestructiveSlottingChanges(
 }
 
 /**
- * Reconcile slot access types based on unit allocations.
- *
- * Target: exactly `pool = totalSlots - totalUnitAllocated` slots should be priority/regular.
- * The rest should be unit access.
+ * Reconcile slot access types based on unit allocations, per side.
  *
  * Rules:
- * - Never touch slots with occupants (claimed unit slots stay unit, claimed priority stays priority)
- * - If too few priority/regular slots: convert unclaimed unit slots (top slots first — Squad Leaders get priority)
+ * - Never touch slots with occupants
+ * - If too few priority/regular slots: convert unclaimed unit slots (top slots first)
  * - If too many priority/regular slots: convert unclaimed priority/regular back to unit (bottom slots first)
- * - Split priority:regular 2:1 among the converted slots
+ * - Split priority:regular 2:1 among converted slots
  *
- * Returns a new slotting object (does not mutate the input).
- * Returns null if no changes were needed.
+ * Returns a new slotting object, or null if no changes were needed.
  */
 export function autoConvertUnclaimedSlots(
 	slotting: CanonicalSlotting,
-	totalUnitAllocated: number
+	unitAllocatedPerSide: Map<string, number>
 ): CanonicalSlotting | null {
 	const result = structuredClone(slotting);
+	let changed = false;
 
-	let totalSlots = 0;
+	type SlotRef = { slot: CanonicalSlot; squadIndex: number; slotIndex: number };
+
 	for (const side of result.sides) {
-		for (const squad of side.squads) {
-			totalSlots += squad.slots.length;
-		}
-	}
+		const sideAllocated = unitAllocatedPerSide.get(side.id) ?? 0;
 
-	const targetNonUnit = Math.max(0, totalSlots - totalUnitAllocated);
+		let sideSlots = 0;
+		for (const squad of side.squads) sideSlots += squad.slots.length;
 
-	// Count current non-unit slots that have no occupant (can be reshuffled)
-	// and those with occupants (locked in place)
-	let currentNonUnitUnoccupied = 0;
-	let currentNonUnitOccupied = 0;
-	for (const side of result.sides) {
+		const targetNonUnit = Math.max(0, sideSlots - sideAllocated);
+
+		let currentNonUnitUnoccupied = 0;
+		let currentNonUnitOccupied = 0;
 		for (const squad of side.squads) {
 			for (const slot of squad.slots) {
 				if (slot.access !== 'unit') {
@@ -226,18 +221,14 @@ export function autoConvertUnclaimedSlots(
 				}
 			}
 		}
-	}
 
-	const currentNonUnit = currentNonUnitUnoccupied + currentNonUnitOccupied;
-	if (currentNonUnit === targetNonUnit) return null;
+		const currentNonUnit = currentNonUnitUnoccupied + currentNonUnitOccupied;
+		if (currentNonUnit === targetNonUnit) continue;
+		changed = true;
 
-	type SlotRef = { slot: CanonicalSlot; squadIndex: number; slotIndex: number };
-
-	if (currentNonUnit < targetNonUnit) {
-		// Need more non-unit slots → convert unclaimed unit slots
-		const needed = targetNonUnit - currentNonUnit;
-		const unclaimed: SlotRef[] = [];
-		for (const side of result.sides) {
+		if (currentNonUnit < targetNonUnit) {
+			const needed = targetNonUnit - currentNonUnit;
+			const unclaimed: SlotRef[] = [];
 			for (let si = 0; si < side.squads.length; si++) {
 				for (let sli = 0; sli < side.squads[si].slots.length; sli++) {
 					const slot = side.squads[si].slots[sli];
@@ -246,19 +237,15 @@ export function autoConvertUnclaimedSlots(
 					}
 				}
 			}
-		}
-		// Top slots first (lower index = higher rank)
-		unclaimed.sort((a, b) => a.slotIndex - b.slotIndex || a.squadIndex - b.squadIndex);
-		const toConvert = unclaimed.slice(0, needed);
-		const priorityCount = Math.round(toConvert.length * 2 / 3);
-		for (let i = 0; i < toConvert.length; i++) {
-			toConvert[i].slot.access = i < priorityCount ? 'priority' : 'regular';
-		}
-	} else {
-		// Too many non-unit slots → convert unoccupied priority/regular back to unit
-		const excess = currentNonUnit - targetNonUnit;
-		const convertible: SlotRef[] = [];
-		for (const side of result.sides) {
+			unclaimed.sort((a, b) => a.slotIndex - b.slotIndex || a.squadIndex - b.squadIndex);
+			const toConvert = unclaimed.slice(0, needed);
+			const priorityCount = Math.round(toConvert.length * 2 / 3);
+			for (let i = 0; i < toConvert.length; i++) {
+				toConvert[i].slot.access = i < priorityCount ? 'priority' : 'regular';
+			}
+		} else {
+			const excess = currentNonUnit - targetNonUnit;
+			const convertible: SlotRef[] = [];
 			for (let si = 0; si < side.squads.length; si++) {
 				for (let sli = 0; sli < side.squads[si].slots.length; sli++) {
 					const slot = side.squads[si].slots[sli];
@@ -267,16 +254,15 @@ export function autoConvertUnclaimedSlots(
 					}
 				}
 			}
-		}
-		// Bottom slots first (higher index = lower rank — give those back to units)
-		convertible.sort((a, b) => b.slotIndex - a.slotIndex || b.squadIndex - a.squadIndex);
-		const toRevert = convertible.slice(0, excess);
-		for (const ref of toRevert) {
-			ref.slot.access = 'unit';
+			convertible.sort((a, b) => b.slotIndex - a.slotIndex || b.squadIndex - a.squadIndex);
+			const toRevert = convertible.slice(0, excess);
+			for (const ref of toRevert) {
+				ref.slot.access = 'unit';
+			}
 		}
 	}
 
-	return result;
+	return changed ? result : null;
 }
 
 export function countUnitSlotsUsed(slotting: CanonicalSlotting, unitTag: string): number {

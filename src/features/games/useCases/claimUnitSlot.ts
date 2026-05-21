@@ -19,7 +19,7 @@ export type ClaimUnitSlotResult =
 
 export function claimUnitSlot(
 	deps: ClaimUnitSlotDeps,
-	input: { shortCode: string; slotId: string; steamId64: string }
+	input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }
 ): ClaimUnitSlotResult {
 	const result = deps.repo.claimUnitSlot(input);
 	if (result.success) return { ok: true };

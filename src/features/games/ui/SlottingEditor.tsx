@@ -24,10 +24,11 @@ type Props = {
 	slottingRevision: number;
 	unitAssignments: GameUnitAssignment[];
 	missionId: number;
+	episodeNumber: number;
 	onSaved: (mission: AdminGameMissionDetail) => void;
 };
 
-export function SlottingEditor({ slotting, slottingRevision, unitAssignments, missionId, onSaved }: Props) {
+export function SlottingEditor({ slotting, slottingRevision, unitAssignments, missionId, episodeNumber, onSaved }: Props) {
 	const tg = useTranslations('games');
 	const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 	const [savingSlotId, setSavingSlotId] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
+					episodeNumber,
 					slottingRevision,
 					slotting: next,
 					confirmDestructive: true

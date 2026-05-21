@@ -180,7 +180,6 @@ describe('Admin game release endpoints (integration)', () => {
 		const json = await res.json();
 		expect(json.success).toBe(true);
 		expect(json.mission.priorityClaimManualState).toBe('closed');
-		expect(json.mission.regularJoinEnabled).toBe(false);
 		expect(json.mission.priorityGameplayReleasedAt).toMatch(/^\d{4}-\d{2}-\d{2} /);
 
 		const row = getDb()
@@ -193,7 +192,6 @@ describe('Admin game release endpoints (integration)', () => {
 				priority_gameplay_released_at: string | null;
 			};
 		expect(row.priority_claim_manual_state).toBe('closed');
-		expect(row.regular_join_enabled).toBe(0);
 		expect(row.priority_gameplay_released_at).not.toBeNull();
 	});
 

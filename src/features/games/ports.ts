@@ -154,6 +154,7 @@ export type UpdateGameSlottingRepoResult =
 				| 'slotting_revision_conflict'
 				| 'regular_join_requires_regular_slots'
 				| 'destructive_change_requires_confirmation'
+				| 'episode_not_found'
 				| 'database_error';
 			destructiveChanges?: GameSlottingDestructiveChange[];
 	  };
@@ -258,9 +259,9 @@ export type GamesCurrentRepo = {
 };
 
 export type GamesParticipationRepo = {
-	claimPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string }) => ClaimPrioritySlotRepoResult;
-	switchPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string }) => SwitchPrioritySlotRepoResult;
-	leavePrioritySlot: (input: { shortCode: string; steamId64: string }) => LeavePrioritySlotRepoResult;
+	claimPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => ClaimPrioritySlotRepoResult;
+	switchPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => SwitchPrioritySlotRepoResult;
+	leavePrioritySlot: (input: { shortCode: string; steamId64: string; episodeNumber: number }) => LeavePrioritySlotRepoResult;
 	joinRegularGame: (input: { shortCode: string; steamId64: string }) => JoinRegularGameRepoResult;
 	leaveRegularGame: (input: { shortCode: string; steamId64: string }) => LeaveRegularGameRepoResult;
 };
@@ -408,8 +409,8 @@ export type GamesUnitAssignmentRepo = {
 };
 
 export type GamesUnitSlottingRepo = {
-	claimUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string }) => ClaimUnitSlotRepoResult;
-	releaseUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string }) => ReleaseUnitSlotRepoResult;
+	claimUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => ClaimUnitSlotRepoResult;
+	releaseUnitSlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => ReleaseUnitSlotRepoResult;
 };
 
 export type UpdateUnitAssignmentsDeps = {

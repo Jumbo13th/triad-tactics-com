@@ -382,6 +382,7 @@ describe('Game mission endpoint (integration)', () => {
 		insertPublishedMission({
 			shortCode: 'OP-PRIORITY-RELEASE',
 			regularJoinEnabled: true,
+			priorityClaimManualState: 'closed',
 			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
 			slotting: createMissionSlotting({ priorityOccupantUserId: priorityPlayer.userId })
 		});
@@ -426,6 +427,7 @@ describe('Game mission endpoint (integration)', () => {
 
 		const missionId = insertPublishedMission({
 			shortCode: 'OP-PRIORITY-DECRYPT-FAIL',
+			priorityClaimManualState: 'closed',
 			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
 			slotting: createMissionSlotting({ priorityOccupantUserId: priorityPlayer.userId })
 		});
@@ -456,6 +458,7 @@ describe('Game mission endpoint (integration)', () => {
 		});
 		const missionId = insertPublishedMission({
 			shortCode: 'OP-REGULAR-RELEASE',
+			priorityClaimManualState: 'closed',
 			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
 			regularGameplayReleasedAt: '2026-03-20T19:20:00.000Z',
 			slotting: createMissionSlotting({ includePriority: false, includeRegular: true })
@@ -492,7 +495,7 @@ describe('Game mission endpoint (integration)', () => {
 		expect(lateJoinerJson.mission.password).toEqual({ stage: null, value: null, waitingForViewerAccess: false, missedJoinWindow: true });
 	});
 
-	it('keeps regular join closed and hides passwords after both gameplay stages were hidden', async () => {
+	it('reopens regular join and shows early password after both gameplay stages were hidden', async () => {
 		const { dbOperations, GET, NextRequest } = await loadGameMissionHarness();
 		const viewer = createConfirmedPlayer(dbOperations, {
 			steamId64: '76561198000000108',
@@ -518,9 +521,8 @@ describe('Game mission endpoint (integration)', () => {
 		expect(res.status).toBe(200);
 		const json = await res.json();
 		expect(json.success).toBe(true);
-		expect(json.mission.regularJoinOpen).toBe(false);
-		expect(json.mission.viewer.canJoinRegular).toBe(false);
-		expect(json.mission.password).toEqual({ stage: null, value: null, waitingForViewerAccess: false, missedJoinWindow: true });
+		expect(json.mission.regularJoinOpen).toBe(true);
+		expect(json.mission.password.stage).toBe('early');
 	});
 
 	it('does not mark joined regular participants as missed after both gameplay stages were hidden', async () => {
@@ -550,9 +552,9 @@ describe('Game mission endpoint (integration)', () => {
 		expect(res.status).toBe(200);
 		const json = await res.json();
 		expect(json.success).toBe(true);
-		expect(json.mission.regularJoinOpen).toBe(false);
+		expect(json.mission.regularJoinOpen).toBe(true);
 		expect(json.mission.viewer.joinedRegular).toBe(true);
-		expect(json.mission.password).toEqual({ stage: null, value: null, waitingForViewerAccess: false, missedJoinWindow: false });
+		expect(json.mission.password.stage).toBe('early');
 	});
 
 	it('rejects unconfirmed users from loading mission detail', async () => {

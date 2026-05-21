@@ -17,7 +17,7 @@ export type SwitchPrioritySlotResult =
 
 export function switchPrioritySlot(
 	deps: SwitchPrioritySlotDeps,
-	input: { shortCode: string; slotId: string; steamId64: string }
+	input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }
 ): SwitchPrioritySlotResult {
 	const result = deps.repo.switchPrioritySlot(input);
 	if (result.success) return { ok: true };

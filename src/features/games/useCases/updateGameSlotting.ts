@@ -12,6 +12,7 @@ export type UpdateGameSlottingResult =
 				| 'slotting_revision_conflict'
 				| 'regular_join_requires_regular_slots'
 				| 'destructive_change_requires_confirmation'
+				| 'episode_not_found'
 				| 'database_error';
 			destructiveChanges?: GameSlottingDestructiveChange[];
 	  };

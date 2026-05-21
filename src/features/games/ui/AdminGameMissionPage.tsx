@@ -23,6 +23,26 @@ import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePrefer
 import { SlottingEditor } from './SlottingEditor';
 import { formatMissionUpdateMessage } from './missionPageUtils';
 
+type SideSummary = { id: string; name: string; displayName?: string };
+
+/** Collect unique sides across all episodes (deduped by id). */
+function collectAllSides(mission: AdminGameMissionDetail): SideSummary[] {
+	const seen = new Map<string, SideSummary>();
+	for (const ep of mission.episodeSlottings ?? []) {
+		for (const side of ep.slotting.sides) {
+			if (!seen.has(side.id)) {
+				seen.set(side.id, { id: side.id, name: side.name, displayName: side.displayName });
+			}
+		}
+	}
+	if (seen.size === 0) {
+		for (const side of mission.slotting.sides) {
+			seen.set(side.id, { id: side.id, name: side.name, displayName: side.displayName });
+		}
+	}
+	return Array.from(seen.values());
+}
+
 type SettingsFormState = {
 	title: string;
 	descriptionEn: string;
@@ -222,6 +242,7 @@ export default function AdminGameMissionPage() {
 	const [missionState, setMissionState] = useState<'loading' | 'ready' | 'not_found' | 'error'>('loading');
 	const [settingsForm, setSettingsForm] = useState<SettingsFormState | null>(null);
 	const [slottingText, setSlottingText] = useState('');
+	const [selectedSlottingEpisode, setSelectedSlottingEpisode] = useState(1);
 	const [winnerSideId, setWinnerSideId] = useState('');
 	const [sideScores, setSideScores] = useState<Record<string, string>>({});
 	const [cancelReason, setCancelReason] = useState('');
@@ -261,11 +282,13 @@ export default function AdminGameMissionPage() {
 	const syncMissionState = (nextMission: AdminGameMissionDetail) => {
 		setMission(nextMission);
 		setSettingsForm(missionToSettingsForm(nextMission));
-		setSlottingText(JSON.stringify(nextMission.slotting, null, 2));
+		const episodeData = nextMission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+		setSlottingText(JSON.stringify(episodeData?.slotting ?? nextMission.slotting, null, 2));
 		setWinnerSideId(nextMission.archiveResult?.winnerSideId ?? '');
+		const allSides = collectAllSides(nextMission);
 		setSideScores(
 			Object.fromEntries(
-				nextMission.slotting.sides.map((side) => {
+				allSides.map((side) => {
 					const existing = nextMission.archiveResult?.sideScores.find((score) => score.sideId === side.id);
 					return [side.id, existing ? String(existing.score) : ''];
 				})
@@ -287,7 +310,8 @@ export default function AdminGameMissionPage() {
 
 	const syncSlottingResponse = (nextMission: AdminGameMissionDetail) => {
 		setMission(nextMission);
-		setSlottingText(JSON.stringify(nextMission.slotting, null, 2));
+		const episodeData = nextMission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+		setSlottingText(JSON.stringify(episodeData?.slotting ?? nextMission.slotting, null, 2));
 	};
 
 	const loadMission = async () => {
@@ -580,11 +604,14 @@ export default function AdminGameMissionPage() {
 		try {
 			setFeedback(null);
 			setActiveAction('slotting');
+			const episodeData = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+			const revision = episodeData?.slottingRevision ?? mission.slottingRevision;
 			const res = await fetch(`/api/admin/games/${mission.id}/slotting`, {
 				method: 'PUT',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
-					slottingRevision: mission.slottingRevision,
+					episodeNumber: selectedSlottingEpisode,
+					slottingRevision: revision,
 					slotting: parsedSlotting,
 					confirmDestructive
 				})
@@ -725,7 +752,8 @@ export default function AdminGameMissionPage() {
 
 	const handleArchive = async () => {
 		if (!mission) return;
-		const sideScoreList = mission.slotting.sides.map((side) => {
+		const allSides = collectAllSides(mission);
+		const sideScoreList = allSides.map((side) => {
 			const raw = sideScores[side.id]?.trim();
 			return {
 				sideId: side.id,
@@ -1061,8 +1089,23 @@ export default function AdminGameMissionPage() {
 												<p className="mt-1 text-sm text-neutral-400">{ta('gamesSlottingSectionText')}</p>
 											</div>
 
-												<div className={`${editorCardClass} grid gap-3`}>
-													<label className="text-sm font-medium text-neutral-200">{ta('gamesFieldSlottingJson')}</label>
+											<EpisodeSelector
+												mission={mission}
+												selectedEpisode={selectedSlottingEpisode}
+												onSelectedEpisodeChange={(ep) => {
+													setSelectedSlottingEpisode(ep);
+													const epData = mission.episodeSlottings?.find((e) => e.episodeNumber === ep);
+													setSlottingText(JSON.stringify(epData?.slotting ?? mission.slotting, null, 2));
+												}}
+												onSaved={syncSlottingResponse}
+											/>
+
+											<AdminDisclosure
+												summaryLeft={
+													<h2 className="text-sm font-semibold tracking-tight text-neutral-200">{ta('gamesFieldSlottingJson')}</h2>
+												}
+											>
+												<div className="grid gap-3">
 													<textarea value={slottingText} onChange={(event) => setSlottingText(event.target.value)} rows={20} spellCheck={false} className={editorMonoTextAreaClass} />
 													{(() => {
 														try {
@@ -1078,43 +1121,44 @@ export default function AdminGameMissionPage() {
 														} catch { /* invalid JSON, ignore */ }
 														return null;
 													})()}
-													<div className="flex flex-wrap items-center gap-3">
-														<AdminButton variant="primary" onClick={() => void handleSaveSlotting()} disabled={activeAction !== null}>
-															{activeAction === 'slotting' ? ta('gamesSavingSlotting') : ta('gamesSaveSlottingAction')}
-														</AdminButton>
-														<AdminButton variant="secondary" onClick={() => setSlottingText(JSON.stringify(mission.slotting, null, 2))} disabled={activeAction !== null}>
-															{ta('gamesResetSlottingAction')}
-														</AdminButton>
-													</div>
+													<AdminButton variant="primary" onClick={() => void handleSaveSlotting()} disabled={activeAction !== null}>
+														{activeAction === 'slotting' ? ta('gamesSavingSlotting') : ta('gamesSaveSlottingAction')}
+													</AdminButton>
 												</div>
+											</AdminDisclosure>
 
-											</div>
-										</section>
-
-										<section className={editorSectionClass}>
 											<AdminDisclosure
 												summaryLeft={
-													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminUnitAssignmentsTitle')}</h2>
+													<h2 className="text-sm font-semibold tracking-tight text-neutral-200">{tg('adminUnitAssignmentsTitle')}</h2>
 												}
 											>
-												<UnitAssignmentsPanel missionId={mission.id} slotting={mission.slotting} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse} />
+												<UnitAssignmentsPanel missionId={mission.id} episodeNumber={selectedSlottingEpisode} slotting={(() => {
+												const ep = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+												return ep?.slotting ?? mission.slotting;
+											})()} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse} />
 											</AdminDisclosure>
-										</section>
 
-										<section className={editorSectionClass}>
 											<AdminDisclosure
 												summaryLeft={
-													<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{tg('adminSlottingEditorTitle')}</h2>
+													<h2 className="text-sm font-semibold tracking-tight text-neutral-200">{tg('adminSlottingEditorTitle')}</h2>
 												}
 											>
 												<SlottingEditor
-													slotting={mission.slotting}
-													slottingRevision={mission.slottingRevision}
+													slotting={(() => {
+														const ep = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+														return ep?.slotting ?? mission.slotting;
+													})()}
+													slottingRevision={(() => {
+														const ep = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+														return ep?.slottingRevision ?? mission.slottingRevision;
+													})()}
 													unitAssignments={mission.unitAssignments}
 													missionId={mission.id}
+													episodeNumber={selectedSlottingEpisode}
 													onSaved={syncSlottingResponse}
 												/>
 											</AdminDisclosure>
+										</div>
 										</section>
 
 										<section className={editorSectionClass}>
@@ -1133,19 +1177,19 @@ export default function AdminGameMissionPage() {
 
 													<ActionCard title={ta('gamesReleaseCardTitle')} description={ta('gamesReleaseCardText')}>
 														<div className="flex flex-wrap gap-3">
-															<AdminButton variant="secondary" onClick={() => void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-unit`, 'gamesReleaseUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !!mission.unitGameplayReleasedAt}>
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseUnitTitle'), description: ta('gamesConfirmReleaseUnitText'), confirmLabel: ta('gamesReleaseUnitAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-unit`, 'gamesReleaseUnitAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.unitGameplayReleasedAt}>
 																{activeAction === 'gamesReleaseUnitAction' ? ta('gamesReleasingUnit') : ta('gamesReleaseUnitAction')}
 															</AdminButton>
 															<AdminButton variant="secondary" onClick={() => void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-unit`, 'gamesHideUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !mission.unitGameplayReleasedAt || !!mission.priorityGameplayReleasedAt}>
 																{activeAction === 'gamesHideUnitAction' ? ta('gamesHidingUnit') : ta('gamesHideUnitAction')}
 															</AdminButton>
-															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleasePriorityTitle'), description: ta('gamesConfirmReleasePriorityText'), confirmLabel: ta('gamesReleasePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-priority`, 'gamesReleasePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published'}>
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleasePriorityTitle'), description: ta('gamesConfirmReleasePriorityText'), confirmLabel: ta('gamesReleasePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-priority`, 'gamesReleasePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.priorityGameplayReleasedAt}>
 																{activeAction === 'gamesReleasePriorityAction' ? ta('gamesReleasingPriority') : ta('gamesReleasePriorityAction')}
 															</AdminButton>
 																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHidePriorityTitle'), description: ta('gamesConfirmHidePriorityText'), confirmLabel: ta('gamesHidePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-priority`, 'gamesHidePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.priorityGameplayReleasedAt || !!mission.regularGameplayReleasedAt}>
 																	{activeAction === 'gamesHidePriorityAction' ? ta('gamesHidingPriority') : ta('gamesHidePriorityAction')}
 																</AdminButton>
-															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseRegularTitle'), description: ta('gamesConfirmReleaseRegularText'), confirmLabel: ta('gamesReleaseRegularAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-regular`, 'gamesReleaseRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published'}>
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseRegularTitle'), description: ta('gamesConfirmReleaseRegularText'), confirmLabel: ta('gamesReleaseRegularAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-regular`, 'gamesReleaseRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.regularGameplayReleasedAt}>
 																{activeAction === 'gamesReleaseRegularAction' ? ta('gamesReleasingRegular') : ta('gamesReleaseRegularAction')}
 															</AdminButton>
 																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHideRegularTitle'), description: ta('gamesConfirmHideRegularText'), confirmLabel: ta('gamesHideRegularAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-regular`, 'gamesHideRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.regularGameplayReleasedAt}>
@@ -1228,17 +1272,18 @@ export default function AdminGameMissionPage() {
 
 													<ActionCard title={ta('gamesArchiveCardTitle')} description={ta('gamesArchiveCardText')}>
 														<div className="grid gap-3">
+															{(() => { const allSides = collectAllSides(mission); return (<>
 															<label className="grid gap-2 text-sm text-neutral-200">
 																<span>{ta('gamesArchiveWinnerLabel')}</span>
 																<select value={winnerSideId} onChange={(event) => setWinnerSideId(event.target.value)} className={editorInputClass}>
 																	<option value="">{ta('gamesArchiveDrawOption')}</option>
-																	{mission.slotting.sides.map((side) => (
+																	{allSides.map((side) => (
 																		<option key={side.id} value={side.id}>{sideDisplayName(side)}</option>
 																	))}
 																</select>
 															</label>
 															<div className="grid gap-3 sm:grid-cols-2">
-																{mission.slotting.sides.map((side) => (
+																{allSides.map((side) => (
 																	<label key={side.id} className="grid gap-2 text-sm text-neutral-200">
 																		<span>{ta('gamesArchiveSideScoreLabel', { side: sideDisplayName(side) })}</span>
 																		<input value={sideScores[side.id] ?? ''} onChange={(event) => setSideScores({ ...sideScores, [side.id]: event.target.value })} className={editorInputClass} />
@@ -1248,6 +1293,7 @@ export default function AdminGameMissionPage() {
 															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmArchiveTitle'), description: ta('gamesConfirmArchiveText'), confirmLabel: ta('gamesArchiveAction'), onConfirm: () => { setConfirmAction(null); void handleArchive(); } })} disabled={activeAction !== null || mission.status !== 'published'}>
 																{activeAction === 'archive' ? ta('gamesArchiving') : ta('gamesArchiveAction')}
 															</AdminButton>
+															</>); })()}
 														</div>
 													</ActionCard>
 
@@ -1377,6 +1423,142 @@ export default function AdminGameMissionPage() {
 	);
 }
 
+function EpisodeSelector({ mission, selectedEpisode, onSelectedEpisodeChange, onSaved }: {
+	mission: AdminGameMissionDetail;
+	selectedEpisode: number;
+	onSelectedEpisodeChange: (ep: number) => void;
+	onSaved: (mission: AdminGameMissionDetail) => void;
+}) {
+	const tg = useTranslations('games');
+	const episodes = mission.episodeSlottings ?? [];
+	const [deleteConfirm, setDeleteConfirm] = useState<{ episodeNumber: number; occupiedCount?: number } | null>(null);
+
+	const handleAddEpisode = async () => {
+		const nextEpisodeNumber = episodes.length > 0 ? Math.max(...episodes.map((e) => e.episodeNumber)) + 1 : 2;
+		const sourceSlotting = episodes[0]?.slotting ?? mission.slotting;
+		const clearedSlotting = {
+			sides: sourceSlotting.sides.map((side) => ({
+				...side,
+				squads: side.squads.map((squad) => ({
+					...squad,
+					slots: squad.slots.map((slot) => ({
+						...slot,
+						occupant: null
+					}))
+				}))
+			}))
+		};
+
+		try {
+			const res = await fetch(`/api/admin/games/${mission.id}/slotting`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					episodeNumber: nextEpisodeNumber,
+					slottingRevision: 1,
+					slotting: clearedSlotting,
+					confirmDestructive: false
+				})
+			});
+			const json: unknown = await res.json();
+			const parsed = parseAdminGameMissionResponse(json);
+			if (parsed && 'mission' in parsed) {
+				onSaved(parsed.mission);
+				onSelectedEpisodeChange(nextEpisodeNumber);
+			}
+		} catch { /* network error */ }
+	};
+
+	const handleDeleteEpisode = async (episodeNumber: number, confirmOccupied: boolean) => {
+		try {
+			const res = await fetch(`/api/admin/games/${mission.id}/slotting`, {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ episodeNumber, confirmOccupied })
+			});
+			const json = await res.json() as Record<string, unknown>;
+			if (!res.ok) {
+				if (json.error === 'has_occupied_slots') {
+					setDeleteConfirm({ episodeNumber, occupiedCount: json.occupiedCount as number });
+					return;
+				}
+				return;
+			}
+			const parsed = parseAdminGameMissionResponse(json);
+			if (parsed && 'mission' in parsed) {
+				onSaved(parsed.mission);
+				if (selectedEpisode === episodeNumber) onSelectedEpisodeChange(1);
+			}
+			setDeleteConfirm(null);
+		} catch { /* network error */ }
+	};
+
+	return (
+		<div className="rounded-xl border border-neutral-700 bg-neutral-900/50 px-4 py-3">
+			<div className="flex flex-wrap items-center gap-3">
+				<span className="text-sm font-semibold text-neutral-300">{tg('adminEpisodeSelectorLabel')}</span>
+				<div className="flex items-center gap-1">
+					{episodes.map((ep) => (
+						<button
+							key={ep.episodeNumber}
+							type="button"
+							onClick={() => onSelectedEpisodeChange(ep.episodeNumber)}
+							className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+								selectedEpisode === ep.episodeNumber
+									? 'bg-[color:var(--accent)] text-white'
+									: 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200'
+							}`}
+						>
+							{tg('adminEpisodeTabLabel', { number: ep.episodeNumber })}
+						</button>
+					))}
+				</div>
+				<button
+					type="button"
+					onClick={() => void handleAddEpisode()}
+					className="rounded-md bg-neutral-700 px-2.5 py-1 text-xs font-medium text-neutral-300 hover:bg-neutral-600"
+					title={tg('adminAddEpisodeTitle')}
+				>
+					+ {tg('adminAddEpisodeButton')}
+				</button>
+				{selectedEpisode > 1 && (
+					<button
+						type="button"
+						onClick={() => void handleDeleteEpisode(selectedEpisode, false)}
+						className="rounded-md px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300"
+					>
+						{tg('adminDeleteEpisodeButton')}
+					</button>
+				)}
+			</div>
+
+			{deleteConfirm && (
+				<div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
+					<p className="text-sm text-red-200">
+						{tg('adminDeleteEpisodeOccupiedWarning', { count: deleteConfirm.occupiedCount ?? 0, episode: deleteConfirm.episodeNumber })}
+					</p>
+					<div className="mt-2 flex gap-2">
+						<button
+							type="button"
+							onClick={() => void handleDeleteEpisode(deleteConfirm.episodeNumber, true)}
+							className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500"
+						>
+							{tg('adminDeleteEpisodeConfirm')}
+						</button>
+						<button
+							type="button"
+							onClick={() => setDeleteConfirm(null)}
+							className="rounded-md border border-neutral-600 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-800"
+						>
+							{tg('adminDeleteEpisodeCancel')}
+						</button>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<label className="grid gap-2 text-sm text-neutral-200">
@@ -1398,18 +1580,21 @@ function ActionCard({ title, description, children }: { title: string; descripti
 
 function UnitAssignmentsPanel({
 	missionId,
+	episodeNumber = 1,
 	slotting,
 	currentAssignments,
 	onSaved
 }: {
 	missionId: number;
+	episodeNumber?: number;
 	slotting: import('@/features/games/domain/slotting').CanonicalSlotting;
 	currentAssignments: import('@/features/games/domain/types').GameUnitAssignment[];
 	onSaved: (mission: AdminGameMissionDetail) => void;
 }) {
 	const tg = useTranslations('games');
+	const episodeAssignments = currentAssignments.filter((a) => a.episodeNumber === episodeNumber);
 	const [assignments, setAssignments] = useState<Array<{ unitId: number; unitTag: string; unitName: string; sideId: string }>>(() =>
-		currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId }))
+		episodeAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId }))
 	);
 	const [availableUnits, setAvailableUnits] = useState<Array<{ id: number; tag: string; name: string; slotsAllocated: number }>>([]);
 	const [loadingUnits, setLoadingUnits] = useState(true);
@@ -1417,8 +1602,9 @@ function UnitAssignmentsPanel({
 	const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
 	useEffect(() => {
-		setAssignments(currentAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId })));
-	}, [currentAssignments]);
+		const filtered = currentAssignments.filter((a) => a.episodeNumber === episodeNumber);
+		setAssignments(filtered.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId })));
+	}, [currentAssignments, episodeNumber]);
 
 	useEffect(() => {
 		void (async () => {
@@ -1456,6 +1642,7 @@ function UnitAssignmentsPanel({
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
+					episodeNumber,
 					assignments: assignments.map((a) => ({ unitId: a.unitId, sideId: a.sideId }))
 				})
 			});
@@ -1484,25 +1671,29 @@ function UnitAssignmentsPanel({
 			{assignments.length > 0 ? (
 				<div className="grid gap-2">
 					{assignments.map((a) => (
-						<div key={a.unitId} className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-950/70 px-3 py-2">
-							<span className="text-sm font-semibold text-neutral-100">{a.unitTag}</span>
-							<span className="text-xs text-neutral-400">({a.unitName})</span>
-							<select
-								value={a.sideId}
-								onChange={(e) => updateSide(a.unitId, e.target.value)}
-								className="ml-auto rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
-							>
-								{slotting.sides.map((side) => (
-									<option key={side.id} value={side.id}>{sideDisplayName(side)}</option>
-								))}
-							</select>
-							<button
-								type="button"
-								onClick={() => removeUnit(a.unitId)}
-								className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 transition hover:bg-red-500/20"
-							>
-								{tg('adminUnitAssignmentsRemove')}
-							</button>
+						<div key={a.unitId} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/70 px-3 py-2">
+							<div className="min-w-0">
+								<span className="text-sm font-semibold text-neutral-100">{a.unitTag}</span>
+								<span className="ml-1.5 text-xs text-neutral-400">({a.unitName})</span>
+							</div>
+							<div className="flex items-center gap-2">
+								<select
+									value={a.sideId}
+									onChange={(e) => updateSide(a.unitId, e.target.value)}
+									className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs text-neutral-200"
+								>
+									{slotting.sides.map((side) => (
+										<option key={side.id} value={side.id}>{sideDisplayName(side)}</option>
+									))}
+								</select>
+								<button
+									type="button"
+									onClick={() => removeUnit(a.unitId)}
+									className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-200 transition hover:bg-red-500/20"
+								>
+									{tg('adminUnitAssignmentsRemove')}
+								</button>
+							</div>
 						</div>
 					))}
 				</div>

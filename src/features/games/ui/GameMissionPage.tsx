@@ -14,8 +14,6 @@ import {
 	SLOTTING_INDEX_COLUMN_REM,
 	SLOTTING_SQUAD_COLUMN_REM,
 	buildSideRows,
-	buildSlottingSummary,
-	findHeldSlotSummary,
 	formatMissionUpdateMessage,
 	formatCountdownValue,
 	formatViewerDate,
@@ -33,6 +31,7 @@ import {
 } from './missionPageComponents';
 import { useMissionGuide, MissionGuideModal } from './MissionGuideModal';
 import { useSlottingSSE } from './useSlottingSSE';
+import { useEpisodeSlotting, countPriorityAvailable, collectAllEpisodeSides, findUserHeldSlotId, findSlotAccess } from './useEpisodeSlotting';
 
 export default function GameMissionPage({ mission }: { mission: GameMissionDetail }) {
 	const t = useTranslations('games');
@@ -51,8 +50,6 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 	const isMissionLive = mission.status === 'published' && startTimestamp !== null && now !== null ? startTimestamp <= now : false;
 	const startsAt = formatViewerDate(mission.startsAt, locale, timeZone, hourCycle);
 	const archivedAt = formatViewerDate(mission.archivedAt, locale, timeZone, hourCycle);
-	const heldSlotSummary = findHeldSlotSummary(mission.slotting, mission.viewer.heldSlotId);
-	const slottingSummary = buildSlottingSummary(mission.slotting, mission.viewer.heldSlotId);
 
 	const confirmTitle =
 		pendingConfirm?.kind === 'switch'
@@ -98,7 +95,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 					archiveResult={mission.archiveResult}
 					archiveStatus={mission.archiveStatus}
 					archiveReason={mission.archiveReason}
-					sides={mission.slotting.sides}
+					sides={collectAllEpisodeSides(mission)}
 					t={t}
 				/>
 			) : null}
@@ -181,8 +178,6 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 				busy={busy}
 				pendingActionId={pendingActionId}
 				runAction={runAction}
-				heldSlotSummary={heldSlotSummary}
-				slottingSummary={slottingSummary}
 				confirmAction={setPendingConfirm}
 				guideShow={guide.show}
 				t={t}
@@ -747,16 +742,44 @@ function RegularJoinModal({
 	);
 }
 
-type SlottingSideSummary = ReturnType<typeof buildSlottingSummary>[number];
-type HeldSlotSummary = ReturnType<typeof findHeldSlotSummary>;
+function EpisodeUnitSlottingCard({ unitTag, unitSideId, unitSlotsAllocated, slotting, t }: {
+	unitTag: string;
+	unitSideId: string | null;
+	unitSlotsAllocated: number;
+	slotting: GameMissionDetail['slotting'];
+	t: ReturnType<typeof useTranslations<'games'>>;
+}) {
+	const normalizedTag = unitTag.toLowerCase();
+	let used = 0;
+	for (const side of slotting.sides)
+		for (const squad of side.squads)
+			for (const slot of squad.slots)
+				if (slot.occupant?.type === 'placeholder' && slot.occupant.label.toLowerCase() === normalizedTag)
+					used++;
+	const sideName = (() => { const s = slotting.sides.find((s) => s.id === unitSideId); return s ? sideDisplayName(s) : ''; })();
+
+	return (
+		<div className="mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div className="space-y-1">
+					<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">{t('unitSlottingTitle')}</p>
+					<p className="text-sm text-emerald-100/80">
+						{t('unitSlottingSubtitle', { unitTag, sideName })}
+					</p>
+				</div>
+				<span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-950/50 px-3 py-1.5 text-sm font-semibold text-emerald-300">
+					{t('unitSlottingSlotsCounter', { used, total: unitSlotsAllocated })}
+				</span>
+			</div>
+		</div>
+	);
+}
 
 function SlottingSection({
 	mission,
 	busy,
 	pendingActionId,
 	runAction,
-	heldSlotSummary,
-	slottingSummary,
 	confirmAction,
 	guideShow,
 	t
@@ -765,8 +788,6 @@ function SlottingSection({
 	busy: boolean;
 	pendingActionId: string | null;
 	runAction: RunAction;
-	heldSlotSummary: HeldSlotSummary;
-	slottingSummary: SlottingSideSummary[];
 	confirmAction: (pending: { kind: 'switch' | 'leave-slot' | 'leave-regular'; action: () => void }) => void;
 	guideShow: () => void;
 	t: ReturnType<typeof useTranslations<'games'>>;
@@ -776,8 +797,14 @@ function SlottingSection({
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
 	const [isRefreshing, startRefresh] = useTransition();
 	const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
-	const canLeavePrioritySlot = mission.status === 'published' && mission.viewer.heldSlotAccess === 'priority';
 	const refreshSlotting = () => startRefresh(() => router.refresh());
+
+	const {
+		episodes, hasMultipleEpisodes, selectedEpisode, setSelectedEpisode, displayedMission,
+		canLeavePrioritySlot, heldSlotSummary: episodeHeldSlotSummary, slottingSummary: episodeSlottingSummary,
+		unclaimedEpisodes, unclaimedHintKey, isUnitLeader, viewerUnitTag,
+		showEpisodeReminder, dismissReminder
+	} = useEpisodeSlotting(mission);
 
 	return (
 		<>
@@ -811,7 +838,7 @@ function SlottingSection({
 						{t('slottingFullscreenOpen')}
 					</button>
 					<span className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-full border border-neutral-800 bg-white/[0.03] px-3 py-1.5 text-sm font-semibold text-neutral-300 sm:min-h-0 sm:w-auto">
-						{t('priorityAvailability', { count: mission.availablePrioritySlotCount })}
+						{t('priorityAvailability', { count: countPriorityAvailable(displayedMission.slotting) })}
 					</span>
 				</div>
 			</div>
@@ -820,17 +847,17 @@ function SlottingSection({
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="space-y-2">
 						<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">{t('slottingHeldTitle')}</p>
-						{heldSlotSummary ? (
+						{episodeHeldSlotSummary ? (
 							<>
 								<div className="flex flex-wrap items-center gap-2 text-sm text-neutral-100">
-									<span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: heldSlotSummary.sideColor }} />
-									<span className="font-semibold">{heldSlotSummary.sideName}</span>
+									<span className="inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: episodeHeldSlotSummary.sideColor }} />
+									<span className="font-semibold">{episodeHeldSlotSummary.sideName}</span>
 									<span className="text-neutral-500">/</span>
-									<span className="font-semibold">{heldSlotSummary.squadName}</span>
+									<span className="font-semibold">{episodeHeldSlotSummary.squadName}</span>
 									<span className="text-neutral-500">/</span>
-									<span>{t('slottingHeldRowLabel', { row: String(heldSlotSummary.rowIndex).padStart(2, '0') })}</span>
+									<span>{t('slottingHeldRowLabel', { row: String(episodeHeldSlotSummary.rowIndex).padStart(2, '0') })}</span>
 								</div>
-								<p className="text-sm text-neutral-300">{heldSlotSummary.role}</p>
+								<p className="text-sm text-neutral-300">{episodeHeldSlotSummary.role}</p>
 							</>
 						) : (
 							<p className="text-sm text-neutral-400">{t('slottingHeldEmpty')}</p>
@@ -842,10 +869,11 @@ function SlottingSection({
 							disabled={busy}
 							onClick={() => {
 								confirmAction({
-															kind: 'leave-slot',
+									kind: 'leave-slot',
 									action: () => void runAction({
 										id: 'leave-slot',
-										path: `/api/games/${mission.shortCode}/leave-slot`
+										path: `/api/games/${mission.shortCode}/leave-slot`,
+										body: { episodeNumber: selectedEpisode }
 									})
 								});
 							}}
@@ -866,7 +894,7 @@ function SlottingSection({
 					) : null}
 					{mission.priorityClaimOpen ? (
 						<div className="rounded-xl border border-[color:var(--accent)]/20 bg-[color:var(--accent)]/5 px-4 py-2.5">
-							<p className="text-xs text-[color:var(--accent)]">{t('slottingPhasePriorityOpen', { count: mission.availablePrioritySlotCount })}</p>
+							<p className="text-xs text-[color:var(--accent)]">{t('slottingPhasePriorityOpen', { count: countPriorityAvailable(displayedMission.slotting) })}</p>
 						</div>
 					) : mission.priorityClaimOpensAt && !mission.priorityGameplayReleasedAt ? (
 						<div className="rounded-xl border border-neutral-800 bg-white/[0.02] px-4 py-2.5">
@@ -882,26 +910,42 @@ function SlottingSection({
 			) : null}
 
 			{mission.viewer.isUnitLeader && mission.viewer.unitTag && mission.unitSlottingOpen ? (
-				<div className="mt-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<div className="space-y-1">
-							<p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">{t('unitSlottingTitle')}</p>
-							<p className="text-sm text-emerald-100/80">
-								{t('unitSlottingSubtitle', {
-									unitTag: mission.viewer.unitTag,
-									sideName: (() => { const s = mission.slotting.sides.find((s) => s.id === mission.viewer.unitSideId); return s ? sideDisplayName(s) : ''; })()
-								})}
-							</p>
-						</div>
-						<span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-950/50 px-3 py-1.5 text-sm font-semibold text-emerald-300">
-							{t('unitSlottingSlotsCounter', { used: mission.viewer.unitSlotsUsed, total: mission.viewer.unitSlotsAllocated })}
-						</span>
+				<EpisodeUnitSlottingCard unitTag={mission.viewer.unitTag} unitSideId={mission.viewer.unitSideId} unitSlotsAllocated={mission.viewer.unitSlotsAllocated} slotting={displayedMission.slotting} t={t} />
+			) : null}
+
+			{hasMultipleEpisodes ? (
+				<div className="mt-4 flex flex-wrap items-center gap-3">
+					<div className="flex items-center gap-1.5">
+						{episodes.map((ep) => {
+							const isUnclaimed = unclaimedEpisodes.includes(ep.episodeNumber);
+							return (
+								<button
+									key={ep.episodeNumber}
+									type="button"
+									onClick={() => setSelectedEpisode(ep.episodeNumber)}
+									className={`relative rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-all ${
+										selectedEpisode === ep.episodeNumber
+											? 'bg-[color:var(--accent)] text-neutral-950 shadow-sm shadow-[color:var(--accent)]/25'
+											: 'bg-neutral-900 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300'
+									}`}
+								>
+									{t('episodeTabLabel', { number: ep.episodeNumber })}
+									{isUnclaimed ? (
+										<span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50" />
+									) : null}
+								</button>
+							);
+						})}
 					</div>
+					{unclaimedHintKey && unclaimedEpisodes.length > 0 ? (
+						<p className="text-xs text-amber-300/80">{t(unclaimedHintKey, { count: unclaimedEpisodes.length, unitTag: viewerUnitTag ?? '' })}</p>
+					) : null}
 				</div>
 			) : null}
 
 			<SlottingBoards
-				mission={mission}
+				mission={displayedMission}
+				episodeNumber={selectedEpisode}
 				busy={busy}
 				pendingActionId={pendingActionId}
 				runAction={runAction}
@@ -928,7 +972,7 @@ function SlottingSection({
 							</tr>
 						</thead>
 						<tbody>
-							{slottingSummary.map((side) => (
+							{episodeSlottingSummary.map((side) => (
 								<Fragment key={side.sideId}>
 									{side.squads.map((squad, i) => (
 										<tr key={`${side.sideId}-${squad.squadId}`} className="odd:bg-white/[0.015]">
@@ -999,7 +1043,10 @@ function SlottingSection({
 		{isFullscreenOpen && typeof document !== 'undefined'
 			? createPortal(
 				<SlottingFullscreenOverlay
-					mission={mission}
+					mission={displayedMission}
+					episodes={episodes}
+					selectedEpisode={selectedEpisode}
+					onSelectedEpisodeChange={setSelectedEpisode}
 					busy={busy}
 					pendingActionId={pendingActionId}
 					runAction={runAction}
@@ -1012,12 +1059,92 @@ function SlottingSection({
 				document.body
 			)
 			: null}
+
+		{showEpisodeReminder && unclaimedEpisodes.length > 0 && typeof document !== 'undefined'
+			? createPortal(
+				<EpisodeReminderModal
+					episodes={unclaimedEpisodes}
+					isUnitLeader={isUnitLeader}
+					unitTag={viewerUnitTag}
+					onGoToEpisode={(ep) => {
+						setSelectedEpisode(ep);
+						dismissReminder(false);
+					}}
+					onDismiss={dismissReminder}
+					t={t}
+				/>,
+				document.body
+			)
+			: null}
 		</>
+	);
+}
+
+function EpisodeReminderModal({ episodes, isUnitLeader, unitTag, onGoToEpisode, onDismiss, t }: {
+	episodes: number[];
+	isUnitLeader: boolean;
+	unitTag: string | null;
+	onGoToEpisode: (ep: number) => void;
+	onDismiss: (dontShowAgain: boolean) => void;
+	t: ReturnType<typeof useTranslations<'games'>>;
+}) {
+	const [dontShowAgain, setDontShowAgain] = useState(false);
+
+	return (
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+			<div className="mx-4 w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-950 p-6 shadow-2xl shadow-black/40">
+				<h3 className="text-base font-semibold text-neutral-50">
+					{isUnitLeader
+						? t('episodeReminderTitleUnit', { unitTag: unitTag ?? '' })
+						: t('episodeReminderTitlePriority')
+					}
+				</h3>
+				<p className="mt-2 text-sm text-neutral-400">
+					{isUnitLeader
+						? t('episodeReminderBodyUnit', { count: episodes.length })
+						: t('episodeReminderBodyPriority', { count: episodes.length })
+					}
+				</p>
+
+				<div className="mt-4 flex flex-wrap gap-2">
+					{episodes.map((ep) => (
+						<button
+							key={ep}
+							type="button"
+							onClick={() => onGoToEpisode(ep)}
+							className="rounded-lg bg-[color:var(--accent)] px-3 py-1.5 text-sm font-semibold text-neutral-950 transition hover:brightness-110"
+						>
+							{t('episodeTabLabel', { number: ep })}
+						</button>
+					))}
+				</div>
+
+				<div className="mt-5 flex items-center justify-between gap-4">
+					<label className="flex items-center gap-2 text-xs text-neutral-500">
+						<input
+							type="checkbox"
+							checked={dontShowAgain}
+							onChange={(e) => setDontShowAgain(e.target.checked)}
+							className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-900 text-[color:var(--accent)]"
+						/>
+						{t('episodeReminderDontShowAgain')}
+					</label>
+					<button
+						type="button"
+						onClick={() => onDismiss(dontShowAgain)}
+						className="rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-1.5 text-sm font-medium text-neutral-300 transition hover:bg-neutral-800"
+					>
+						{t('episodeReminderDismiss')}
+					</button>
+				</div>
+			</div>
+		</div>
 	);
 }
 
 function SlottingBoards({
 	mission,
+	episodeNumber = 1,
 	busy,
 	pendingActionId,
 	runAction,
@@ -1026,6 +1153,7 @@ function SlottingBoards({
 	className = 'grid gap-6'
 }: {
 	mission: GameMissionDetail;
+	episodeNumber?: number;
 	busy: boolean;
 	pendingActionId: string | null;
 	runAction: RunAction;
@@ -1125,14 +1253,14 @@ function SlottingBoards({
 														void runAction({
 															id: `unit-claim-${slot.id}`,
 															path: `/api/games/${mission.shortCode}/claim-unit`,
-															body: { slotId: slot.id }
+															body: { slotId: slot.id, episodeNumber }
 														});
 													},
 													onRelease: () => {
 														void runAction({
 															id: `unit-release-${slot.id}`,
 															path: `/api/games/${mission.shortCode}/release-unit`,
-															body: { slotId: slot.id }
+															body: { slotId: slot.id, episodeNumber }
 														});
 													}
 												} : null;
@@ -1156,7 +1284,7 @@ function SlottingBoards({
 																void runAction({
 																	id: slot.id,
 																	path: `/api/games/${mission.shortCode}/claim`,
-																	body: { slotId: slot.id }
+																	body: { slotId: slot.id, episodeNumber }
 																});
 															}}
 															onSwitch={() => {
@@ -1165,7 +1293,7 @@ function SlottingBoards({
 																	action: () => void runAction({
 																		id: slot.id,
 																		path: `/api/games/${mission.shortCode}/switch-slot`,
-																		body: { slotId: slot.id }
+																		body: { slotId: slot.id, episodeNumber }
 																	})
 																});
 															}}
@@ -1174,7 +1302,8 @@ function SlottingBoards({
 																	kind: 'leave-slot',
 																	action: () => void runAction({
 																		id: 'leave-slot',
-																		path: `/api/games/${mission.shortCode}/leave-slot`
+																		path: `/api/games/${mission.shortCode}/leave-slot`,
+																		body: { episodeNumber }
 																	})
 																});
 															}}
@@ -1198,6 +1327,9 @@ function SlottingBoards({
 
 function SlottingFullscreenOverlay({
 	mission,
+	episodes = [],
+	selectedEpisode = 1,
+	onSelectedEpisodeChange,
 	busy,
 	pendingActionId,
 	runAction,
@@ -1208,6 +1340,9 @@ function SlottingFullscreenOverlay({
 	t
 }: {
 	mission: GameMissionDetail;
+	episodes?: Array<{ episodeNumber: number; slotting: GameMissionDetail['slotting']; slottingRevision: number }>;
+	selectedEpisode?: number;
+	onSelectedEpisodeChange?: (ep: number) => void;
 	busy: boolean;
 	pendingActionId: string | null;
 	runAction: RunAction;
@@ -1217,6 +1352,30 @@ function SlottingFullscreenOverlay({
 	onClose: () => void;
 	t: ReturnType<typeof useTranslations<'games'>>;
 }) {
+	const activeEpisodeData = episodes.find((e) => e.episodeNumber === selectedEpisode);
+	const fsEpisodeHeldSlotId = activeEpisodeData
+		? findUserHeldSlotId(activeEpisodeData.slotting, mission.viewer.userId)
+		: mission.viewer.heldSlotId;
+	const fsEpisodeHeldSlotAccess = activeEpisodeData
+		? findSlotAccess(activeEpisodeData.slotting, fsEpisodeHeldSlotId)
+		: mission.viewer.heldSlotAccess;
+	const fsEpisodeUnitSideId = mission.viewer.unitSideByEpisode?.[selectedEpisode] ?? mission.viewer.unitSideId;
+	const displayedMission = activeEpisodeData
+		? {
+			...mission,
+			slotting: activeEpisodeData.slotting,
+			slottingRevision: activeEpisodeData.slottingRevision,
+			viewer: {
+				...mission.viewer,
+				heldSlotId: fsEpisodeHeldSlotId,
+				heldSlotAccess: fsEpisodeHeldSlotAccess,
+				unitSideId: fsEpisodeUnitSideId,
+				canClaimPriority: mission.viewer.hasPriorityBadge && mission.priorityClaimOpen && !fsEpisodeHeldSlotId,
+				canSwitchPriority: mission.priorityClaimOpen && fsEpisodeHeldSlotAccess === 'priority',
+				canClaimUnitSlot: mission.viewer.isUnitLeader && mission.unitSlottingOpen && fsEpisodeUnitSideId != null
+			}
+		}
+		: mission;
 	useEffect(() => {
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
@@ -1254,7 +1413,7 @@ function SlottingFullscreenOverlay({
 								{t('slottingRefresh')}
 							</button>
 							<span className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-full border border-neutral-800 bg-white/[0.03] px-3 py-1.5 text-sm font-semibold text-neutral-300 sm:min-h-0 sm:w-auto">
-								{t('priorityAvailability', { count: mission.availablePrioritySlotCount })}
+								{t('priorityAvailability', { count: countPriorityAvailable(displayedMission.slotting) })}
 							</span>
 							<button
 								type="button"
@@ -1270,9 +1429,31 @@ function SlottingFullscreenOverlay({
 					</div>
 				</div>
 
+				{episodes.length > 1 && onSelectedEpisodeChange ? (
+					<div className="border-b border-neutral-800 px-4 py-2 sm:px-6">
+						<div className="flex items-center gap-1.5">
+							{episodes.map((ep) => (
+								<button
+									key={ep.episodeNumber}
+									type="button"
+									onClick={() => onSelectedEpisodeChange(ep.episodeNumber)}
+									className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-all ${
+										selectedEpisode === ep.episodeNumber
+											? 'bg-[color:var(--accent)] text-neutral-950 shadow-sm shadow-[color:var(--accent)]/25'
+											: 'bg-neutral-900 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300'
+									}`}
+								>
+									{t('episodeTabLabel', { number: ep.episodeNumber })}
+								</button>
+							))}
+						</div>
+					</div>
+				) : null}
+
 				<div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
 					<SlottingBoards
-						mission={mission}
+						mission={displayedMission}
+						episodeNumber={selectedEpisode}
 						busy={busy}
 						pendingActionId={pendingActionId}
 						runAction={runAction}

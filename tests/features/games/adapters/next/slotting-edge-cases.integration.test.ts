@@ -353,7 +353,7 @@ describe('Slotting edge cases (integration)', () => {
 				] }] }]
 			};
 
-			const result = autoConvertUnclaimedSlots(slotting, 4);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 4]]));
 			// All 4 allocated, all claimed → no changes needed
 			expect(result).toBeNull();
 		});
@@ -404,7 +404,7 @@ describe('Slotting edge cases (integration)', () => {
 				] }] }]
 			};
 
-			const result = autoConvertUnclaimedSlots(slotting, 3);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 3]]));
 			expect(result).not.toBeNull();
 			const slots = result!.sides[0].squads[0].slots;
 			const priority = slots.filter(s => s.access === 'priority');
@@ -424,7 +424,7 @@ describe('Slotting edge cases (integration)', () => {
 			};
 
 			// 2 total, 1 allocated → 1 converts → round(1 * 2/3) = 1 priority, 0 regular
-			const result = autoConvertUnclaimedSlots(slotting, 1);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 1]]));
 			expect(result).not.toBeNull();
 			const slots = result!.sides[0].squads[0].slots;
 			expect(slots.filter(s => s.access === 'priority').length).toBe(1);
@@ -448,7 +448,7 @@ describe('Slotting edge cases (integration)', () => {
 			};
 
 			// 5 total, now 4 allocated → only 1 non-unit needed, but 2 exist
-			const result = autoConvertUnclaimedSlots(slotting, 4);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 4]]));
 			expect(result).not.toBeNull();
 			const slots = result!.sides[0].squads[0].slots;
 			const nonUnit = slots.filter(s => s.access !== 'unit');
@@ -471,7 +471,7 @@ describe('Slotting edge cases (integration)', () => {
 
 			// 4 total, 3 allocated → need 1 non-unit, have 3. But a2 is occupied.
 			// Only 2 convertible (a3 + a4), need to convert 2 → result: 1 non-unit (a2, occupied)
-			const result = autoConvertUnclaimedSlots(slotting, 3);
+			const result = autoConvertUnclaimedSlots(slotting, new Map([['s1', 3]]));
 			expect(result).not.toBeNull();
 			const slots = result!.sides[0].squads[0].slots;
 			// a2 stays priority (occupied), a3 & a4 reverted to unit

@@ -48,7 +48,10 @@ import {
 	parseAuditPayload,
 	parseLocalizedDescription,
 	resolvePasswordUpdate,
+	selectEpisodeSlotting,
+	selectEpisodeSlottings,
 	selectMissionColumns,
+	syncMissionsTableForEp1,
 	selectPriorityBadgeTypeIds,
 	validatePublishableMission,
 	type MissionRow,
@@ -84,6 +87,7 @@ function saveSlottingUpdate(input: {
 	db: ReturnType<typeof getDb>;
 	row: MissionRow;
 	missionId: number;
+	episodeNumber: number;
 	slottingRevision: number;
 	nextSlotting: ReturnType<typeof parseCanonicalSlotting>;
 	updatedBySteamId64: string;
@@ -93,7 +97,7 @@ function saveSlottingUpdate(input: {
 	| { success: true; mission: GameAdminMission }
 	| {
 			success: false;
-			error: 'slotting_revision_conflict' | 'destructive_change_requires_confirmation' | 'database_error';
+			error: 'slotting_revision_conflict' | 'destructive_change_requires_confirmation' | 'episode_not_found' | 'database_error';
 			destructiveChanges?: ReturnType<typeof detectDestructiveSlottingChanges>;
 	  } {
 	const selectMission = input.db.prepare(`
@@ -102,20 +106,66 @@ function saveSlottingUpdate(input: {
 		WHERE id = ?
 		LIMIT 1
 	`);
-	const updateMissionSlotting = input.db.prepare(`
-		UPDATE missions
+	const updateEpisodeSlotting = input.db.prepare(`
+		UPDATE mission_episode_slotting
 		SET slotting_json = ?,
-			slotting_revision = slotting_revision + 1,
-			updated_at = CURRENT_TIMESTAMP,
-			updated_by_steamid64 = ?
-		WHERE id = ? AND slotting_revision = ?
+			slotting_revision = slotting_revision + 1
+		WHERE mission_id = ? AND episode_number = ? AND slotting_revision = ?
 	`);
 	const insertAudit = input.db.prepare(`
 		INSERT INTO mission_audit_events (mission_id, actor_steamid64, event_type, payload)
 		VALUES (?, ?, 'mission.slotting.updated', ?)
 	`);
 
-	const currentSlotting = parseCanonicalSlotting(input.row.slotting_json);
+	const insertNewEpisode = input.db.prepare(`
+		INSERT INTO mission_episode_slotting (mission_id, episode_number, slotting_json, slotting_revision)
+		VALUES (?, ?, ?, 1)
+	`);
+
+	const currentEpisode = selectEpisodeSlotting(input.db, input.missionId, input.episodeNumber);
+	if (!currentEpisode) {
+		try {
+			insertNewEpisode.run(input.missionId, input.episodeNumber, JSON.stringify(input.nextSlotting));
+
+			// Copy unit assignments from the latest existing episode
+			const sourceEpisode = input.db.prepare(`
+				SELECT episode_number FROM mission_unit_assignments
+				WHERE mission_id = ? AND episode_number < ?
+				ORDER BY episode_number DESC LIMIT 1
+			`).get(input.missionId, input.episodeNumber) as { episode_number: number } | undefined;
+
+			if (sourceEpisode) {
+				input.db.prepare(`
+					INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64)
+					SELECT mission_id, unit_id, side_id, ?, assigned_by_steamid64
+					FROM mission_unit_assignments
+					WHERE mission_id = ? AND episode_number = ?
+				`).run(input.episodeNumber, input.missionId, sourceEpisode.episode_number);
+			}
+		} catch {
+			return { success: false, error: 'database_error' };
+		}
+
+		const selectMissionForReturn = input.db.prepare(`SELECT ${selectMissionColumns()} FROM missions WHERE id = ? LIMIT 1`);
+		const updated = selectMissionForReturn.get(input.missionId) as MissionRow | undefined;
+		if (!updated) return { success: false, error: 'database_error' };
+
+		insertAudit.run(
+			input.missionId,
+			input.updatedBySteamId64,
+			JSON.stringify({
+				source: input.source,
+				episodeNumber: input.episodeNumber,
+				before: emptyCanonicalSlotting,
+				after: input.nextSlotting,
+				destructiveChanges: []
+			})
+		);
+
+		emitSlottingUpdated(updated.short_code, 1, input.episodeNumber);
+		return { success: true, mission: mapMissionRow(input.db, updated) };
+	}
+	const currentSlotting = currentEpisode.slotting;
 
 	const destructiveChanges =
 		input.row.status === 'published' ? detectDestructiveSlottingChanges(currentSlotting, input.nextSlotting) : [];
@@ -127,33 +177,40 @@ function saveSlottingUpdate(input: {
 		};
 	}
 
-	const updatedInfo = updateMissionSlotting.run(
-		JSON.stringify(input.nextSlotting),
-		input.updatedBySteamId64,
+	const nextSlottingJson = JSON.stringify(input.nextSlotting);
+
+	const updatedInfo = updateEpisodeSlotting.run(
+		nextSlottingJson,
 		input.missionId,
+		input.episodeNumber,
 		input.slottingRevision
 	);
 	if (updatedInfo.changes === 0) {
 		return { success: false, error: 'slotting_revision_conflict' };
 	}
 
+	syncMissionsTableForEp1(input.db, input.missionId, input.episodeNumber, nextSlottingJson, input.updatedBySteamId64);
+
 	const updated = selectMission.get(input.missionId) as MissionRow | undefined;
 	if (!updated) {
 		return { success: false, error: 'database_error' };
 	}
+
+	const freshEpisode = selectEpisodeSlotting(input.db, input.missionId, input.episodeNumber);
 
 	insertAudit.run(
 		input.missionId,
 		input.updatedBySteamId64,
 		JSON.stringify({
 			source: input.source,
+			episodeNumber: input.episodeNumber,
 			before: currentSlotting,
 			after: input.nextSlotting,
 			destructiveChanges
 		})
 	);
 
-	emitSlottingUpdated(updated.short_code, updated.slotting_revision);
+	emitSlottingUpdated(updated.short_code, freshEpisode?.slottingRevision ?? updated.slotting_revision, input.episodeNumber);
 	return { success: true, mission: mapMissionRow(input.db, updated) };
 }
 
@@ -259,6 +316,16 @@ export function createDraft(input: {
 		INSERT INTO mission_audit_events (mission_id, actor_steamid64, event_type, payload)
 		VALUES (?, ?, 'mission.created', ?)
 	`);
+	const insertEpisodeSlotting = db.prepare(`
+		INSERT OR REPLACE INTO mission_episode_slotting (mission_id, episode_number, slotting_json, slotting_revision)
+		VALUES (?, ?, ?, 1)
+	`);
+	const selectSourceEpisodeSlottings = db.prepare(`
+		SELECT episode_number, slotting_json
+		FROM mission_episode_slotting
+		WHERE mission_id = ?
+		ORDER BY episode_number ASC
+	`);
 
 	try {
 		const run = db.transaction((): CreateGameDraftRepoResult => {
@@ -267,6 +334,7 @@ export function createDraft(input: {
 			}
 
 			let slottingJson = JSON.stringify(emptyCanonicalSlotting);
+			let sourceEpisodeSlottings: Array<{ episode_number: number; slotting_json: string }> = [];
 			if (input.mode === 'duplicate_previous') {
 				const sourceRow =
 					(selectPublishedSource.get() as { slotting_json: string } | undefined) ??
@@ -275,6 +343,17 @@ export function createDraft(input: {
 					return { success: false, error: 'no_source_mission' };
 				}
 				slottingJson = JSON.stringify(clearUserOccupants(parseCanonicalSlotting(sourceRow.slotting_json)));
+
+				const sourceIdRow = db.prepare(`
+					SELECT id FROM missions WHERE status = 'published' LIMIT 1
+				`).get() as { id: number } | undefined;
+				const archivedIdRow = sourceIdRow ? undefined : db.prepare(`
+					SELECT id FROM missions WHERE status = 'archived' ORDER BY COALESCE(archived_at, updated_at) DESC, id DESC LIMIT 1
+				`).get() as { id: number } | undefined;
+				const sourceMissionId = sourceIdRow?.id ?? archivedIdRow?.id;
+				if (sourceMissionId) {
+					sourceEpisodeSlottings = selectSourceEpisodeSlottings.all(sourceMissionId) as Array<{ episode_number: number; slotting_json: string }>;
+				}
 			}
 
 			const inserted = insertDraft.run(
@@ -304,6 +383,16 @@ export function createDraft(input: {
 
 			const rowIdRaw = inserted.lastInsertRowid;
 			const rowId = typeof rowIdRaw === 'bigint' ? Number(rowIdRaw) : (rowIdRaw as number);
+
+			if (sourceEpisodeSlottings.length > 0) {
+				for (const ep of sourceEpisodeSlottings) {
+					const clearedJson = JSON.stringify(clearUserOccupants(parseCanonicalSlotting(ep.slotting_json)));
+					insertEpisodeSlotting.run(rowId, ep.episode_number, clearedJson);
+				}
+			} else {
+				insertEpisodeSlotting.run(rowId, 1, slottingJson);
+			}
+
 			insertAudit.run(rowId, input.createdBySteamId64, JSON.stringify({ mode: input.mode }));
 			const created = selectInserted.get(rowId) as MissionRow | undefined;
 			if (!created) {
@@ -491,10 +580,14 @@ export function updateSettings(
 				insertPriorityBadge.run(input.missionId, badgeTypeId);
 			}
 
-			// Auto-convert unclaimed unit slots when priority claim opens
 			if (input.priorityClaimManualState === 'open' && row.priority_claim_manual_state !== 'open') {
 				const freshRow = selectMission.get(input.missionId) as MissionRow | undefined;
-				if (freshRow) ensureAutoConversion(db, freshRow);
+				if (freshRow) {
+					const allEpisodes = selectEpisodeSlottings(db, input.missionId);
+					for (const ep of allEpisodes) {
+						ensureAutoConversion(db, freshRow, ep.episodeNumber);
+					}
+				}
 			}
 
 			const updated = selectMission.get(input.missionId) as MissionRow | undefined;
@@ -547,15 +640,12 @@ export function updateSlotting(
 				return { success: false, error: 'not_found' };
 			}
 
-			if (row.slotting_revision !== input.slottingRevision) {
-				return { success: false, error: 'slotting_revision_conflict' };
-			}
-
 			const nextSlotting = parseCanonicalSlotting(input.slotting);
 			return saveSlottingUpdate({
 				db,
 				row,
 				missionId: input.missionId,
+				episodeNumber: input.episodeNumber,
 				slottingRevision: input.slottingRevision,
 				nextSlotting,
 				updatedBySteamId64: input.updatedBySteamId64,
@@ -569,6 +659,86 @@ export function updateSlotting(
 		if (error instanceof Error && error.name === 'ZodError') {
 			return { success: false, error: 'slotting_invalid' };
 		}
+		return { success: false, error: 'database_error' };
+	}
+}
+
+// ── Episode deletion ────────────────────────────────────────────
+
+export type DeleteEpisodeSlottingResult =
+	| { success: true; mission: GameAdminMission }
+	| {
+			success: false;
+			error: 'not_found' | 'cannot_delete_episode_1' | 'episode_not_found' | 'has_occupied_slots' | 'database_error';
+			occupiedCount?: number;
+	  };
+
+export function deleteEpisodeSlotting(input: {
+	missionId: number;
+	episodeNumber: number;
+	confirmOccupied: boolean;
+	deletedBySteamId64: string;
+}): DeleteEpisodeSlottingResult {
+	const db = getDb();
+
+	if (input.episodeNumber === 1) {
+		return { success: false, error: 'cannot_delete_episode_1' };
+	}
+
+	try {
+		const run = db.transaction((): DeleteEpisodeSlottingResult => {
+			const selectMission = db.prepare(`SELECT ${selectMissionColumns()} FROM missions WHERE id = ? LIMIT 1`);
+			const row = selectMission.get(input.missionId) as MissionRow | undefined;
+			if (!row) {
+				return { success: false, error: 'not_found' };
+			}
+
+			const episode = selectEpisodeSlotting(db, input.missionId, input.episodeNumber);
+			if (!episode) {
+				return { success: false, error: 'episode_not_found' };
+			}
+
+			if (!input.confirmOccupied) {
+				let occupiedCount = 0;
+				for (const side of episode.slotting.sides) {
+					for (const squad of side.squads) {
+						for (const slot of squad.slots) {
+							if (slot.occupant !== null) occupiedCount++;
+						}
+					}
+				}
+				if (occupiedCount > 0) {
+					return { success: false, error: 'has_occupied_slots', occupiedCount };
+				}
+			}
+
+			db.prepare(`DELETE FROM mission_episode_slotting WHERE mission_id = ? AND episode_number = ?`)
+				.run(input.missionId, input.episodeNumber);
+
+			db.prepare(`DELETE FROM mission_unit_assignments WHERE mission_id = ? AND episode_number = ?`)
+				.run(input.missionId, input.episodeNumber);
+
+			db.prepare(`
+				INSERT INTO mission_audit_events (mission_id, actor_steamid64, event_type, payload)
+				VALUES (?, ?, 'mission.episode.deleted', ?)
+			`).run(
+				input.missionId,
+				input.deletedBySteamId64,
+				JSON.stringify({ episodeNumber: input.episodeNumber })
+			);
+
+			const updated = selectMission.get(input.missionId) as MissionRow | undefined;
+			if (!updated) return { success: false, error: 'database_error' };
+
+			return { success: true, mission: mapMissionRow(db, updated) };
+		});
+
+		const result = run();
+		if (result.success) {
+			emitSlottingUpdated(result.mission.shortCode, result.mission.slottingRevision, input.episodeNumber);
+		}
+		return result;
+	} catch {
 		return { success: false, error: 'database_error' };
 	}
 }
@@ -632,7 +802,7 @@ export function publishMission(
 
 			const priorityBadgeCount =
 				(selectPriorityBadgeCount.get(input.missionId) as { count?: number } | undefined)?.count ?? 0;
-			const reasons = validatePublishableMission({ row, priorityBadgeCount });
+			const reasons = validatePublishableMission({ db, row, priorityBadgeCount });
 			if (reasons.length > 0) {
 				return { success: false, error: 'publish_validation_failed', reasons };
 			}
@@ -721,8 +891,22 @@ export function archiveGame(input: {
 				return { success: false as const, error: 'not_published' as const };
 			}
 
-			const slotting = parseCanonicalSlotting(row.slotting_json);
-			const archiveResult = normalizeArchiveCompletedResult({ slotting, result: input.result });
+			const episodes = selectEpisodeSlottings(db, input.missionId);
+			const baseSlotting = parseCanonicalSlotting(row.slotting_json);
+			const seenSideIds = new Set<string>();
+			const allSides: typeof baseSlotting.sides = [];
+			for (const ep of episodes) {
+				for (const side of ep.slotting.sides) {
+					if (!seenSideIds.has(side.id)) {
+						seenSideIds.add(side.id);
+						allSides.push(side);
+					}
+				}
+			}
+			if (allSides.length === 0) {
+				for (const side of baseSlotting.sides) allSides.push(side);
+			}
+			const archiveResult = normalizeArchiveCompletedResult({ slotting: { sides: allSides }, result: input.result });
 			if (!archiveResult) {
 				return { success: false as const, error: 'archive_result_invalid' as const };
 			}

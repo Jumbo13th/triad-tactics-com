@@ -71,13 +71,19 @@ export const publishGameRequestSchema = z.object({
 });
 
 export const updateGameSlottingRequestSchema = z.object({
+	episodeNumber: z.number().int().min(1).default(1),
 	slottingRevision: z.number().int().positive(),
 	slotting: canonicalSlottingSchema,
 	confirmDestructive: z.boolean().optional().default(false)
 });
 
 export const claimPrioritySlotRequestSchema = z.object({
-	slotId: z.string().trim().min(1)
+	slotId: z.string().trim().min(1),
+	episodeNumber: z.number().int().min(1).default(1)
+});
+
+export const leavePrioritySlotRequestSchema = z.object({
+	episodeNumber: z.number().int().min(1).default(1)
 });
 
 export const archiveGameRequestSchema = z.object({
@@ -175,6 +181,7 @@ export type CreateMissionUpdateRequest = z.infer<typeof createMissionUpdateReque
 export type UpdateMissionUpdateRequest = z.infer<typeof updateMissionUpdateRequestSchema>;
 
 export const updateUnitAssignmentsRequestSchema = z.object({
+	episodeNumber: z.number().int().min(1).default(1),
 	assignments: z.array(z.object({
 		unitId: z.number().int().positive(),
 		sideId: z.string().trim().min(1)
@@ -182,11 +189,13 @@ export const updateUnitAssignmentsRequestSchema = z.object({
 });
 
 export const claimUnitSlotRequestSchema = z.object({
-	slotId: z.string().trim().min(1)
+	slotId: z.string().trim().min(1),
+	episodeNumber: z.number().int().min(1).default(1)
 });
 
 export const releaseUnitSlotRequestSchema = z.object({
-	slotId: z.string().trim().min(1)
+	slotId: z.string().trim().min(1),
+	episodeNumber: z.number().int().min(1).default(1)
 });
 
 export type UpdateUnitAssignmentsRequest = z.infer<typeof updateUnitAssignmentsRequestSchema>;
