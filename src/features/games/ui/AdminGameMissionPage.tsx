@@ -1135,7 +1135,51 @@ export default function AdminGameMissionPage() {
 												<UnitAssignmentsPanel missionId={mission.id} episodeNumber={selectedSlottingEpisode} slotting={(() => {
 												const ep = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
 												return ep?.slotting ?? mission.slotting;
-											})()} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse} />
+											})()} currentAssignments={mission.unitAssignments} onSaved={syncSlottingResponse}
+											onApplyCommanders={async (sideATag, sideBTag, sideAMissionSideId, sideBMissionSideId) => {
+												try {
+													const episodeData = mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+													const currentSlotting = episodeData?.slotting ?? mission.slotting;
+													const revision = episodeData?.slottingRevision ?? mission.slottingRevision;
+													const modified = JSON.parse(JSON.stringify(currentSlotting)) as { sides: Array<{ id: string; squads: Array<{ slots: Array<{ occupant: unknown }> }> }> };
+													for (const side of modified.sides) {
+														let tag: string | null = null;
+														if (side.id === sideAMissionSideId) tag = sideATag;
+														else if (side.id === sideBMissionSideId) tag = sideBTag;
+														if (!tag) continue;
+														const firstSlot = side.squads?.[0]?.slots?.[0];
+														if (firstSlot) {
+															firstSlot.occupant = { type: 'placeholder', label: tag };
+														}
+													}
+													const res = await fetch(`/api/admin/games/${mission.id}/slotting`, {
+														method: 'PUT',
+														headers: { 'content-type': 'application/json' },
+														body: JSON.stringify({
+															episodeNumber: selectedSlottingEpisode,
+															slottingRevision: revision,
+															slotting: modified,
+															confirmDestructive: false,
+														})
+													});
+													const json: unknown = await res.json();
+													const parsed = parseAdminGameMissionResponse(json);
+													if (parsed && !('error' in parsed)) {
+														// Only update slotting state, not the full mission
+														// (full mission refresh would reset the unsaved assignment list)
+														const ep = parsed.mission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
+														setSlottingText(JSON.stringify(ep?.slotting ?? parsed.mission.slotting, null, 2));
+														setMission((prev) => prev ? {
+															...prev,
+															slotting: parsed.mission.slotting,
+															slottingRevision: parsed.mission.slottingRevision,
+															episodeSlottings: parsed.mission.episodeSlottings,
+														} : prev);
+													}
+												} catch {
+													// failed to apply commanders to slotting
+												}
+											}} />
 											</AdminDisclosure>
 
 											<AdminDisclosure
@@ -1435,15 +1479,29 @@ function EpisodeSelector({ mission, selectedEpisode, onSelectedEpisodeChange, on
 
 	const handleAddEpisode = async () => {
 		const nextEpisodeNumber = episodes.length > 0 ? Math.max(...episodes.map((e) => e.episodeNumber)) + 1 : 2;
-		const sourceSlotting = episodes[0]?.slotting ?? mission.slotting;
+		const prevEpisodeNumber = nextEpisodeNumber - 1;
+		const prevEpisode = episodes.find((e) => e.episodeNumber === prevEpisodeNumber);
+		const sourceSlotting = prevEpisode?.slotting ?? mission.slotting;
+
+		// Find the commander (first slot of first squad) on each side from the previous episode
+		const commanderBySideId = new Map<string, unknown>();
+		for (const side of sourceSlotting.sides) {
+			const firstSlot = side.squads[0]?.slots[0];
+			if (firstSlot?.occupant && typeof firstSlot.occupant === 'object' && 'type' in firstSlot.occupant && firstSlot.occupant.type === 'placeholder') {
+				commanderBySideId.set(side.id, firstSlot.occupant);
+			}
+		}
+
 		const clearedSlotting = {
 			sides: sourceSlotting.sides.map((side) => ({
 				...side,
-				squads: side.squads.map((squad) => ({
+				squads: side.squads.map((squad, squadIdx) => ({
 					...squad,
-					slots: squad.slots.map((slot) => ({
+					slots: squad.slots.map((slot, slotIdx) => ({
 						...slot,
-						occupant: null
+						occupant: squadIdx === 0 && slotIdx === 0 && commanderBySideId.has(side.id)
+							? commanderBySideId.get(side.id)
+							: null
 					}))
 				}))
 			}))
@@ -1583,15 +1641,18 @@ function UnitAssignmentsPanel({
 	episodeNumber = 1,
 	slotting,
 	currentAssignments,
-	onSaved
+	onSaved,
+	onApplyCommanders
 }: {
 	missionId: number;
 	episodeNumber?: number;
 	slotting: import('@/features/games/domain/slotting').CanonicalSlotting;
 	currentAssignments: import('@/features/games/domain/types').GameUnitAssignment[];
 	onSaved: (mission: AdminGameMissionDetail) => void;
+	onApplyCommanders?: (sideAUnitTag: string, sideBUnitTag: string, sideAMissionSideId: string, sideBMissionSideId: string) => void;
 }) {
 	const tg = useTranslations('games');
+	const ta = useTranslations('admin');
 	const episodeAssignments = currentAssignments.filter((a) => a.episodeNumber === episodeNumber);
 	const [assignments, setAssignments] = useState<Array<{ unitId: number; unitTag: string; unitName: string; sideId: string }>>(() =>
 		episodeAssignments.map((a) => ({ unitId: a.unitId, unitTag: a.unitTag, unitName: a.unitName, sideId: a.sideId }))
@@ -1600,6 +1661,15 @@ function UnitAssignmentsPanel({
 	const [loadingUnits, setLoadingUnits] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+	const [rotationDialogOpen, setRotationDialogOpen] = useState(false);
+	const [rotationData, setRotationData] = useState<{
+		config: { sideAName: string; sideBName: string };
+		sideA: Array<{ unitId: number; unitTag: string; unitName: string }>;
+		sideB: Array<{ unitId: number; unitTag: string; unitName: string }>;
+		commanderPair: { sideAUnitId: number; sideAUnitTag: string; sideAUnitName: string; sideBUnitId: number; sideBUnitTag: string; sideBUnitName: string; scheduledDate: string } | null;
+	} | null>(null);
+	const [rotationMapSideATo, setRotationMapSideATo] = useState<string>('');
+	const [applyCommanderPair, setApplyCommanderPair] = useState(false);
 
 	useEffect(() => {
 		const filtered = currentAssignments.filter((a) => a.episodeNumber === episodeNumber);
@@ -1620,21 +1690,70 @@ function UnitAssignmentsPanel({
 		})();
 	}, []);
 
-	const addUnit = (unitId: number) => {
-		const unit = availableUnits.find((u) => u.id === unitId);
-		if (!unit || assignments.some((a) => a.unitId === unitId)) return;
-		setAssignments([...assignments, { unitId: unit.id, unitTag: unit.tag, unitName: unit.name, sideId: slotting.sides[0]?.id ?? '' }]);
+	const canApplyRotation = slotting.sides.length === 2;
+
+	const handleApplyRotation = async () => {
+		try {
+			const res = await fetch('/api/admin/rotation', { cache: 'no-store' });
+			const json = await res.json() as {
+				config?: { sideAName: string; sideBName: string };
+				sideA?: Array<{ unitId: number; unitTag: string; unitName: string }>;
+				sideB?: Array<{ unitId: number; unitTag: string; unitName: string }>;
+				commanderSchedule?: Array<{ sideAUnitId: number; sideAUnitTag: string; sideAUnitName: string; sideBUnitId: number; sideBUnitTag: string; sideBUnitName: string; scheduledDate: string }>;
+			};
+			if (!json.config || !json.sideA || !json.sideB || (json.sideA.length === 0 && json.sideB.length === 0)) {
+				setFeedback({ type: 'error', text: ta('rotationApplyNoRotation') });
+				return;
+			}
+			// Find today-or-next upcoming commander pair
+			const today = new Date();
+			const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+			const upcomingPair = (json.commanderSchedule ?? []).find((p) => p.scheduledDate >= todayStr) ?? null;
+			setRotationData({ config: json.config, sideA: json.sideA, sideB: json.sideB, commanderPair: upcomingPair });
+			setApplyCommanderPair(!!upcomingPair);
+			setRotationMapSideATo(slotting.sides[0]?.id ?? '');
+			setRotationDialogOpen(true);
+		} catch {
+			setFeedback({ type: 'error', text: ta('rotationErrorSave') });
+		}
 	};
 
-	const removeUnit = (unitId: number) => {
-		setAssignments(assignments.filter((a) => a.unitId !== unitId));
+	const confirmApplyRotation = async () => {
+		if (!rotationData) return;
+		const sideAMissionSideId = rotationMapSideATo;
+		const sideBMissionSideId = slotting.sides.find((s) => s.id !== sideAMissionSideId)?.id ?? '';
+		const pair = applyCommanderPair ? rotationData.commanderPair : null;
+
+		// Build side lists, putting the commander unit first if applying commander pair
+		const buildSide = (units: typeof rotationData.sideA, commanderUnitId: number | null, missionSideId: string) => {
+			const result: Array<{ unitId: number; unitTag: string; unitName: string; sideId: string }> = [];
+			if (commanderUnitId != null) {
+				const commander = units.find((u) => u.unitId === commanderUnitId);
+				if (commander) result.push({ unitId: commander.unitId, unitTag: commander.unitTag, unitName: commander.unitName, sideId: missionSideId });
+			}
+			for (const u of units) {
+				if (commanderUnitId != null && u.unitId === commanderUnitId) continue;
+				result.push({ unitId: u.unitId, unitTag: u.unitTag, unitName: u.unitName, sideId: missionSideId });
+			}
+			return result;
+		};
+
+		const newAssignments = [
+			...buildSide(rotationData.sideA, pair?.sideAUnitId ?? null, sideAMissionSideId),
+			...buildSide(rotationData.sideB, pair?.sideBUnitId ?? null, sideBMissionSideId),
+		];
+
+		await saveAssignments(newAssignments);
+		if (pair && onApplyCommanders) {
+			onApplyCommanders(pair.sideAUnitTag, pair.sideBUnitTag, sideAMissionSideId, sideBMissionSideId);
+		}
+
+		setRotationDialogOpen(false);
+		setRotationData(null);
 	};
 
-	const updateSide = (unitId: number, sideId: string) => {
-		setAssignments(assignments.map((a) => (a.unitId === unitId ? { ...a, sideId } : a)));
-	};
-
-	const handleSave = async () => {
+	const saveAssignments = async (next: typeof assignments) => {
+		setAssignments(next);
 		setSaving(true);
 		setFeedback(null);
 		try {
@@ -1643,13 +1762,12 @@ function UnitAssignmentsPanel({
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					episodeNumber,
-					assignments: assignments.map((a) => ({ unitId: a.unitId, sideId: a.sideId }))
+					assignments: next.map((a) => ({ unitId: a.unitId, sideId: a.sideId }))
 				})
 			});
 			const json: unknown = await res.json();
 			const parsed = parseAdminGameMissionResponse(json);
 			if (parsed && !('error' in parsed)) {
-				setFeedback({ type: 'success', text: tg('adminUnitAssignmentsSaved') });
 				onSaved(parsed.mission);
 			} else {
 				const code = parsed && 'error' in parsed ? parsed.error : 'unknown';
@@ -1662,11 +1780,97 @@ function UnitAssignmentsPanel({
 		}
 	};
 
+	const addUnit = (unitId: number) => {
+		const unit = availableUnits.find((u) => u.id === unitId);
+		if (!unit || assignments.some((a) => a.unitId === unitId)) return;
+		void saveAssignments([...assignments, { unitId: unit.id, unitTag: unit.tag, unitName: unit.name, sideId: slotting.sides[0]?.id ?? '' }]);
+	};
+
+	const removeUnit = (unitId: number) => {
+		void saveAssignments(assignments.filter((a) => a.unitId !== unitId));
+	};
+
+	const updateSide = (unitId: number, sideId: string) => {
+		void saveAssignments(assignments.map((a) => (a.unitId === unitId ? { ...a, sideId } : a)));
+	};
+
 	const unassignedUnits = availableUnits.filter((u) => !assignments.some((a) => a.unitId === u.id));
 
 	return (
 		<div className="grid gap-4">
-			<p className="text-sm text-neutral-400">{tg('adminUnitAssignmentsSubtitle')}</p>
+			<div className="flex items-center justify-between">
+				<p className="text-sm text-neutral-400">{tg('adminUnitAssignmentsSubtitle')}</p>
+				{canApplyRotation ? (
+					<button
+						type="button"
+						onClick={() => { void handleApplyRotation(); }}
+						className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition hover:bg-neutral-800"
+					>
+						{ta('rotationApplyTitle')}
+					</button>
+				) : (
+					<span className="text-xs text-neutral-500" title={ta('rotationApplyNeedTwoSides')}>
+						{ta('rotationApplyTitle')}
+					</span>
+				)}
+			</div>
+
+			{/* Apply Rotation Dialog */}
+			{rotationDialogOpen && rotationData && (
+				<div className="rounded-xl border border-neutral-700 bg-neutral-900 p-4">
+					<p className="mb-3 text-sm font-semibold text-neutral-50">{ta('rotationApplyDescription')}</p>
+					<label className="mb-3 flex items-center gap-2 text-sm text-neutral-300">
+						<span>{ta('rotationApplyMapSideA', { sideName: rotationData.config.sideAName })}</span>
+						<select
+							value={rotationMapSideATo}
+							onChange={(e) => setRotationMapSideATo(e.target.value)}
+							className="rounded-md border border-neutral-700 bg-neutral-950 px-2 py-1 text-xs text-neutral-200"
+						>
+							{slotting.sides.map((side) => (
+								<option key={side.id} value={side.id}>{sideDisplayName(side)}</option>
+							))}
+						</select>
+					</label>
+					<div className="mb-3 grid gap-1 text-xs text-neutral-400">
+						<span>{rotationData.config.sideAName}: {rotationData.sideA.map((u) => u.unitTag).join(', ') || '—'}</span>
+						<span>{rotationData.config.sideBName}: {rotationData.sideB.map((u) => u.unitTag).join(', ') || '—'}</span>
+					</div>
+					{rotationData.commanderPair && (
+						<label className="mb-3 flex items-center gap-2 text-sm text-neutral-300">
+							<input
+								type="checkbox"
+								checked={applyCommanderPair}
+								onChange={(e) => setApplyCommanderPair(e.target.checked)}
+								className="h-4 w-4 rounded border-neutral-600 bg-neutral-950 text-[color:var(--accent)] accent-[color:var(--accent)]"
+							/>
+							<span>
+								{ta('rotationApplyCommanderPair', {
+									sideA: rotationData.commanderPair.sideAUnitTag,
+									sideB: rotationData.commanderPair.sideBUnitTag,
+									date: rotationData.commanderPair.scheduledDate,
+								})}
+							</span>
+						</label>
+					)}
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							disabled={saving}
+							onClick={() => { void confirmApplyRotation(); }}
+							className="rounded-lg bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{ta('rotationApplyConfirm')}
+						</button>
+						<button
+							type="button"
+							onClick={() => { setRotationDialogOpen(false); setRotationData(null); }}
+							className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-800"
+						>
+							{ta('rotationApplyCancel')}
+						</button>
+					</div>
+				</div>
+			)}
 
 			{assignments.length > 0 ? (
 				<div className="grid gap-2">
@@ -1727,17 +1931,6 @@ function UnitAssignmentsPanel({
 			{feedback ? (
 				<p className={`text-sm ${feedback.type === 'error' ? 'text-red-300' : 'text-emerald-300'}`}>{feedback.text}</p>
 			) : null}
-
-			<div>
-				<button
-					type="button"
-					onClick={() => { void handleSave(); }}
-					disabled={saving}
-					className="rounded-lg bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{saving ? tg('adminUnitAssignmentsSaving') : tg('adminUnitAssignmentsSave')}
-				</button>
-			</div>
 		</div>
 	);
 }

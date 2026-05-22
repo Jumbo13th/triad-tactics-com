@@ -17,7 +17,9 @@ type UnitSummary = {
 	hasAvatar: boolean;
 };
 
-export default function UnitsListPage() {
+type RotationInfo = { sideName: string; sideColor: string };
+
+export default function UnitsListPage({ rotationMap = {} }: { rotationMap?: Record<string, RotationInfo> }) {
 	const t = useTranslations('units');
 	const [units, setUnits] = useState<UnitSummary[]>([]);
 	const [total, setTotal] = useState(0);
@@ -174,6 +176,20 @@ export default function UnitsListPage() {
 										<h3 className="text-xl font-semibold tracking-tight text-neutral-50 transition-colors group-hover:text-[color:var(--accent)] sm:text-2xl">{unit.name}</h3>
 									</div>
 									<div className="mt-3 flex flex-wrap items-center gap-2">
+										{rotationMap[String(unit.id)] && (
+											<span
+												className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+												style={{
+													backgroundColor: `${rotationMap[String(unit.id)].sideColor}15`,
+													borderWidth: 1,
+													borderColor: `${rotationMap[String(unit.id)].sideColor}40`,
+													color: rotationMap[String(unit.id)].sideColor,
+												}}
+											>
+												<span className="h-2 w-2 rounded-full" style={{ backgroundColor: rotationMap[String(unit.id)].sideColor }} />
+												{rotationMap[String(unit.id)].sideName}
+											</span>
+										)}
 										{unit.slotsAllocated > 0 && (
 											<span className="inline-flex items-center rounded-full border border-neutral-800 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-neutral-300">
 												{t('slotsAllocated')}: {unit.slotsAllocated}

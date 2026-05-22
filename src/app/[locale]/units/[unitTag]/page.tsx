@@ -6,6 +6,8 @@ import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
 import { unitDeps } from '@/features/units/deps';
+import { rotationDeps } from '@/features/rotation/deps';
+import { getRotationUseCase } from '@/features/rotation/useCases/getRotation';
 
 export default async function UnitDetailRoutePage({ params }: { params: Promise<{ locale: string; unitTag: string }> }) {
 	const { locale, unitTag } = await params;
@@ -19,5 +21,15 @@ export default async function UnitDetailRoutePage({ params }: { params: Promise<
 	const id = unitDeps.repo.getUnitIdByTag(unitTag);
 	if (!id) redirect(`/${locale}/units`);
 
-	return <UnitDetailPage unitId={id} />;
+	const rotation = getRotationUseCase(rotationDeps).json;
+	const allUnits = [...rotation.sideA, ...rotation.sideB];
+	const match = allUnits.find(u => u.unitId === id);
+	const rotationSide = match
+		? {
+			sideName: match.side === 'a' ? rotation.config.sideAName : rotation.config.sideBName,
+			sideColor: match.side === 'a' ? rotation.config.sideAColor : rotation.config.sideBColor,
+		}
+		: null;
+
+	return <UnitDetailPage unitId={id} rotationSide={rotationSide} />;
 }

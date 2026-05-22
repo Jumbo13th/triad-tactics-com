@@ -58,7 +58,9 @@ function resolveEventKind(kind: string): string {
 	return kind;
 }
 
-export default function UnitDetailPage({ unitId }: { unitId: number }) {
+type RotationSideInfo = { sideName: string; sideColor: string } | null;
+
+export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId: number; rotationSide?: RotationSideInfo }) {
 	const t = useTranslations('units');
 	const locale = useLocale();
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
@@ -157,6 +159,21 @@ export default function UnitDetailPage({ unitId }: { unitId: number }) {
 					</div>
 
 					<div className="flex flex-wrap items-center gap-3 text-sm text-neutral-400">
+						{rotationSide && (
+							<Link
+								href="/games#rotation"
+								className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition hover:opacity-80"
+								style={{
+									backgroundColor: `${rotationSide.sideColor}15`,
+									borderWidth: 1,
+									borderColor: `${rotationSide.sideColor}40`,
+									color: rotationSide.sideColor,
+								}}
+							>
+								<span className="h-2 w-2 rounded-full" style={{ backgroundColor: rotationSide.sideColor }} />
+								{rotationSide.sideName}
+							</Link>
+						)}
 						{unit.leaderCallsign && (
 							<div className="inline-flex items-center rounded-full border border-neutral-800 bg-neutral-950/80 px-3 py-1 text-xs font-semibold text-neutral-300">
 								{t('commander')}: {unit.leaderCallsign}

@@ -9,7 +9,7 @@ export function getActiveSiteBanForUser(input: { userId: number }): Sanction | n
 	const stmt = db.prepare(`
 		SELECT * FROM sanctions
 		WHERE user_id = ? AND type = 'site_ban' AND ${ACTIVE_CONDITION}
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id DESC
 		LIMIT 1
 	`);
 	return (stmt.get(input.userId) as Sanction | undefined) ?? null;
@@ -20,7 +20,7 @@ export function getActiveServerBanForUser(input: { userId: number }): Sanction |
 	const stmt = db.prepare(`
 		SELECT * FROM sanctions
 		WHERE user_id = ? AND type = 'server_ban' AND ${ACTIVE_CONDITION}
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id DESC
 		LIMIT 1
 	`);
 	return (stmt.get(input.userId) as Sanction | undefined) ?? null;
@@ -31,7 +31,7 @@ export function getActiveStrikesForUser(input: { userId: number }): Sanction[] {
 	const stmt = db.prepare(`
 		SELECT * FROM sanctions
 		WHERE user_id = ? AND type = 'strike' AND ${ACTIVE_CONDITION}
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id DESC
 	`);
 	return stmt.all(input.userId) as Sanction[];
 }
@@ -59,7 +59,7 @@ export function getSanctionsForUser(input: { userId: number }): PublicSanctionEn
 		LEFT JOIN user_identities ei ON ei.provider = 'steam' AND ei.provider_user_id = s.expires_updated_by_steamid64
 		LEFT JOIN users eu ON eu.id = ei.user_id
 		WHERE s.user_id = ?
-		ORDER BY s.created_at DESC
+		ORDER BY s.created_at DESC, s.id DESC, s.id DESC
 	`);
 	return stmt.all(input.userId) as PublicSanctionEntry[];
 }
@@ -110,7 +110,7 @@ export function listSanctions(input: {
 		LEFT JOIN user_identities ei ON ei.provider = 'steam' AND ei.provider_user_id = s.expires_updated_by_steamid64
 		LEFT JOIN users eu ON eu.id = ei.user_id
 		${where}
-		ORDER BY s.created_at DESC
+		ORDER BY s.created_at DESC, s.id DESC
 		LIMIT ? OFFSET ?
 	`);
 	const sanctions = selectStmt.all(...params, input.pageSize, offset) as SanctionWithCallsign[];
@@ -177,7 +177,7 @@ export function listPublicSanctions(input: { page: number; pageSize: number; que
 		LEFT JOIN user_identities ei ON ei.provider = 'steam' AND ei.provider_user_id = s.expires_updated_by_steamid64
 		LEFT JOIN users eu ON eu.id = ei.user_id
 		${where}
-		ORDER BY s.created_at DESC
+		ORDER BY s.created_at DESC, s.id DESC
 		LIMIT ? OFFSET ?
 	`);
 	const sanctions = selectStmt.all(...params, input.pageSize, offset) as PublicSanctionEntry[];
