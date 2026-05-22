@@ -16,7 +16,7 @@ function isActivePath(currentPathname: string, href: string) {
 }
 
 function isActiveGamesDropdown(pathname: string) {
-	return pathname.startsWith('/games') || pathname.startsWith('/sanctions');
+	return pathname.startsWith('/games') || pathname.startsWith('/units') || pathname.startsWith('/sanctions');
 }
 
 function getActiveAdminHref(pathname: string) {
@@ -28,6 +28,7 @@ function getActiveAdminHref(pathname: string) {
 	if (pathname.startsWith('/admin/games')) return '/admin/games';
 	if (pathname.startsWith('/admin/units')) return '/admin/units';
 	if (pathname.startsWith('/admin/sanctions')) return '/admin/sanctions';
+	if (pathname.startsWith('/admin/rotation')) return '/admin/rotation';
 	return '/admin';
 }
 
@@ -57,7 +58,6 @@ export default function SiteNavBar() {
 
 	const items = useMemo(() => {
 		const base: SiteNavItem[] = [{ href: '/', label: t('home') }];
-		base.push({ href: '/units', label: t('units'), badge: null });
 		base.push({ href: '/important', label: t('important'), badge: null });
 		base.push({ href: '/rules', label: t('rules'), badge: null });
 		return base;
@@ -137,6 +137,7 @@ export default function SiteNavBar() {
 								{(() => {
 									const gamesItems = [
 										{ href: '/games', label: t('missions') },
+										{ href: '/units', label: t('units') },
 										{ href: '/sanctions', label: t('sanctions') }
 									] as const;
 									return gamesItems.map((item) => (
@@ -199,6 +200,7 @@ export default function SiteNavBar() {
 										{ href: '/admin/games', label: ta('navGames') },
 									{ href: '/admin/units', label: ta('navUnits') },
 										{ href: '/admin/sanctions', label: ta('navSanctions') },
+										{ href: '/admin/rotation', label: ta('navRotation') },
 										{ href: '/admin/maintenance', label: ta('navMaintenance') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);

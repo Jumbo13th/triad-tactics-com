@@ -764,5 +764,69 @@ export const migrations: Migration[] = [
 			ALTER TABLE sanctions ADD COLUMN original_expires_at DATETIME;
 			ALTER TABLE sanctions ADD COLUMN expires_updated_by_steamid64 TEXT;
 		`
+	},
+	{
+		id: 17,
+		name: 'rotation',
+		up: `
+			CREATE TABLE IF NOT EXISTS rotation_config (
+				id INTEGER PRIMARY KEY CHECK(id = 1),
+				side_a_name TEXT NOT NULL DEFAULT 'Side Alpha',
+				side_b_name TEXT NOT NULL DEFAULT 'Side Beta',
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_by_steamid64 TEXT
+			);
+
+			CREATE TABLE IF NOT EXISTS rotation_unit_assignments (
+				unit_id INTEGER NOT NULL PRIMARY KEY,
+				side TEXT NOT NULL CHECK(side IN ('a', 'b')),
+				position INTEGER NOT NULL DEFAULT 0,
+				assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_rua_side ON rotation_unit_assignments(side);
+
+			CREATE TABLE IF NOT EXISTS rotation_commander_schedule (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				position INTEGER NOT NULL DEFAULT 0,
+				side_a_unit_id INTEGER NOT NULL,
+				side_b_unit_id INTEGER NOT NULL,
+				scheduled_date TEXT NOT NULL,
+				FOREIGN KEY (side_a_unit_id) REFERENCES units(id) ON DELETE CASCADE,
+				FOREIGN KEY (side_b_unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_rcs_position
+				ON rotation_commander_schedule(position);
+		`
+	},
+	{
+		id: 18,
+		name: 'rotation_commander_schedule_paired',
+		up: `
+			DROP TABLE IF EXISTS rotation_commander_schedule;
+
+			CREATE TABLE IF NOT EXISTS rotation_commander_schedule (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				position INTEGER NOT NULL DEFAULT 0,
+				side_a_unit_id INTEGER NOT NULL,
+				side_b_unit_id INTEGER NOT NULL,
+				scheduled_date TEXT NOT NULL,
+				FOREIGN KEY (side_a_unit_id) REFERENCES units(id) ON DELETE CASCADE,
+				FOREIGN KEY (side_b_unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_rcs_position
+				ON rotation_commander_schedule(position);
+		`
+	},
+	{
+		id: 19,
+		name: 'rotation_side_colors',
+		up: `
+			ALTER TABLE rotation_config ADD COLUMN side_a_color TEXT NOT NULL DEFAULT '#3b82f6';
+			ALTER TABLE rotation_config ADD COLUMN side_b_color TEXT NOT NULL DEFAULT '#ef4444';
+		`
 	}
 ];

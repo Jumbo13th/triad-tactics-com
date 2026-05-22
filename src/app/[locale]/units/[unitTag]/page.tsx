@@ -6,6 +6,8 @@ import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
 import { unitDeps } from '@/features/units/deps';
+import { rotationDeps } from '@/features/rotation/deps';
+import { getRotationSideForUnit } from '@/features/rotation/useCases/getRotationSideForUnit';
 
 export default async function UnitDetailRoutePage({ params }: { params: Promise<{ locale: string; unitTag: string }> }) {
 	const { locale, unitTag } = await params;
@@ -19,5 +21,7 @@ export default async function UnitDetailRoutePage({ params }: { params: Promise<
 	const id = unitDeps.repo.getUnitIdByTag(unitTag);
 	if (!id) redirect(`/${locale}/units`);
 
-	return <UnitDetailPage unitId={id} />;
+	const rotationSide = getRotationSideForUnit(rotationDeps, id);
+
+	return <UnitDetailPage unitId={id} rotationSide={rotationSide} />;
 }

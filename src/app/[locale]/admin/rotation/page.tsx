@@ -1,14 +1,12 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { UnitsListPage } from '@/features/units/ui/root';
+import { AdminRotationPage } from '@/features/rotation/ui/root';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
-import { rotationDeps } from '@/features/rotation/deps';
-import { getRotationMap } from '@/features/rotation/useCases/getRotationMap';
 
-export default async function UnitsRoutePage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function AdminRotationRoutePage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
 	const cookieStore = await cookies();
 	const sid = cookieStore.get(STEAM_SESSION_COOKIE)?.value ?? null;
@@ -16,8 +14,8 @@ export default async function UnitsRoutePage({ params }: { params: Promise<{ loc
 
 	const flowRedirect = getProtectedPageRedirect(locale, status);
 	if (flowRedirect) redirect(flowRedirect);
+	if (!status.connected) redirect(`/${locale}/apply`);
+	if (status.accessLevel !== 'admin') redirect(`/${locale}`);
 
-	const rotationMap = getRotationMap(rotationDeps);
-
-	return <UnitsListPage rotationMap={rotationMap} />;
+	return <AdminRotationPage />;
 }

@@ -3,14 +3,17 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import type { CurrentGameSummary, GameArchiveResult, GameArchiveSummary } from '@/features/games/domain/types';
+import type { Rotation } from '@/features/rotation/domain/types';
 import type { AppLocale } from '@/i18n/locales';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { formatViewerDate } from './missionPageUtils';
 import CurrentGameMissionCard from './CurrentGameMissionCard';
+import { RotationSection } from '@/features/rotation/ui/root';
 
 type Props = {
 	current: CurrentGameSummary | null;
 	archive: GameArchiveSummary[];
+	rotation: Rotation;
 };
 
 function renderArchiveResult(result: GameArchiveResult | null, t: ReturnType<typeof useTranslations<'games'>>): string {
@@ -26,7 +29,7 @@ function renderArchiveScores(result: GameArchiveResult | null): string | null {
 	return result.sideScores.map((score) => `${score.sideName} ${score.score}`).join(' / ');
 }
 
-export default function GamesHubPage({ current, archive }: Props) {
+export default function GamesHubPage({ current, archive, rotation }: Props) {
 	const t = useTranslations('games');
 	const locale = useLocale();
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
@@ -47,6 +50,8 @@ export default function GamesHubPage({ current, archive }: Props) {
 					<p className="mt-2 max-w-2xl text-sm text-neutral-300 sm:text-base">{t('noCurrentText')}</p>
 				</div>
 			)}
+
+			<RotationSection rotation={rotation} />
 
 			<details className="group rounded-2xl border border-neutral-800 bg-neutral-950 shadow-sm shadow-black/20">
 				<summary className="flex cursor-pointer list-none items-center justify-between p-5 sm:p-8 [&::-webkit-details-marker]:hidden">

@@ -4,6 +4,8 @@ import GamesHubPage from '@/features/games/ui/GamesHubPage';
 import { getGameArchiveSummariesDeps, getCurrentGameDeps } from '@/features/games/deps';
 import { getGameArchiveSummaries } from '@/features/games/useCases/getGameArchiveSummaries';
 import { getCurrentGame } from '@/features/games/useCases/getCurrentGame';
+import { rotationDeps } from '@/features/rotation/deps';
+import { getRotationUseCase } from '@/features/rotation/useCases/getRotation';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
@@ -24,5 +26,7 @@ export default async function GamesRoutePage({ params }: { params: Promise<{ loc
 		throw new Error('games_archive_load_failed');
 	}
 
-	return <GamesHubPage current={current} archive={archive.archive} />;
+	const rotation = getRotationUseCase(rotationDeps).json;
+
+	return <GamesHubPage current={current} archive={archive.archive} rotation={rotation} />;
 }
