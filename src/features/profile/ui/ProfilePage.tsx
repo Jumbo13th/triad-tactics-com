@@ -7,6 +7,7 @@ import { ProfileLoading } from "@/features/profile/ui/ProfileLoading";
 import { ProfileNotAuthorized } from "@/features/profile/ui/ProfileNotAuthorized";
 import { useProfileData } from "@/features/profile/ui/useProfileData";
 import { ArmaGuidEditField } from "@/features/armaId/ui/root";
+import { UserSanctionsList } from "@/features/sanctions/ui/root";
 import { useTranslations } from "next-intl";
 import { Link } from '@/i18n/routing';
 
@@ -89,6 +90,8 @@ export default function ProfilePage() {
 						</div>
 					</div>
 				)}
+
+				<UserSanctionsList />
 			</div>
 		</section>
 	);

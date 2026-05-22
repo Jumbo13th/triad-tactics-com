@@ -23,7 +23,11 @@ const userStatusConnectedSchema = z.object({
 	renameRequiredByCallsign: z.string().nullable(),
 	armaGuidRequired: sqliteBoolean,
 	accessLevel: z.enum(['guest', 'player', 'admin']),
-	badges: z.array(z.object({ label: z.string() })).optional()
+	badges: z.array(z.object({ label: z.string() })).optional(),
+	siteBanned: sqliteBoolean.optional(),
+	siteBanReason: z.string().nullable().optional(),
+	siteBanExpiresAt: z.string().nullable().optional(),
+	serverBanned: sqliteBoolean.optional()
 });
 
 export type UserStatus =
@@ -45,6 +49,10 @@ export type UserStatus =
 			armaGuidRequired: boolean;
 			accessLevel: UserAccessLevel;
 			badges?: { label: string }[];
+			siteBanned?: boolean;
+			siteBanReason?: string | null;
+			siteBanExpiresAt?: string | null;
+			serverBanned?: boolean;
 	  };
 
 export function isConfirmedByAccessLevel(accessLevel: UserAccessLevel): boolean {

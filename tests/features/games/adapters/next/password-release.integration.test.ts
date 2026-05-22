@@ -17,6 +17,7 @@ function createConfirmedPlayer(dbOps: DbOperations, steamId64: string, callsign:
 	if (!confirmed.success) throw new Error('confirm application failed');
 	const user = dbOps.getUserBySteamId64(steamId64);
 	if (!user?.id) throw new Error('user not found after confirm');
+	dbOps.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${steamId64}` });
 	return user.id;
 }
 

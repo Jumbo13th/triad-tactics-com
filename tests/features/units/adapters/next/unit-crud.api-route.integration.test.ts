@@ -50,6 +50,7 @@ function seedConfirmedPlayer(dbOps: Awaited<ReturnType<typeof loadHarness>>['dbO
 	dbOps.confirmApplication(applicationId, ADMIN_STEAM_ID);
 	const user = dbOps.getUserBySteamId64(steamid64);
 	if (!user?.id) throw new Error('Expected confirmed user');
+	dbOps.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${steamid64}` });
 	const sessionId = createSteamSession(dbOps, { steamid64, redirectPath: '/en/units' });
 	return { userId: user.id, sessionId };
 }

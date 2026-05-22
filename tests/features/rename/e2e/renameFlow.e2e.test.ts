@@ -58,6 +58,10 @@ describe('Rename flow (e2e via API handlers)', () => {
 		);
 		expect(resConfirm.status).toBe(200);
 
+		const confirmedUser = dbOperations.getUserBySteamId64(userSteamId);
+		if (!confirmedUser?.id) throw new Error('Expected confirmed user');
+		dbOperations.setArmaGuidByUserId({ userId: confirmedUser.id, armaGuid: `test-guid-${userSteamId}` });
+
 		// Admin: mark user as rename-required.
 		const resRequire = await POST_RENAME_REQUIRED(
 			new NextRequest('http://localhost/api/admin/rename-required', {

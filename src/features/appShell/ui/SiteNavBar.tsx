@@ -15,6 +15,10 @@ function isActivePath(currentPathname: string, href: string) {
 	return currentPathname === href || currentPathname.startsWith(`${href}/`);
 }
 
+function isActiveGamesDropdown(pathname: string) {
+	return pathname.startsWith('/games') || pathname.startsWith('/sanctions');
+}
+
 function getActiveAdminHref(pathname: string) {
 	// pathname comes without locale prefix
 	if (pathname.startsWith('/admin/users')) return '/admin/users';
@@ -23,6 +27,7 @@ function getActiveAdminHref(pathname: string) {
 	if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
 	if (pathname.startsWith('/admin/games')) return '/admin/games';
 	if (pathname.startsWith('/admin/units')) return '/admin/units';
+	if (pathname.startsWith('/admin/sanctions')) return '/admin/sanctions';
 	return '/admin';
 }
 
@@ -39,29 +44,26 @@ export default function SiteNavBar() {
 	const status = useAdminStatus();
 	const steamStatus = useUserStatus();
 	const adminMenuRef = useRef<HTMLDetailsElement>(null);
+	const gamesMenuRef = useRef<HTMLDetailsElement>(null);
 	const isAuthorized =
 		steamStatus?.connected === true && isConfirmedByAccessLevel(steamStatus.accessLevel);
 	const currentGame = useCurrentGameSummary(isAuthorized);
 
 	useEffect(() => {
-		// Close the dropdown when navigating to a new route.
+		// Close the dropdowns when navigating to a new route.
 		if (adminMenuRef.current) adminMenuRef.current.open = false;
+		if (gamesMenuRef.current) gamesMenuRef.current.open = false;
 	}, [pathname]);
 
 	const items = useMemo(() => {
 		const base: SiteNavItem[] = [{ href: '/', label: t('home') }];
-		if (isAuthorized) {
-			base.push({
-				href: '/games',
-				label: t('games'),
-				badge: currentGame ? t('currentIndicator') : null
-			});
-		}
 		base.push({ href: '/units', label: t('units'), badge: null });
 		base.push({ href: '/important', label: t('important'), badge: null });
 		base.push({ href: '/rules', label: t('rules'), badge: null });
 		return base;
-	}, [currentGame, isAuthorized, t]);
+	}, [t]);
+
+	const gamesDropdownActive = isActiveGamesDropdown(pathname);
 
 	return (
 		<div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 shadow-sm shadow-black/20">
@@ -94,6 +96,71 @@ export default function SiteNavBar() {
 							</Link>
 						);
 					})}
+
+					{isAuthorized ? (
+						<details ref={gamesMenuRef} className="relative">
+							<summary
+								aria-haspopup="menu"
+								className={
+									'inline-flex list-none items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 [&::-webkit-details-marker]:hidden [&::marker]:hidden ' +
+									(gamesDropdownActive
+										? 'bg-[color:var(--accent)] text-neutral-950'
+										: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
+								}
+							>
+								{t('games')}
+								{currentGame ? (
+									<span
+										className={
+											'ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] ' +
+											(gamesDropdownActive ? 'bg-black/15 text-neutral-950' : 'bg-[color:var(--accent)]/20 text-[color:var(--accent)]')
+										}
+									>
+										{t('currentIndicator')}
+									</span>
+								) : null}
+								<svg
+									viewBox="0 0 20 20"
+									fill="currentColor"
+									className="h-4 w-4 opacity-80"
+									aria-hidden="true"
+								>
+									<path
+										fillRule="evenodd"
+										d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
+										clipRule="evenodd"
+									/>
+								</svg>
+							</summary>
+
+							<DropdownMenuPanel>
+								{(() => {
+									const gamesItems = [
+										{ href: '/games', label: t('missions') },
+										{ href: '/sanctions', label: t('sanctions') }
+									] as const;
+									return gamesItems.map((item) => (
+										<Link
+											key={item.href}
+											href={item.href}
+											role="menuitem"
+											onClick={() => {
+												if (gamesMenuRef.current) gamesMenuRef.current.open = false;
+											}}
+											className={
+												'flex items-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950 ' +
+												(isActivePath(pathname, item.href)
+													? 'bg-white/10 text-neutral-50'
+													: 'text-neutral-300 hover:bg-white/5 hover:text-neutral-50')
+											}
+										>
+											{item.label}
+										</Link>
+									));
+								})()}
+							</DropdownMenuPanel>
+						</details>
+					) : null}
 
 					{status?.connected && status.isAdmin ? (
 						<details ref={adminMenuRef} className="relative">
@@ -131,7 +198,8 @@ export default function SiteNavBar() {
 										{ href: '/admin/mailing', label: ta('navMailing') },
 										{ href: '/admin/games', label: ta('navGames') },
 									{ href: '/admin/units', label: ta('navUnits') },
-										{ href: '/admin/maintenance', label: 'Maintenance' }
+										{ href: '/admin/sanctions', label: ta('navSanctions') },
+										{ href: '/admin/maintenance', label: ta('navMaintenance') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);
 									return items.map((item) => (

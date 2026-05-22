@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { isAppLocale, routing } from '@/i18n/routing';
 import { SiteFooter, SiteHeader } from '@/features/appShell/ui/root';
+import { BanNotice } from '@/features/sanctions/ui/root';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -39,7 +40,9 @@ export default async function LocaleLayout({
             primaryAction={{ href: '/apply', label: tw('applyButtonShort') }}
           />
 
-          <div className="mt-6 flex-1">{children}</div>
+          <div className="mt-6 flex-1">
+            <BanNotice>{children}</BanNotice>
+          </div>
 
           <SiteFooter />
         </div>

@@ -1,6 +1,7 @@
 import type { SteamAuthDeps } from '@/features/steamAuth/ports';
 import type { UserStatus } from '@/features/users/domain/api';
 import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
+import { getActiveSiteBanForUser, getActiveServerBanForUser } from '@/features/sanctions/infra/sqliteSanctions';
 
 export function getUserStatus(deps: SteamAuthDeps, sid: string | null): UserStatus {
 	const identity = getSteamIdentity(deps, sid);
@@ -33,6 +34,20 @@ export function getUserStatus(deps: SteamAuthDeps, sid: string | null): UserStat
 	const isConfirmed = !!user?.player_confirmed_at;
 	const armaGuidRequired = isConfirmed && !armaGuid;
 
+	let siteBanned = false;
+	let siteBanReason: string | null = null;
+	let siteBanExpiresAt: string | null = null;
+	let serverBanned = false;
+	if (user?.id) {
+		const ban = getActiveSiteBanForUser({ userId: user.id });
+		if (ban) {
+			siteBanned = true;
+			siteBanReason = ban.reason ?? null;
+			siteBanExpiresAt = ban.expires_at ?? null;
+		}
+		serverBanned = getActiveServerBanForUser({ userId: user.id }) !== null;
+	}
+
 	return {
 		connected: true,
 		steamid64: identity.steamid64,
@@ -49,6 +64,10 @@ export function getUserStatus(deps: SteamAuthDeps, sid: string | null): UserStat
 		renameRequiredByCallsign,
 		armaGuidRequired,
 		accessLevel,
-		badges
+		badges,
+		siteBanned,
+		siteBanReason,
+		siteBanExpiresAt,
+		serverBanned
 	};
 }

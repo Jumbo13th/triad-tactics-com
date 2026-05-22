@@ -88,8 +88,8 @@ export function useEpisodeSlotting(mission: GameMissionDetail): EpisodeSlottingS
 				heldSlotId: episodeHeldSlotId,
 				heldSlotAccess: episodeHeldSlotAccess,
 				unitSideId: episodeUnitSideId,
-				canClaimPriority: mission.viewer.hasPriorityBadge && mission.priorityClaimOpen && !episodeHeldSlotId,
-				canSwitchPriority: mission.priorityClaimOpen && episodeHeldSlotAccess === 'priority',
+				canClaimPriority: mission.viewer.hasPriorityBadge && mission.priorityClaimOpen && !episodeHeldSlotId && !mission.viewer.serverBanned,
+				canSwitchPriority: mission.priorityClaimOpen && episodeHeldSlotAccess === 'priority' && !mission.viewer.serverBanned,
 				canClaimUnitSlot: mission.viewer.isUnitLeader && mission.unitSlottingOpen && episodeUnitSideId != null
 			}
 		}

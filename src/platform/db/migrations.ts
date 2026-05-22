@@ -729,5 +729,40 @@ export const migrations: Migration[] = [
 				ON users(LOWER(arma_guid))
 				WHERE arma_guid IS NOT NULL AND TRIM(arma_guid) != '';
 		`
+	},
+	{
+		id: 15,
+		name: 'sanctions',
+		up: `
+			CREATE TABLE IF NOT EXISTS sanctions (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user_id INTEGER NOT NULL,
+				type TEXT NOT NULL CHECK(type IN ('site_ban', 'server_ban', 'strike')),
+				reason TEXT NOT NULL DEFAULT '',
+				expires_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				created_by_steamid64 TEXT NOT NULL,
+				cancelled_at DATETIME,
+				cancelled_by_steamid64 TEXT,
+				cancelled_reason TEXT,
+				auto_generated INTEGER NOT NULL DEFAULT 0 CHECK(auto_generated IN (0, 1)),
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_sanctions_user_id ON sanctions(user_id);
+			CREATE INDEX IF NOT EXISTS idx_sanctions_type ON sanctions(type);
+			CREATE INDEX IF NOT EXISTS idx_sanctions_active
+				ON sanctions(type, expires_at)
+				WHERE cancelled_at IS NULL;
+			CREATE INDEX IF NOT EXISTS idx_sanctions_created_at ON sanctions(created_at DESC);
+		`
+	},
+	{
+		id: 16,
+		name: 'sanctions_expiry_update',
+		up: `
+			ALTER TABLE sanctions ADD COLUMN original_expires_at DATETIME;
+			ALTER TABLE sanctions ADD COLUMN expires_updated_by_steamid64 TEXT;
+		`
 	}
 ];

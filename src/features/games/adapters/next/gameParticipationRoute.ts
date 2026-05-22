@@ -18,6 +18,14 @@ import { leaveRegularGame } from '@/features/games/useCases/leaveRegularGame';
 import { releaseUnitSlot } from '@/features/games/useCases/releaseUnitSlot';
 import { switchPrioritySlot } from '@/features/games/useCases/switchPrioritySlot';
 import { errorToLogObject, logger } from '@/platform/logger';
+import { getUserBySteamId64 } from '@/features/users/infra/sqliteUsers';
+import { getActiveServerBanForUser } from '@/features/sanctions/infra/sqliteSanctions';
+
+function hasActiveServerBan(steamId64: string): boolean {
+	const user = getUserBySteamId64(steamId64);
+	if (!user?.id) return false;
+	return getActiveServerBanForUser({ userId: user.id }) !== null;
+}
 
 async function readRequestBody(request: NextRequest): Promise<unknown> {
 	const raw = await request.text();
@@ -32,6 +40,9 @@ export async function postGameClaimRoute(
 	try {
 		const member = requireConnectedGameUser(request);
 		if (!member.ok) return member.response;
+		if (hasActiveServerBan(member.steamId64)) {
+			return NextResponse.json({ error: 'server_banned' }, { status: 403 });
+		}
 
 		const shortCode = await readShortCode(context);
 		if (!shortCode) {
@@ -82,6 +93,9 @@ export async function postGameJoinRoute(
 	try {
 		const member = requireConnectedGameUser(request);
 		if (!member.ok) return member.response;
+		if (hasActiveServerBan(member.steamId64)) {
+			return NextResponse.json({ error: 'server_banned' }, { status: 403 });
+		}
 
 		const shortCode = await readShortCode(context);
 		if (!shortCode) {
@@ -115,6 +129,9 @@ export async function postGameSwitchSlotRoute(
 	try {
 		const member = requireConnectedGameUser(request);
 		if (!member.ok) return member.response;
+		if (hasActiveServerBan(member.steamId64)) {
+			return NextResponse.json({ error: 'server_banned' }, { status: 403 });
+		}
 
 		const shortCode = await readShortCode(context);
 		if (!shortCode) {

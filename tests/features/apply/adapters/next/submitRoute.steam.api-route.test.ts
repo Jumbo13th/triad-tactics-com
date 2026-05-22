@@ -64,6 +64,10 @@ function createConfirmedApplicant(
 
 	const confirmed = dbOperations.confirmApplication(Number(inserted.id), ADMIN_STEAM_ID);
 	expect(confirmed.success).toBe(true);
+
+	const user = dbOperations.getUserBySteamId64(input.steamid64);
+	if (!user?.id) throw new Error('User not found after confirmation');
+	dbOperations.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${input.steamid64}` });
 }
 
 const hasSteamEnv = Boolean(

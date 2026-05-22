@@ -287,6 +287,8 @@ function createConfirmedPlayer(
 		throw new Error('Expected confirmed user to exist');
 	}
 
+	dbOperations.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${input.steamId64}` });
+
 	const sessionId = createSteamSession(dbOperations, {
 		steamid64: input.steamId64,
 		redirectPath: '/en/games'

@@ -23,6 +23,7 @@ export const dbOperations = {
 		const db = getDb();
 		try {
 			db.exec(
+				'DELETE FROM sanctions; ' +
 				'DELETE FROM mission_episode_slotting; ' +
 				'DELETE FROM mission_unit_assignments; ' +
 				'DELETE FROM unit_memberships; ' +

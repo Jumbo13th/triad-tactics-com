@@ -8,7 +8,6 @@ const ADMIN_STEAM_ID = '76561198099990001';
 const LEADER_STEAM_ID = '76561198099990002';
 const PLAYER_STEAM_ID = '76561198099990003';
 const PLAYER2_STEAM_ID = '76561198099990004';
-const PLAYER3_STEAM_ID = '76561198099990005';
 
 const UNIT_BODY = {
 	memberNames: 'Player1\nPlayer2\nPlayer3\nPlayer4\nPlayer5\nPlayer6',
@@ -50,6 +49,7 @@ function seedConfirmedPlayer(dbOps: Awaited<ReturnType<typeof loadHarness>>['dbO
 	dbOps.confirmApplication(applicationId, ADMIN_STEAM_ID);
 	const user = dbOps.getUserBySteamId64(steamid64);
 	if (!user?.id) throw new Error('Expected confirmed user');
+	dbOps.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${steamid64}` });
 	const sessionId = createSteamSession(dbOps, { steamid64, redirectPath: '/en/units' });
 	return { userId: user.id, sessionId };
 }

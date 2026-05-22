@@ -6,7 +6,6 @@ import { buildTestApplicationRecord } from '../../../../fixtures/application';
 
 const ADMIN_STEAM_ID = '76561198099990001';
 const PLAYER1_STEAM_ID = '76561198099990002';
-const PLAYER2_STEAM_ID = '76561198099990003';
 const LEADER_STEAM_ID = '76561198099990004';
 
 function missionRouteContext(missionId: number | string) {
@@ -26,6 +25,7 @@ function createConfirmedPlayer(dbOps: DbOperations, steamId64: string, callsign:
 	if (!confirmed.success) throw new Error('confirm application failed');
 	const user = dbOps.getUserBySteamId64(steamId64);
 	if (!user?.id) throw new Error('user not found after confirm');
+	dbOps.setArmaGuidByUserId({ userId: user.id, armaGuid: `test-guid-${steamId64}` });
 	return user.id;
 }
 
@@ -588,7 +588,7 @@ describe('Episode slotting (integration)', () => {
 
 	describe('draft duplication with episodes', () => {
 		it('duplicate_previous copies all episodes with cleared occupants', async () => {
-			const { missionId, badgeId } = insertPublishedMission('dup-1');
+			const { missionId } = insertPublishedMission('dup-1');
 			addEpisode2(missionId);
 
 			// Add occupant to EP1 and EP2
