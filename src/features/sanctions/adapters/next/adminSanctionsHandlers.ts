@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { requireAdmin } from '@/features/admin/adapters/next/adminAuth';
-import { listSanctions } from '../../useCases/listSanctions';
-import { createSanction } from '../../useCases/createSanction';
-import { cancelSanction } from '../../useCases/cancelSanction';
-import { updateSanctionExpiry } from '../../useCases/updateSanctionExpiry';
-import { listSanctionsDeps, createSanctionDeps, cancelSanctionDeps, updateSanctionExpiryDeps } from '../../deps';
-import type { SanctionType } from '../../domain/types';
+import { listSanctions } from '@/features/sanctions/useCases/listSanctions';
+import { createSanction } from '@/features/sanctions/useCases/createSanction';
+import { cancelSanction } from '@/features/sanctions/useCases/cancelSanction';
+import { updateSanctionExpiry } from '@/features/sanctions/useCases/updateSanctionExpiry';
+import { listSanctionsDeps, createSanctionDeps, cancelSanctionDeps, updateSanctionExpiryDeps } from '@/features/sanctions/deps';
+import type { SanctionType } from '@/features/sanctions/domain/types';
+
+const createSanctionSchema = z.object({
+	userId: z.number().int().min(1),
+	type: z.enum(['site_ban', 'server_ban', 'strike']),
+	reason: z.string(),
+	durationMinutes: z.number().nullable().optional()
+});
+
+const cancelSanctionSchema = z.object({
+	reason: z.string().min(1)
+});
+
+const updateExpirySchema = z.object({
+	expiresAt: z.string().nullable()
+});
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -60,20 +76,11 @@ export async function postAdminCreateSanctionRoute(request: NextRequest): Promis
 		if (!admin.ok) return admin.response;
 
 		const body = await request.json();
-		const { userId, type, reason, durationMinutes } = body as {
-			userId: number;
-			type: SanctionType;
-			reason: string;
-			durationMinutes: number | null;
-		};
-
-		if (!userId || !type || typeof reason !== 'string') {
+		const parsed = createSanctionSchema.safeParse(body);
+		if (!parsed.success) {
 			return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
 		}
-
-		if (!['site_ban', 'server_ban', 'strike'].includes(type)) {
-			return NextResponse.json({ error: 'invalid_type' }, { status: 400 });
-		}
+		const { userId, type, reason, durationMinutes } = parsed.data;
 
 		const result = createSanction(createSanctionDeps, {
 			userId,
@@ -109,15 +116,15 @@ export async function postAdminCancelSanctionRoute(
 		}
 
 		const body = await request.json();
-		const { reason } = body as { reason: string };
-		if (typeof reason !== 'string' || !reason.trim()) {
+		const parsed = cancelSanctionSchema.safeParse(body);
+		if (!parsed.success) {
 			return NextResponse.json({ error: 'reason_required' }, { status: 400 });
 		}
 
 		const result = cancelSanction(cancelSanctionDeps, {
 			sanctionId,
 			cancelledBySteamId64: admin.identity.steamid64,
-			cancelledReason: reason.trim()
+			cancelledReason: parsed.data.reason.trim()
 		});
 
 		if (!result.success) {
@@ -146,12 +153,19 @@ export async function postAdminUpdateSanctionExpiryRoute(
 		}
 
 		const body = await request.json();
-		const { expiresAt } = body as { expiresAt: string | null };
-		if (expiresAt !== null && typeof expiresAt !== 'string') {
+		const parsed = updateExpirySchema.safeParse(body);
+		if (!parsed.success) {
 			return NextResponse.json({ error: 'invalid_expires_at' }, { status: 400 });
 		}
-		if (expiresAt !== null && new Date(expiresAt.replace(' ', 'T') + 'Z') <= new Date()) {
-			return NextResponse.json({ error: 'expires_in_past' }, { status: 400 });
+		const { expiresAt } = parsed.data;
+		if (expiresAt !== null) {
+			const parsedExpires = new Date(expiresAt.replace(' ', 'T') + 'Z');
+			if (isNaN(parsedExpires.getTime())) {
+				return NextResponse.json({ error: 'invalid_expires_at' }, { status: 400 });
+			}
+			if (parsedExpires <= new Date()) {
+				return NextResponse.json({ error: 'expires_in_past' }, { status: 400 });
+			}
 		}
 
 		const result = updateSanctionExpiry(updateSanctionExpiryDeps, {

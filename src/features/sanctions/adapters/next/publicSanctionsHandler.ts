@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { errorToLogObject, logger } from '@/platform/logger';
-import { listPublicSanctions } from '../../useCases/listPublicSanctions';
-import { listPublicSanctionsDeps } from '../../deps';
+import { listPublicSanctions } from '@/features/sanctions/useCases/listPublicSanctions';
+import { listPublicSanctionsDeps } from '@/features/sanctions/deps';
 
 const DEFAULT_PAGE_SIZE = 50;
 

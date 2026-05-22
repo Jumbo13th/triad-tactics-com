@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { parsePublicSanctionsResponse, type PublicSanctionsResponse, isActiveSanction, localizeReason } from '../domain/api';
+import { parsePublicSanctionsResponse, type PublicSanctionsResponse, isActiveSanction, localizeReason } from '@/features/sanctions/domain/api';
 import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { TypeBadge } from './SanctionBadges';
-import type { SanctionType } from '../domain/types';
+import type { SanctionType } from '@/features/sanctions/domain/types';
 
 function StatusBadge({ sanction, t }: { sanction: { cancelled_at: string | null; expires_at: string | null }; t: (key: string) => string }) {
 	if (sanction.cancelled_at) {

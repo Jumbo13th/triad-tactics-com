@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { parseUserSanctionsResponse, isActiveSanction, localizeReason } from '../domain/api';
+import { parseUserSanctionsResponse, isActiveSanction, localizeReason } from '@/features/sanctions/domain/api';
 import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { TypeBadge } from './SanctionBadges';
-import type { PublicSanctionEntry } from '../domain/types';
+import type { PublicSanctionEntry } from '@/features/sanctions/domain/types';
 
 export default function UserSanctionsList() {
 	const ts = useTranslations('sanctions');

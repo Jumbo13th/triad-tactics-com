@@ -10,7 +10,7 @@ import {
 	parseUpdateExpiryResponse,
 	isActiveSanction,
 	localizeReason
-} from '../domain/api';
+} from '@/features/sanctions/domain/api';
 import {
 	AdminSurface,
 	AdminToolbar,
@@ -25,11 +25,17 @@ import {
 import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { TypeBadge } from './SanctionBadges';
-import type { SanctionType } from '../domain/types';
+import type { SanctionType } from '@/features/sanctions/domain/types';
 
 function utcToLocalInput(utc: string): string {
 	const d = new Date(utc.endsWith('Z') ? utc : utc.replace(' ', 'T') + 'Z');
 	if (isNaN(d.getTime())) return '';
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function nowLocalInput(): string {
+	const d = new Date();
 	const pad = (n: number) => String(n).padStart(2, '0');
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -504,7 +510,7 @@ export default function AdminSanctionsPage() {
 												<input
 													type="datetime-local"
 													value={expiryDate}
-													min={new Date().toISOString().slice(0, 16)}
+													min={nowLocalInput()}
 													onChange={(e) => { setExpiryDate(e.target.value); setExpiryPermanent(false); setExpiryError(''); }}
 													disabled={expiryPermanent}
 													style={{ colorScheme: 'dark' }}

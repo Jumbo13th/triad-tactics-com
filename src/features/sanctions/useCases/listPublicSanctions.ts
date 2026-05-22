@@ -18,14 +18,12 @@ export function listPublicSanctions(
 		? (input.typeFilter as 'site_ban' | 'server_ban' | 'strike')
 		: null;
 	const statusFilter = input.status === 'active' ? 'active' as const : null;
-	const { sanctions, total } = deps.repo.listPublicSanctions({
-		page: input.page,
-		pageSize: input.pageSize,
-		query: input.query,
-		typeFilter,
-		statusFilter
-	});
+	const repoArgs = { pageSize: input.pageSize, query: input.query, typeFilter, statusFilter } as const;
+	let { sanctions, total } = deps.repo.listPublicSanctions({ ...repoArgs, page: input.page });
 	const totalPages = Math.max(1, Math.ceil(total / input.pageSize));
 	const page = Math.min(Math.max(1, input.page), totalPages);
+	if (page !== input.page) {
+		({ sanctions, total } = deps.repo.listPublicSanctions({ ...repoArgs, page }));
+	}
 	return { page, pageSize: input.pageSize, totalPages, total, sanctions };
 }

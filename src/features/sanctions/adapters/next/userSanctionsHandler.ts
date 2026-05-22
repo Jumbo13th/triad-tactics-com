@@ -3,8 +3,8 @@ import { errorToLogObject, logger } from '@/platform/logger';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
-import { getUserSanctions } from '../../useCases/getUserSanctions';
-import { getUserSanctionsDeps } from '../../deps';
+import { getUserSanctions } from '@/features/sanctions/useCases/getUserSanctions';
+import { getUserSanctionsDeps } from '@/features/sanctions/deps';
 
 export async function getUserSanctionsRoute(request: NextRequest): Promise<NextResponse> {
 	try {

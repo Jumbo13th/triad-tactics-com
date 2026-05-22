@@ -1,4 +1,4 @@
-import type { SanctionType } from '../domain/types';
+import type { SanctionType } from '@/features/sanctions/domain/types';
 
 const TYPE_COLORS: Record<SanctionType, string> = {
 	site_ban: 'bg-red-500/20 text-red-400',

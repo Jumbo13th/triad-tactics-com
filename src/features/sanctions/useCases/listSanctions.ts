@@ -14,14 +14,13 @@ export function listSanctions(
 	deps: ListSanctionsDeps,
 	input: { typeFilter?: SanctionType | null; query?: string; page: number; pageSize: number }
 ): ListSanctionsResult {
-	const { sanctions, total } = deps.repo.listSanctions({
-		page: input.page,
-		pageSize: input.pageSize,
-		query: input.query,
-		typeFilter: input.typeFilter
-	});
+	const repoArgs = { pageSize: input.pageSize, query: input.query, typeFilter: input.typeFilter } as const;
+	let { sanctions, total } = deps.repo.listSanctions({ ...repoArgs, page: input.page });
 	const totalPages = Math.max(1, Math.ceil(total / input.pageSize));
 	const page = Math.min(Math.max(1, input.page), totalPages);
+	if (page !== input.page) {
+		({ sanctions, total } = deps.repo.listSanctions({ ...repoArgs, page }));
+	}
 	return {
 		page,
 		pageSize: input.pageSize,
