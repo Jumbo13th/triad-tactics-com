@@ -8,7 +8,7 @@ import type { AppLocale } from '@/i18n/locales';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { formatViewerDate } from './missionPageUtils';
 import CurrentGameMissionCard from './CurrentGameMissionCard';
-import RotationSection from '@/features/rotation/ui/RotationSection';
+import { RotationSection } from '@/features/rotation/ui/root';
 
 type Props = {
 	current: CurrentGameSummary | null;

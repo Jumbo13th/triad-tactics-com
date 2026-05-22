@@ -1660,6 +1660,7 @@ function UnitAssignmentsPanel({
 	const [availableUnits, setAvailableUnits] = useState<Array<{ id: number; tag: string; name: string; slotsAllocated: number }>>([]);
 	const [loadingUnits, setLoadingUnits] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const saveVersionRef = useRef(0);
 	const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 	const [rotationDialogOpen, setRotationDialogOpen] = useState(false);
 	const [rotationData, setRotationData] = useState<{
@@ -1753,6 +1754,7 @@ function UnitAssignmentsPanel({
 	};
 
 	const saveAssignments = async (next: typeof assignments) => {
+		const version = ++saveVersionRef.current;
 		setAssignments(next);
 		setSaving(true);
 		setFeedback(null);
@@ -1765,6 +1767,7 @@ function UnitAssignmentsPanel({
 					assignments: next.map((a) => ({ unitId: a.unitId, sideId: a.sideId }))
 				})
 			});
+			if (version !== saveVersionRef.current) return;
 			const json: unknown = await res.json();
 			const parsed = parseAdminGameMissionResponse(json);
 			if (parsed && !('error' in parsed)) {
@@ -1774,23 +1777,27 @@ function UnitAssignmentsPanel({
 				setFeedback({ type: 'error', text: tg('adminUnitAssignmentsErrorPrefix', { error: code }) });
 			}
 		} catch {
+			if (version !== saveVersionRef.current) return;
 			setFeedback({ type: 'error', text: tg('adminUnitAssignmentsNetworkError') });
 		} finally {
-			setSaving(false);
+			if (version === saveVersionRef.current) setSaving(false);
 		}
 	};
 
 	const addUnit = (unitId: number) => {
+		if (saving) return;
 		const unit = availableUnits.find((u) => u.id === unitId);
 		if (!unit || assignments.some((a) => a.unitId === unitId)) return;
 		void saveAssignments([...assignments, { unitId: unit.id, unitTag: unit.tag, unitName: unit.name, sideId: slotting.sides[0]?.id ?? '' }]);
 	};
 
 	const removeUnit = (unitId: number) => {
+		if (saving) return;
 		void saveAssignments(assignments.filter((a) => a.unitId !== unitId));
 	};
 
 	const updateSide = (unitId: number, sideId: string) => {
+		if (saving) return;
 		void saveAssignments(assignments.map((a) => (a.unitId === unitId ? { ...a, sideId } : a)));
 	};
 

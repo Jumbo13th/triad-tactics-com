@@ -6,7 +6,7 @@ import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
 import { rotationDeps } from '@/features/rotation/deps';
-import { getRotationUseCase } from '@/features/rotation/useCases/getRotation';
+import { getRotationMap } from '@/features/rotation/useCases/getRotationMap';
 
 export default async function UnitsRoutePage({ params }: { params: Promise<{ locale: string }> }) {
 	const { locale } = await params;
@@ -17,10 +17,7 @@ export default async function UnitsRoutePage({ params }: { params: Promise<{ loc
 	const flowRedirect = getProtectedPageRedirect(locale, status);
 	if (flowRedirect) redirect(flowRedirect);
 
-	const rotation = getRotationUseCase(rotationDeps).json;
-	const rotationMap = new Map<number, { sideName: string; sideColor: string }>();
-	for (const u of rotation.sideA) rotationMap.set(u.unitId, { sideName: rotation.config.sideAName, sideColor: rotation.config.sideAColor });
-	for (const u of rotation.sideB) rotationMap.set(u.unitId, { sideName: rotation.config.sideBName, sideColor: rotation.config.sideBColor });
+	const rotationMap = getRotationMap(rotationDeps);
 
-	return <UnitsListPage rotationMap={Object.fromEntries(rotationMap)} />;
+	return <UnitsListPage rotationMap={rotationMap} />;
 }
