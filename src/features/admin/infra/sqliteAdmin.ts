@@ -62,6 +62,7 @@ function buildUsersFilter(input: { status: 'all' | 'rename_required' | 'confirme
 			LOWER(COALESCE(ui.provider_user_id, '')) LIKE ?
 			OR LOWER(COALESCE(u.discord_id, '')) LIKE ?
 			OR LOWER(COALESCE(u.current_callsign, '')) LIKE ?
+			OR LOWER(COALESCE(u.arma_guid, '')) LIKE ?
 			OR CAST(u.id AS TEXT) LIKE ?
 			OR CAST(COALESCE(u.confirmed_application_id, '') AS TEXT) LIKE ?
 			OR EXISTS (
@@ -71,7 +72,7 @@ function buildUsersFilter(input: { status: 'all' | 'rename_required' | 'confirme
 				WHERE ub.user_id = u.id AND LOWER(bt.label) LIKE ?
 			)
 		)`);
-		params.push(like, like, like, like, like, like);
+		params.push(like, like, like, like, like, like, like);
 	}
 
 	return {
@@ -123,6 +124,7 @@ export function listUsers(status: 'all' | 'rename_required' | 'confirmed'): Admi
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
 			u.current_callsign,
 			u.discord_id as discord_id,
+			u.arma_guid,
 			rrq.required_at as rename_required_at,
 			rrq.reason as rename_required_reason,
 			rrq.required_by_steamid64 as rename_required_by_steamid64,
@@ -161,6 +163,7 @@ export function listUsersPage(input: {
 		SELECT u.id, u.created_at, u.player_confirmed_at, u.confirmed_application_id,
 			u.current_callsign,
 			u.discord_id as discord_id,
+			u.arma_guid,
 			rrq.required_at as rename_required_at,
 			rrq.reason as rename_required_reason,
 			rrq.required_by_steamid64 as rename_required_by_steamid64,

@@ -106,6 +106,21 @@ function isAllowedDuringConfirmationPending(pathname: string): boolean {
 	return false;
 }
 
+function isAllowedDuringArmaIdRequired(pathname: string): boolean {
+	if (isSteamAuthApiPath(pathname)) return true;
+	if (pathname === USER_STATUS_API_PATH) return true;
+	if (pathname === '/api/arma-id') return true;
+	return false;
+}
+
+function isAllowedDuringSiteBan(pathname: string): boolean {
+	if (isSteamAuthApiPath(pathname)) return true;
+	if (pathname === USER_STATUS_API_PATH) return true;
+	if (pathname === '/api/me/sanctions') return true;
+	if (pathname === '/api/sanctions') return true;
+	return false;
+}
+
 export async function enforceSteamGatesForApi(request: NextRequest): Promise<Response | null> {
 	if (isEdgeRuntime()) return null;
 
@@ -133,6 +148,20 @@ export async function enforceSteamGatesForApi(request: NextRequest): Promise<Res
 
 		if (!isConfirmedByAccessLevel(status.accessLevel)) {
 			return isAllowedDuringConfirmationPending(pathname) ? null : jsonError('forbidden', 403);
+		}
+
+		if (status.armaGuidRequired) {
+			return isAllowedDuringArmaIdRequired(pathname) ? null : jsonError('arma_id_required', 409);
+		}
+
+		if (!isAllowedDuringSiteBan(pathname)) {
+			const { getActiveSiteBanForUser } = await import('../features/sanctions/infra/sqliteSanctions');
+			const { getUserBySteamId64 } = await import('../features/users/infra/sqliteUsers');
+			const user = getUserBySteamId64(status.steamid64);
+			if (user?.id) {
+				const ban = getActiveSiteBanForUser({ userId: user.id });
+				if (ban) return jsonError('site_banned', 403);
+			}
 		}
 
 		return null;

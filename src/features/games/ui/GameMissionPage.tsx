@@ -490,6 +490,7 @@ function RegularJoinSection({
 	const regularJoinWhyBody = mission.viewer.canJoinRegular ? t('regularJoinWhyBody') : t('regularJoinWhyBodyHidden');
 
 	const regularJoinUnavailableReason = (() => {
+		if (mission.viewer.serverBanned) return t('serverBannedNotice');
 		if (mission.status === 'archived') return t('regularJoinUnavailableArchived');
 		if (mission.password.missedJoinWindow) return t('regularJoinUnavailableMissedWindow');
 		if (mission.viewer.heldSlotId) return t('regularJoinUnavailableHeldSlot');
@@ -906,6 +907,12 @@ function SlottingSection({
 							<p className="text-xs text-neutral-400">{t('slottingPhaseRegularOpen')}</p>
 						</div>
 					) : null}
+				</div>
+			) : null}
+
+			{mission.viewer.serverBanned ? (
+				<div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-2.5">
+					<p className="text-xs text-red-300">{t('serverBannedNotice')}</p>
 				</div>
 			) : null}
 

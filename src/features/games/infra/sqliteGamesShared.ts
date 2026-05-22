@@ -21,6 +21,7 @@ import type {
 } from '@/features/games/domain/types';
 import { appLocales } from '@/i18n/locales';
 import { getDb } from '@/platform/db/connection';
+import { getActiveServerBanForUser } from '@/features/sanctions/infra/sqliteSanctions';
 import { slottingEventBus } from '@/platform/sse/eventBus';
 
 export type DbConnection = ReturnType<typeof getDb>;
@@ -701,6 +702,7 @@ export function mapMissionDetailForViewer(input: {
 		: undefined;
 
 	const viewerUnitSlotsUsed = viewerUnit ? countUnitSlotsUsed(slotting, viewerUnit.tag) : 0;
+	const viewerServerBanned = getActiveServerBanForUser({ userId: input.viewer.id }) !== null;
 
 	const unitSideByEpisode: Record<number, string> = {};
 	if (viewerUnit) {
@@ -760,15 +762,17 @@ export function mapMissionDetailForViewer(input: {
 			heldSlotAccess: heldSlot?.slot.access ?? null,
 			joinedRegular,
 			canClaimPriority:
-				isPublished && priorityClaimOpen && availablePrioritySlotCount > 0 && !heldSlot && hasPriorityBadge,
+				isPublished && priorityClaimOpen && availablePrioritySlotCount > 0 && !heldSlot && hasPriorityBadge && !viewerServerBanned,
 			canSwitchPriority:
-				isPublished && priorityClaimOpen && heldSlot?.slot.access === 'priority' && availablePrioritySlotCount > 0,
+				isPublished && priorityClaimOpen && heldSlot?.slot.access === 'priority' && availablePrioritySlotCount > 0 && !viewerServerBanned,
 			canJoinRegular:
 				isPublished &&
 				regularJoinOpen &&
 				!joinedRegular &&
-				!heldSlot,
+				!heldSlot &&
+				!viewerServerBanned,
 			canLeaveRegular: isPublished && joinedRegular,
+			serverBanned: viewerServerBanned,
 			unitId: viewerUnit?.unit_id ?? null,
 			unitTag: viewerUnit?.tag ?? null,
 			unitSideId: viewerUnitAssignment?.side_id ?? null,

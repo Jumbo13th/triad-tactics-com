@@ -95,6 +95,7 @@ const adminUserRowSchema = z.object({
 	confirmed_application_id: z.number().nullable().optional(),
 	current_callsign: z.string().nullable().optional(),
 	discord_id: z.string().nullable().optional(),
+	arma_guid: z.string().nullable().optional(),
 	rename_required_at: z.string().nullable().optional(),
 	rename_required_reason: z.string().nullable().optional(),
 	rename_required_by_steamid64: z.string().nullable().optional(),

@@ -303,6 +303,7 @@ export default function AdminUsersPage() {
 								const steamid64 = row.steamid64 ?? null;
 								const callsign = row.current_callsign ?? null;
 								const discordId = row.discord_id ?? null;
+								const armaGuid = row.arma_guid ?? null;
 								const createdAt = formatLocalizedDateTime(row.created_at ?? null, {
 									locale,
 									timeZone,
@@ -391,6 +392,11 @@ export default function AdminUsersPage() {
 											{discordId ? (
 												<AdminField label={ta('discordId')}>
 													<p>{discordId}</p>
+												</AdminField>
+											) : null}
+											{armaGuid ? (
+												<AdminField label={ta('armaId')}>
+													<p>{armaGuid}</p>
 												</AdminField>
 											) : null}
 											{renameRequiredAt ? (

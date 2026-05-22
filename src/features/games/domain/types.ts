@@ -173,6 +173,7 @@ export type GameMissionViewer = {
 	canSwitchPriority: boolean;
 	canJoinRegular: boolean;
 	canLeaveRegular: boolean;
+	serverBanned: boolean;
 	unitId: number | null;
 	unitTag: string | null;
 	unitSideId: string | null;

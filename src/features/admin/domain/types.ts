@@ -30,6 +30,7 @@ export type AdminUserRow = {
 	rename_required_by_steamid64?: string | null;
 	has_pending_rename_request: boolean;
 	steamid64?: string | null;
+	arma_guid?: string | null;
 	badges: AdminUserBadge[];
 	unit_id?: number | null;
 	unit_name?: string | null;
