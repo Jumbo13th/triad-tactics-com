@@ -11,6 +11,8 @@ const requiredInProduction = [
   'DISCORD_TOKEN_ENCRYPTION_KEY',
   // Protects cron-triggered outbox endpoint
   'OUTBOX_CRON_SECRET',
+  // Protects game server player lookup API
+  'GAMESERVER_API_SECRET',
   // Discord application client ID
   'DISCORD_CLIENT_ID',
   // Discord application client secret
