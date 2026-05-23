@@ -185,7 +185,7 @@ export function listUsersPage(input: {
 			SELECT um.user_id, un.id, un.name, un.tag
 			FROM unit_memberships um
 			JOIN units un ON un.id = um.unit_id
-			WHERE um.role = 'member'
+			WHERE um.role IN ('member', 'deputy', 'leader')
 		) mu ON mu.user_id = u.id
 		${whereClause}
 		ORDER BY u.created_at DESC

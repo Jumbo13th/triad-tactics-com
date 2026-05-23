@@ -399,7 +399,7 @@ describe('Game mission endpoint (integration)', () => {
 		const priorityJson = await priorityRes.json();
 		expect(priorityJson.mission.password).toEqual({ stage: 'final', value: 'live-pass', waitingForViewerAccess: false, missedJoinWindow: false });
 		expect(priorityJson.mission.priorityClaimOpen).toBe(false);
-		expect(priorityJson.mission.regularJoinOpen).toBe(false);
+		expect(priorityJson.mission.regularJoinOpen).toBe(true);
 		expect(priorityJson.mission.viewer).toEqual(
 			expect.objectContaining({
 				heldSlotId: 'slot-priority',
@@ -584,6 +584,62 @@ describe('Game mission endpoint (integration)', () => {
 
 		expect(res.status).toBe(403);
 		expect(await res.json()).toEqual({ error: 'forbidden' });
+	});
+
+	it('closes regular join for players after regular gameplay is released', async () => {
+		const { dbOperations, GET, NextRequest } = await loadGameMissionHarness();
+		const viewer = createConfirmedPlayer(dbOperations, {
+			steamId64: '76561198000000110',
+			callsign: 'RegularViewer'
+		});
+
+		insertPublishedMission({
+			shortCode: 'OP-REGULAR-CLOSED',
+			regularJoinEnabled: true,
+			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
+			regularGameplayReleasedAt: '2026-03-20T19:20:00.000Z'
+		});
+
+		const res = await GET(
+			new NextRequest('http://localhost/api/games/OP-REGULAR-CLOSED', {
+				headers: { cookie: `tt_steam_session=${viewer.sessionId}` }
+			}),
+			gameRouteContext('OP-REGULAR-CLOSED')
+		);
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json.success).toBe(true);
+		expect(json.mission.regularJoinOpen).toBe(false);
+		expect(json.mission.viewer.canJoinRegular).toBe(false);
+	});
+
+	it('keeps regular join open for players when only priority gameplay is released', async () => {
+		const { dbOperations, GET, NextRequest } = await loadGameMissionHarness();
+		const viewer = createConfirmedPlayer(dbOperations, {
+			steamId64: '76561198000000111',
+			callsign: 'StillOpenViewer'
+		});
+
+		insertPublishedMission({
+			shortCode: 'OP-PRIORITY-ONLY',
+			regularJoinEnabled: true,
+			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
+			regularGameplayReleasedAt: null
+		});
+
+		const res = await GET(
+			new NextRequest('http://localhost/api/games/OP-PRIORITY-ONLY', {
+				headers: { cookie: `tt_steam_session=${viewer.sessionId}` }
+			}),
+			gameRouteContext('OP-PRIORITY-ONLY')
+		);
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json.success).toBe(true);
+		expect(json.mission.regularJoinOpen).toBe(true);
+		expect(json.mission.viewer.canJoinRegular).toBe(true);
 	});
 
 	it('returns archived mission detail with final result and without any password access', async () => {

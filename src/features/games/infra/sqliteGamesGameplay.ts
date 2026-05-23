@@ -43,7 +43,7 @@ export function releaseUnitGameplay(input: {
 	try {
 		const run = db.transaction((): ReleaseUnitGameplayRepoResult => {
 			const row = selectMission.get(input.missionId) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'not_found' };
 			}
 
@@ -110,7 +110,7 @@ export function hideUnitGameplay(input: {
 	try {
 		const run = db.transaction((): HideUnitGameplayRepoResult => {
 			const row = selectMission.get(input.missionId) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'not_found' };
 			}
 
@@ -181,7 +181,7 @@ export function releasePriorityGameplay(input: {
 	try {
 		const run = db.transaction((): ReleasePriorityGameplayRepoResult => {
 			const row = selectMission.get(input.missionId) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'not_found' };
 			}
 
@@ -255,7 +255,7 @@ export function hidePriorityGameplay(input: {
 	try {
 		const run = db.transaction((): HidePriorityGameplayRepoResult => {
 			const row = selectMission.get(input.missionId) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'not_found' };
 			}
 
@@ -328,6 +328,7 @@ export function releaseRegularGameplay(input: {
 	const releaseMission = db.prepare(`
 		UPDATE missions
 		SET regular_gameplay_released_at = CURRENT_TIMESTAMP,
+			regular_join_enabled = 0,
 			unit_slotting_manual_state = 'closed',
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?
@@ -349,11 +350,11 @@ export function releaseRegularGameplay(input: {
 				return { success: false, error: 'not_published' };
 			}
 
-			if (!row.priority_gameplay_released_at) {
+			if (row.game_mode !== 'simple' && !row.priority_gameplay_released_at) {
 				return { success: false, error: 'priority_release_required' };
 			}
 
-			if (!isNonEmptyText(row.final_password)) {
+			if (row.game_mode !== 'simple' && !isNonEmptyText(row.final_password)) {
 				return { success: false, error: 'final_password_required' };
 			}
 

@@ -72,12 +72,12 @@ function setupMissionWithUnits(dbOps: DbOperations) {
 	const memberId = createConfirmedPlayer(dbOps, MEMBER_STEAM_ID, 'MemberGuy');
 
 	const unitResult = db.prepare(`
-		INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-		VALUES ('Test Team', 'TT', 'verified', ?, 2, ?)
-	`).run(leaderId, leaderId);
+		INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+		VALUES ('Test Team', 'TT', 'verified', 2, ?)
+	`).run(leaderId);
 	const unitId = Number(unitResult.lastInsertRowid);
 
-	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, leaderId);
+	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, leaderId);
 	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, memberId);
 	db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, assigned_by_steamid64) VALUES (?, ?, 'side-us', ?)").run(missionId, unitId, ADMIN_STEAM_ID);
 	db.prepare("UPDATE missions SET unit_slotting_manual_state = 'open' WHERE id = ?").run(missionId);

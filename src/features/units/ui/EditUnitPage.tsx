@@ -12,7 +12,6 @@ type Unit = {
 	tag: string;
 	description: string;
 	status: string;
-	leaderUserId: number | null;
 	leaderCallsign: string | null;
 	memberCount: number;
 	avatarMime: string | null;
@@ -156,7 +155,7 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 	if (!unit) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.not_found')}</p>;
 	if (!viewer.isLeader && !viewer.isDeputy) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.forbidden')}</p>;
 
-	const membersList = members.filter(m => m.role === 'member' || m.role === 'deputy');
+	const membersList = members.filter(m => m.role === 'member' || m.role === 'deputy' || m.role === 'leader');
 	const applicantsList = members.filter(m => m.role === 'applicant');
 
 	const inputClass =
@@ -244,22 +243,22 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 				</p>
 				{actionError && <p className="mt-2 text-sm text-red-400">{actionError}</p>}
 				<div className="mt-4 grid gap-3">
-					{[...membersList].sort((a, b) => (unit.leaderUserId === b.userId ? 1 : 0) - (unit.leaderUserId === a.userId ? 1 : 0)).map(m => (
+					{[...membersList].sort((a, b) => (b.role === 'leader' ? 1 : 0) - (a.role === 'leader' ? 1 : 0)).map(m => (
 						<div key={m.id} className="flex items-center justify-between rounded-2xl border border-neutral-800 bg-white/[0.03] px-4 py-3">
 							<div className="flex items-center gap-3">
 								<span className="text-sm font-medium text-neutral-200">{m.callsign ?? '—'}</span>
-								{unit.leaderUserId === m.userId && (
+								{m.role === 'leader' && (
 									<span className="inline-flex items-center rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-2.5 py-0.5 text-xs font-semibold text-[color:var(--accent)]">
 										{t('commander')}
 									</span>
 								)}
-								{m.role === 'deputy' && unit.leaderUserId !== m.userId && (
+								{m.role === 'deputy' && (
 									<span className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
 										{t('deputy')}
 									</span>
 								)}
 							</div>
-							{m.userId !== unit.leaderUserId && (viewer.isLeader || (viewer.isDeputy && m.role !== 'deputy')) && (
+							{m.role !== 'leader' && (viewer.isLeader || (viewer.isDeputy && m.role !== 'deputy')) && (
 								<div className="flex gap-2">
 									{viewer.isLeader && (
 										<>

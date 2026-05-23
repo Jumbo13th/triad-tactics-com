@@ -880,5 +880,113 @@ export const migrations: Migration[] = [
 			CREATE INDEX IF NOT EXISTS idx_unit_memberships_user ON unit_memberships(user_id);
 			CREATE INDEX IF NOT EXISTS idx_unit_memberships_role ON unit_memberships(role);
 		`
+	},
+	{
+		id: 24,
+		name: 'mission_game_mode',
+		up: `
+			ALTER TABLE missions ADD COLUMN game_mode TEXT NOT NULL DEFAULT 'standard'
+				CHECK(game_mode IN ('standard', 'simple'));
+		`
+	},
+	{
+		id: 25,
+		name: 'unit_leader_role',
+		up: `
+			-- Save membership data + leader mapping before any table drops
+			CREATE TEMP TABLE _memberships_backup AS
+			SELECT um.id, um.unit_id, um.user_id,
+				CASE
+					WHEN um.user_id = u.leader_user_id THEN 'leader'
+					ELSE um.role
+				END AS role,
+				um.message, um.created_at, um.updated_at
+			FROM unit_memberships um
+			JOIN units u ON u.id = um.unit_id;
+
+			-- Also capture leaders who had no membership row
+			CREATE TEMP TABLE _missing_leaders AS
+			SELECT u.id AS unit_id, u.leader_user_id AS user_id
+			FROM units u
+			WHERE u.leader_user_id IS NOT NULL
+				AND NOT EXISTS (
+					SELECT 1 FROM unit_memberships
+					WHERE unit_id = u.id AND user_id = u.leader_user_id
+				);
+
+			-- Step 1: Rebuild units table (removes leader_user_id).
+			-- This cascades and wipes unit_memberships — that's OK, we have the backup.
+			CREATE TABLE units_new (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL,
+				tag TEXT NOT NULL,
+				description TEXT NOT NULL DEFAULT '',
+				status TEXT NOT NULL DEFAULT 'unverified' CHECK(status IN ('unverified', 'verified')),
+				avatar_data TEXT,
+				avatar_mime TEXT,
+				slots_allocated INTEGER NOT NULL DEFAULT 0,
+				member_names TEXT NOT NULL DEFAULT '',
+				history TEXT NOT NULL DEFAULT '',
+				other_projects TEXT NOT NULL DEFAULT '',
+				join_message TEXT NOT NULL DEFAULT '',
+				created_by_user_id INTEGER NOT NULL,
+				verified_at DATETIME,
+				verified_by_steamid64 TEXT,
+				unverified_at DATETIME,
+				unverified_by_steamid64 TEXT,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+			);
+
+			INSERT INTO units_new (id, name, tag, description, status, avatar_data, avatar_mime, slots_allocated,
+				member_names, history, other_projects, join_message, created_by_user_id,
+				verified_at, verified_by_steamid64, unverified_at, unverified_by_steamid64, created_at, updated_at)
+			SELECT id, name, tag, description, status, avatar_data, avatar_mime, slots_allocated,
+				member_names, history, other_projects, join_message, created_by_user_id,
+				verified_at, verified_by_steamid64, unverified_at, unverified_by_steamid64, created_at, updated_at
+			FROM units;
+
+			DROP TABLE units;
+			ALTER TABLE units_new RENAME TO units;
+
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_units_tag_unique ON units(LOWER(tag));
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_units_name_unique ON units(LOWER(name));
+			CREATE INDEX IF NOT EXISTS idx_units_status ON units(status);
+
+			-- Step 2: Rebuild unit_memberships with 'leader' role support.
+			DROP TABLE unit_memberships;
+
+			CREATE TABLE unit_memberships (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				unit_id INTEGER NOT NULL,
+				user_id INTEGER NOT NULL,
+				role TEXT NOT NULL CHECK(role IN ('member', 'applicant', 'deputy', 'leader')),
+				message TEXT NOT NULL DEFAULT '',
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE,
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+				UNIQUE(unit_id, user_id)
+			);
+
+			INSERT INTO unit_memberships (id, unit_id, user_id, role, message, created_at, updated_at)
+			SELECT id, unit_id, user_id, role, message, created_at, updated_at
+			FROM _memberships_backup;
+
+			-- Insert missing leader memberships
+			INSERT OR IGNORE INTO unit_memberships (unit_id, user_id, role)
+			SELECT unit_id, user_id, 'leader'
+			FROM _missing_leaders;
+
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_unit ON unit_memberships(unit_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_user ON unit_memberships(user_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_role ON unit_memberships(role);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_unit_memberships_leader_unique
+				ON unit_memberships(unit_id) WHERE role = 'leader';
+
+			DROP TABLE _memberships_backup;
+			DROP TABLE _missing_leaders;
+		`
 	}
 ];

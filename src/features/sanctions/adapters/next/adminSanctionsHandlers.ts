@@ -131,27 +131,25 @@ export async function postAdminCreateSanctionRoute(request: NextRequest): Promis
 			expiresAt,
 			autoEscalation: result.autoEscalation ?? false,
 			adminCallsign
-		}, DISCORD_BOT_TOKEN).catch(error => {
+		}, DISCORD_BOT_TOKEN).then(() => {
+			if (result.autoEscalation) {
+				const autoBanExpires = new Date();
+				autoBanExpires.setDate(autoBanExpires.getDate() + 7);
+				const autoBanExpiresAt = autoBanExpires.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
+
+				return notifySanctionInDiscord({
+					kind: 'created',
+					callsign,
+					type: 'server_ban',
+					reason: 'Автоматически: 3 активных предупреждения',
+					expiresAt: autoBanExpiresAt,
+					autoEscalation: false,
+					adminCallsign
+				}, DISCORD_BOT_TOKEN);
+			}
+		}).catch(error => {
 			logger.error({ ...errorToLogObject(error) }, 'discord_sanction_notification_failed');
 		});
-
-		if (result.autoEscalation) {
-			const autoBanExpires = new Date();
-			autoBanExpires.setDate(autoBanExpires.getDate() + 7);
-			const autoBanExpiresAt = autoBanExpires.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
-
-			notifySanctionInDiscord({
-				kind: 'created',
-				callsign,
-				type: 'server_ban',
-				reason: 'Автоматически: 3 активных предупреждения',
-				expiresAt: autoBanExpiresAt,
-				autoEscalation: false,
-				adminCallsign
-			}, DISCORD_BOT_TOKEN).catch(error => {
-				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_autoban_notification_failed');
-			});
-		}
 
 		return NextResponse.json({ success: true, autoEscalation: result.autoEscalation ?? false });
 	} catch (error: unknown) {

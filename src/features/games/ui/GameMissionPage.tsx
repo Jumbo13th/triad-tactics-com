@@ -86,7 +86,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 				t={t}
 			/>
 
-			{mission.status === 'published' ? <MissionAccessNoticeSection t={t} /> : null}
+			{mission.status === 'published' && mission.gameMode !== 'simple' ? <MissionAccessNoticeSection t={t} /> : null}
 
 			<MissionUpdatesSection mission={mission} t={t} />
 
@@ -173,7 +173,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 				t={t}
 			/>
 
-			<SlottingSection
+			{mission.gameMode !== 'simple' && <SlottingSection
 				mission={mission}
 				busy={busy}
 				pendingActionId={pendingActionId}
@@ -181,7 +181,7 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 				confirmAction={setPendingConfirm}
 				guideShow={guide.show}
 				t={t}
-			/>
+			/>}
 		</section>
 	);
 }

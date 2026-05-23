@@ -23,7 +23,7 @@ export function manageMember(deps: UnitDeps, input: {
 	if (!actor) return { ok: false, status: 403, json: { error: 'forbidden' } };
 
 	const actorMembership = deps.memberships.getMembershipByUserAndUnit(actor.id, input.unitId);
-	if (!canManageMembers(unit, actor.id, input.isAdmin, actorMembership)) {
+	if (!canManageMembers(input.isAdmin, actorMembership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 
@@ -55,23 +55,21 @@ export function manageMember(deps: UnitDeps, input: {
 			return { ok: true, status: 200, json: { success: true } };
 		}
 		case 'remove': {
-			if (!input.isAdmin && (unit.leaderUserId === userId || (actorIsDeputy && deps.memberships.getMembershipByUserAndUnit(userId, input.unitId)?.role === 'deputy'))) {
+			const targetMembershipForRemove = deps.memberships.getMembershipByUserAndUnit(userId, input.unitId);
+			if (!input.isAdmin && (targetMembershipForRemove?.role === 'leader' || (actorIsDeputy && targetMembershipForRemove?.role === 'deputy'))) {
 				return { ok: false, status: 403, json: { error: 'forbidden' } };
 			}
 			const removedCallsign = deps.users.getCallsign(userId);
 			const result = deps.memberships.removeMembership(input.unitId, userId);
 			if (!result.success) return { ok: false, status: 404, json: { error: 'member_not_found' } };
 			deps.events.logUnitEvent({ unitId: input.unitId, kind: 'member_removed', targetCallsign: removedCallsign, actorCallsign });
-			if (unit.leaderUserId === userId && input.isAdmin) {
-				deps.repo.clearUnitLeader(input.unitId);
-			}
 			return { ok: true, status: 200, json: { success: true } };
 		}
 		case 'set_role': {
 			if (!role) return { ok: false, status: 400, json: { error: 'validation_error', details: { role: 'required for set_role action' } } };
 			if (actorIsDeputy && !input.isAdmin) {
 				const targetMembership = deps.memberships.getMembershipByUserAndUnit(userId, input.unitId);
-				if (unit.leaderUserId === userId || targetMembership?.role === 'deputy' || role === 'deputy') {
+				if (targetMembership?.role === 'leader' || targetMembership?.role === 'deputy' || role === 'deputy') {
 					return { ok: false, status: 403, json: { error: 'forbidden' } };
 				}
 			}

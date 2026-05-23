@@ -6,6 +6,7 @@ import type {
 	GameAuditEvent,
 	GameMissionDetail,
 	GameDraftCreateMode,
+	GameMode,
 	GameSlottingDestructiveChange,
 	GamePublishValidationError
 } from './domain/types';
@@ -234,7 +235,7 @@ export type GamesAdminOverviewRepo = {
 };
 
 export type GamesDraftRepo = {
-	createDraft: (input: { mode: GameDraftCreateMode; createdBySteamId64: string }) => CreateGameDraftRepoResult;
+	createDraft: (input: { mode: GameDraftCreateMode; gameMode?: GameMode; createdBySteamId64: string }) => CreateGameDraftRepoResult;
 	deleteCurrentDraft: () => DeleteCurrentDraftRepoResult;
 	getMissionById: (input: { missionId: number }) => GetAdminGameMissionRepoResult;
 	updateSettings: (input: UpdateGameSettingsRequest & { missionId: number; updatedBySteamId64: string }) => UpdateGameSettingsRepoResult;

@@ -8,7 +8,6 @@ interface UnitRow {
 	description: string;
 	status: string;
 	avatar_mime: string | null;
-	leader_user_id: number | null;
 	leader_callsign: string | null;
 	slots_allocated: number;
 	member_names: string;
@@ -34,7 +33,6 @@ function mapUnitRow(row: UnitRow): Unit {
 		description: row.description,
 		status: row.status as UnitStatus,
 		avatarMime: row.avatar_mime,
-		leaderUserId: row.leader_user_id,
 		leaderCallsign: row.leader_callsign,
 		slotsAllocated: row.slots_allocated,
 		memberNames: row.member_names,
@@ -80,15 +78,14 @@ function mapMembershipRow(row: MembershipRow): UnitMembership {
 const UNIT_SELECT = `
 	SELECT
 		u.id, u.name, u.tag, u.description, u.status,
-		u.avatar_mime, u.leader_user_id, u.slots_allocated,
+		u.avatar_mime, u.slots_allocated,
 		u.member_names, u.history, u.other_projects, u.join_message,
 		u.created_by_user_id, u.verified_at, u.verified_by_steamid64,
 		u.unverified_at, u.unverified_by_steamid64, u.created_at, u.updated_at,
-		lu.current_callsign AS leader_callsign,
-		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy')) AS member_count,
+		(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' LIMIT 1) AS leader_callsign,
+		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy', 'leader')) AS member_count,
 		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role = 'applicant') AS applicant_count
 	FROM units u
-	LEFT JOIN users lu ON lu.id = u.leader_user_id
 `;
 
 const MEMBERSHIP_SELECT = `
@@ -114,15 +111,15 @@ export function createUnit(input: {
 	try {
 		const result = db.transaction(() => {
 			const insert = db.prepare(`
-				INSERT INTO units (name, tag, description, member_names, history, other_projects, status, leader_user_id, created_by_user_id)
-				VALUES (?, ?, ?, ?, ?, ?, 'unverified', ?, ?)
-			`).run(input.name, input.tag, input.description, input.memberNames, input.history, input.otherProjects, input.creatorUserId, input.creatorUserId);
+				INSERT INTO units (name, tag, description, member_names, history, other_projects, status, created_by_user_id)
+				VALUES (?, ?, ?, ?, ?, ?, 'unverified', ?)
+			`).run(input.name, input.tag, input.description, input.memberNames, input.history, input.otherProjects, input.creatorUserId);
 
 			const unitId = Number(insert.lastInsertRowid);
 
 			db.prepare(`
 				INSERT INTO unit_memberships (unit_id, user_id, role)
-				VALUES (?, ?, 'member')
+				VALUES (?, ?, 'leader')
 			`).run(unitId, input.creatorUserId);
 
 			return unitId;
@@ -173,7 +170,7 @@ export function listUnits(input: {
 	const needle = input.query?.trim().toLowerCase();
 	if (needle) {
 		const like = `%${needle}%`;
-		clauses.push(`(LOWER(u.name) LIKE ? OR LOWER(u.tag) LIKE ? OR LOWER(COALESCE(lu.current_callsign, '')) LIKE ?)`);
+		clauses.push(`(LOWER(u.name) LIKE ? OR LOWER(u.tag) LIKE ? OR EXISTS (SELECT 1 FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' AND LOWER(usr.current_callsign) LIKE ?))`);
 		params.push(like, like, like);
 	}
 
@@ -186,10 +183,9 @@ export function listUnits(input: {
 		SELECT
 			u.id, u.name, u.tag, u.description, u.status,
 			u.avatar_mime, u.slots_allocated, u.updated_at,
-			lu.current_callsign AS leader_callsign,
-			(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy')) AS member_count
+			(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' LIMIT 1) AS leader_callsign,
+			(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy', 'leader')) AS member_count
 		FROM units u
-		LEFT JOIN users lu ON lu.id = u.leader_user_id
 		${where}
 		ORDER BY (CASE WHEN u.slots_allocated > 0 THEN 0 ELSE 1 END) ASC, u.created_at ASC
 		LIMIT ? OFFSET ?
@@ -239,7 +235,7 @@ export function countUnits(input: { status?: UnitStatus; query?: string; hasSlot
 	const needle = input.query?.trim().toLowerCase();
 	if (needle) {
 		const like = `%${needle}%`;
-		clauses.push(`(LOWER(u.name) LIKE ? OR LOWER(u.tag) LIKE ? OR LOWER(COALESCE(lu.current_callsign, '')) LIKE ?)`);
+		clauses.push(`(LOWER(u.name) LIKE ? OR LOWER(u.tag) LIKE ? OR EXISTS (SELECT 1 FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' AND LOWER(usr.current_callsign) LIKE ?))`);
 		params.push(like, like, like);
 	}
 
@@ -247,7 +243,6 @@ export function countUnits(input: { status?: UnitStatus; query?: string; hasSlot
 	const row = db.prepare(`
 		SELECT COUNT(*) AS cnt
 		FROM units u
-		LEFT JOIN users lu ON lu.id = u.leader_user_id
 		${where}
 	`).get(...params) as { cnt: number };
 	return row.cnt;
@@ -367,16 +362,27 @@ export function setUnitLeader(
 ): { success: true } | { success: false; error: 'not_found' | 'not_member' | 'database_error' } {
 	const db = getDb();
 	try {
-		const membership = db.prepare(
-			`SELECT id FROM unit_memberships WHERE unit_id = ? AND user_id = ? AND role IN ('member', 'deputy')`
-		).get(unitId, userId);
-		if (!membership) return { success: false, error: 'not_member' };
+		return db.transaction(() => {
+			const membership = db.prepare(
+				`SELECT id FROM unit_memberships WHERE unit_id = ? AND user_id = ? AND role IN ('member', 'deputy')`
+			).get(unitId, userId);
+			if (!membership) return { success: false as const, error: 'not_member' as const };
 
-		const result = db.prepare(`
-			UPDATE units SET leader_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-		`).run(userId, unitId);
-		if (result.changes === 0) return { success: false, error: 'not_found' };
-		return { success: true };
+			const unitExists = db.prepare('SELECT id FROM units WHERE id = ?').get(unitId);
+			if (!unitExists) return { success: false as const, error: 'not_found' as const };
+
+			db.prepare(
+				`UPDATE unit_memberships SET role = 'member', updated_at = CURRENT_TIMESTAMP WHERE unit_id = ? AND role = 'leader'`
+			).run(unitId);
+
+			db.prepare(
+				`UPDATE unit_memberships SET role = 'leader', updated_at = CURRENT_TIMESTAMP WHERE unit_id = ? AND user_id = ?`
+			).run(unitId, userId);
+
+			db.prepare('UPDATE units SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(unitId);
+
+			return { success: true as const };
+		})();
 	} catch {
 		return { success: false, error: 'database_error' };
 	}
@@ -387,9 +393,9 @@ export function clearUnitLeader(
 ): { success: true } | { success: false; error: 'not_found' | 'database_error' } {
 	const db = getDb();
 	try {
-		const result = db.prepare(`
-			UPDATE units SET leader_user_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-		`).run(unitId);
+		const result = db.prepare(
+			`UPDATE unit_memberships SET role = 'member', updated_at = CURRENT_TIMESTAMP WHERE unit_id = ? AND role = 'leader'`
+		).run(unitId);
 		if (result.changes === 0) return { success: false, error: 'not_found' };
 		return { success: true };
 	} catch {
@@ -465,7 +471,7 @@ export function getActiveMemberUnit(userId: number): { id: number; name: string;
 		SELECT u.id, u.name, u.tag
 		FROM unit_memberships um
 		JOIN units u ON u.id = um.unit_id
-		WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader')
 	`).get(userId) as { id: number; name: string; tag: string } | undefined;
 	return row ?? null;
 }

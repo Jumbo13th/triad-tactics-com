@@ -59,10 +59,11 @@ function getConfig(db: ReturnType<typeof getDb>): RotationConfig {
 
 function getUnitAssignments(db: ReturnType<typeof getDb>): RotationUnitEntry[] {
 	const rows = db.prepare(`
-		SELECT rua.unit_id, u.tag, u.name, u.slots_allocated, lu.current_callsign AS leader_callsign, rua.side, rua.position
+		SELECT rua.unit_id, u.tag, u.name, u.slots_allocated,
+			(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' LIMIT 1) AS leader_callsign,
+			rua.side, rua.position
 		FROM rotation_unit_assignments rua
 		JOIN units u ON u.id = rua.unit_id
-		LEFT JOIN users lu ON lu.id = u.leader_user_id
 		ORDER BY rua.side, rua.position
 	`).all() as UnitAssignmentRow[];
 	return rows.map((r) => ({
@@ -84,17 +85,15 @@ function getCommanderSchedule(db: ReturnType<typeof getDb>): RotationCommanderPa
 			rcs.side_a_unit_id,
 			ua.tag AS side_a_tag,
 			ua.name AS side_a_name,
-			lua.current_callsign AS side_a_leader_callsign,
+			(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = ua.id AND lm.role = 'leader' LIMIT 1) AS side_a_leader_callsign,
 			rcs.side_b_unit_id,
 			ub.tag AS side_b_tag,
 			ub.name AS side_b_name,
-			lub.current_callsign AS side_b_leader_callsign,
+			(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = ub.id AND lm.role = 'leader' LIMIT 1) AS side_b_leader_callsign,
 			rcs.scheduled_date
 		FROM rotation_commander_schedule rcs
 		JOIN units ua ON ua.id = rcs.side_a_unit_id
 		JOIN units ub ON ub.id = rcs.side_b_unit_id
-		LEFT JOIN users lua ON lua.id = ua.leader_user_id
-		LEFT JOIN users lub ON lub.id = ub.leader_user_id
 		ORDER BY rcs.position
 	`).all() as CommanderPairRow[];
 	return rows.map((r) => ({
@@ -114,9 +113,9 @@ function getCommanderSchedule(db: ReturnType<typeof getDb>): RotationCommanderPa
 
 function getAvailableUnits(db: ReturnType<typeof getDb>): AvailableUnit[] {
 	const rows = db.prepare(`
-		SELECT u.id, u.tag, u.name, u.slots_allocated, lu.current_callsign AS leader_callsign
+		SELECT u.id, u.tag, u.name, u.slots_allocated,
+			(SELECT usr.current_callsign FROM unit_memberships lm JOIN users usr ON usr.id = lm.user_id WHERE lm.unit_id = u.id AND lm.role = 'leader' LIMIT 1) AS leader_callsign
 		FROM units u
-		LEFT JOIN users lu ON lu.id = u.leader_user_id
 		WHERE u.status = 'verified' AND u.slots_allocated >= 1
 			AND u.id NOT IN (SELECT unit_id FROM rotation_unit_assignments)
 		ORDER BY u.tag

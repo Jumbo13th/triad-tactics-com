@@ -460,7 +460,7 @@ export default function AdminSanctionsPage() {
 														variant="secondary"
 														onClick={() => { setCancelId(s.id); setExpiryId(null); }}
 													>
-														{ts('cancelAction')}
+														{ts('cancelButton')}
 													</AdminButton>
 												) : null}
 												{expiryId !== s.id ? (

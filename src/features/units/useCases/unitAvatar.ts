@@ -22,7 +22,7 @@ export function uploadAvatar(deps: UnitDeps, input: {
 	if (!user) return { ok: false, status: 403, json: { error: 'forbidden' } };
 
 	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
-	if (!canEditUnit(unit, user.id, input.isAdmin, membership)) {
+	if (!canEditUnit(input.isAdmin, membership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 
@@ -56,7 +56,7 @@ export function deleteAvatar(deps: UnitDeps, input: {
 	if (!user) return { ok: false, status: 403, json: { error: 'forbidden' } };
 
 	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
-	if (!canEditUnit(unit, user.id, input.isAdmin, membership)) {
+	if (!canEditUnit(input.isAdmin, membership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 

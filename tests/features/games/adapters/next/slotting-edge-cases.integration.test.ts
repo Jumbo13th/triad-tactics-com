@@ -97,21 +97,21 @@ function setupTwoUnitMission(dbOps: DbOperations) {
 
 	// Unit A: tag=ALFA, 3 slots
 	const unitAResult = db.prepare(`
-		INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-		VALUES ('Team Alpha', 'ALFA', 'verified', ?, 3, ?)
-	`).run(leaderAId, leaderAId);
+		INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+		VALUES ('Team Alpha', 'ALFA', 'verified', 3, ?)
+	`).run(leaderAId);
 	const unitAId = Number(unitAResult.lastInsertRowid);
-	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitAId, leaderAId);
+	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitAId, leaderAId);
 	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitAId, memberId);
 	db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, assigned_by_steamid64) VALUES (?, ?, 'side-us', ?)").run(missionId, unitAId, ADMIN_STEAM_ID);
 
 	// Unit B: tag=BRVO, 2 slots
 	const unitBResult = db.prepare(`
-		INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-		VALUES ('Team Bravo', 'BRVO', 'verified', ?, 2, ?)
-	`).run(leaderBId, leaderBId);
+		INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+		VALUES ('Team Bravo', 'BRVO', 'verified', 2, ?)
+	`).run(leaderBId);
 	const unitBId = Number(unitBResult.lastInsertRowid);
-	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitBId, leaderBId);
+	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitBId, leaderBId);
 	db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, assigned_by_steamid64) VALUES (?, ?, 'side-ru', ?)").run(missionId, unitBId, ADMIN_STEAM_ID);
 
 	return { missionId, unitAId, unitBId, leaderAId, leaderBId, memberId };
@@ -519,10 +519,10 @@ describe('Slotting edge cases (integration)', () => {
 
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_A_STEAM_ID, 'OrphanLeader');
 			const unitResult = db.prepare(`
-				INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-				VALUES ('Orphan', 'ORPH', 'verified', ?, 3, ?)
-			`).run(leaderId, leaderId);
-			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(Number(unitResult.lastInsertRowid), leaderId);
+				INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+				VALUES ('Orphan', 'ORPH', 'verified', 3, ?)
+			`).run(leaderId);
+			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(Number(unitResult.lastInsertRowid), leaderId);
 
 			const sid = createSteamSession(dbOps, { steamid64: LEADER_A_STEAM_ID, redirectPath: '/' });
 			const res = await POST(
@@ -580,9 +580,9 @@ describe('Slotting edge cases (integration)', () => {
 
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_A_STEAM_ID, 'PendingLeader');
 			const unitResult = db.prepare(`
-				INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-				VALUES ('Pending Team', 'PEND', 'unverified', ?, 3, ?)
-			`).run(leaderId, leaderId);
+				INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+				VALUES ('Pending Team', 'PEND', 'unverified', 3, ?)
+			`).run(leaderId);
 			const unitId = Number(unitResult.lastInsertRowid);
 
 			const sid = createSteamSession(dbOps, { steamid64: ADMIN_STEAM_ID, redirectPath: '/en/admin/games' });
@@ -612,9 +612,9 @@ describe('Slotting edge cases (integration)', () => {
 
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_A_STEAM_ID, 'ZeroLeader');
 			const unitResult = db.prepare(`
-				INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id)
-				VALUES ('Zero Team', 'ZERO', 'verified', ?, 0, ?)
-			`).run(leaderId, leaderId);
+				INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id)
+				VALUES ('Zero Team', 'ZERO', 'verified', 0, ?)
+			`).run(leaderId);
 			const unitId = Number(unitResult.lastInsertRowid);
 
 			const sid = createSteamSession(dbOps, { steamid64: ADMIN_STEAM_ID, redirectPath: '/en/admin/games' });

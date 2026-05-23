@@ -55,11 +55,10 @@ export function getPlayerByArmaId(input: { armaId: string }): GameserverPlayer |
 	const badges = (badgesStmt.all(player.user_id) as BadgeRow[]).map((b) => b.label);
 
 	const unitStmt = db.prepare(`
-		SELECT u.name, u.tag,
-			CASE WHEN u.leader_user_id = um.user_id THEN 'leader' ELSE 'member' END AS role
+		SELECT u.name, u.tag, um.role
 		FROM unit_memberships um
 		JOIN units u ON u.id = um.unit_id
-		WHERE um.user_id = ? AND um.role = 'member'
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader')
 		LIMIT 1
 	`);
 	const unit = (unitStmt.get(player.user_id) as UnitRow | undefined) ?? null;

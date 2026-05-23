@@ -23,6 +23,7 @@ const adminGameMissionOverviewSchema = z.object({
 	id: z.number().int().positive(),
 	shortCode: z.string().nullable(),
 	status: z.enum(['draft', 'published', 'archived']),
+	gameMode: z.enum(['standard', 'simple']).default('standard'),
 	title: z.string(),
 	description: localizedDescriptionSchema,
 	startsAt: z.string().nullable(),

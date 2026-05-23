@@ -1,11 +1,13 @@
 import type { CanonicalSlotting } from '@/features/games/domain/slotting';
 import { sideDisplayName, hasSlotAccess } from '@/features/games/domain/slotting';
+import type { GameMode } from '@/features/games/domain/types';
 
 type MissionPublishedData = {
 	title: string;
 	descriptionRu: string;
 	shortCode: string;
 	startsAt: string;
+	gameMode: GameMode;
 	episodeCount: number;
 	slotting: CanonicalSlotting;
 	priorityClaimOpensAt: string | null;
@@ -15,7 +17,7 @@ type MissionPublishedData = {
 	imageMime: string | null;
 };
 
-const DISCORD_CHANNEL_ID = '1507659367087083520';
+const DISCORD_CHANNEL_ID = '1464208490410283071';
 const DISCORD_TIMEOUT_MS = 8000;
 const EMBED_COLOR = 0xC8A83E;
 
@@ -49,6 +51,7 @@ function buildEmbed(data: MissionPublishedData) {
 	const sides = formatSides(data.slotting);
 	const ts = toUnixTimestamp(data.startsAt);
 
+	const isSimple = data.gameMode === 'simple';
 	const lines: string[] = [];
 
 	if (data.descriptionRu) {
@@ -56,32 +59,40 @@ function buildEmbed(data: MissionPublishedData) {
 		lines.push('');
 	}
 
-	lines.push(`⚔️ **${sides}**`);
+	if (!isSimple) {
+		lines.push(`⚔️ **${sides}**`);
+	}
 	lines.push(`📅 **Дата:** <t:${ts}:D> (<t:${ts}:R>)`);
-	lines.push(`🎬 **Эпизодов:** ${data.episodeCount}`);
-	lines.push(`👥 **Слотов:** ${totalSlots}`);
+	if (!isSimple) {
+		lines.push(`🎬 **Эпизодов:** ${data.episodeCount}`);
+		lines.push(`👥 **Слотов:** ${totalSlots}`);
+	}
 	lines.push('');
 
-	const hasUnit = hasSlotAccess(data.slotting, 'unit');
-	const hasRegular = hasSlotAccess(data.slotting, 'regular') || data.regularJoinEnabled;
-	const hasPriority = hasSlotAccess(data.slotting, 'priority');
-	const hasPriorityScheduled = !!data.priorityClaimOpensAt;
+	if (!isSimple) {
+		const hasUnit = hasSlotAccess(data.slotting, 'unit');
+		const hasRegular = hasSlotAccess(data.slotting, 'regular') || data.regularJoinEnabled;
+		const hasPriority = hasSlotAccess(data.slotting, 'priority');
+		const hasPriorityScheduled = !!data.priorityClaimOpensAt;
 
-	const openNow: string[] = [];
-	if (hasUnit) openNow.push('отрядная');
-	if (hasPriority) openNow.push('приоритетная');
-	if (hasRegular) openNow.push('общая');
-	if (openNow.length > 0) {
-		lines.push(`🟢 Расстановка открыта: **${openNow.join(', ')}**`);
+		const openNow: string[] = [];
+		if (hasUnit) openNow.push('отрядная');
+		if (hasPriority) openNow.push('приоритетная');
+		if (hasRegular) openNow.push('общая');
+		if (openNow.length > 0) {
+			lines.push(`🟢 Расстановка открыта: **${openNow.join(', ')}**`);
+		}
+
+		if (!hasPriority && hasPriorityScheduled) {
+			const priorityTs = toUnixTimestamp(data.priorityClaimOpensAt!);
+			lines.push(`⭐ Приоритетная расстановка откроется: <t:${priorityTs}:f> (<t:${priorityTs}:R>)`);
+		}
+
+		lines.push('');
+		lines.push(`📣 **Занимайте слоты и готовьтесь к игре!**`);
+	} else {
+		lines.push(`📣 **Присоединяйтесь и готовьтесь к игре!**`);
 	}
-
-	if (!hasPriority && hasPriorityScheduled) {
-		const priorityTs = toUnixTimestamp(data.priorityClaimOpensAt!);
-		lines.push(`⭐ Приоритетная расстановка откроется: <t:${priorityTs}:f> (<t:${priorityTs}:R>)`);
-	}
-
-	lines.push('');
-	lines.push(`📣 **Занимайте слоты и готовьтесь к игре!**`);
 	lines.push('');
 	lines.push(`Время начала, адрес сервера и вся информация об игре на сайте:`);
 	lines.push(`🔗 ${missionLink}`);

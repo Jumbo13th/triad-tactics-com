@@ -31,6 +31,7 @@ export async function postAdminGameDraftRoute(request: NextRequest): Promise<Nex
 
 		const created = createGameDraft(createGameDraftDeps, {
 			mode: parsed.data.mode,
+			gameMode: parsed.data.gameMode,
 			createdBySteamId64: admin.identity.steamid64
 		});
 

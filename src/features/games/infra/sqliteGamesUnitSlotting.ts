@@ -119,7 +119,7 @@ export function claimUnitSlot(input: {
 	try {
 		const run = db.transaction((): ClaimUnitSlotRepoResult => {
 			const row = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'mission_not_found' };
 			}
 
@@ -133,14 +133,14 @@ export function claimUnitSlot(input: {
 			}
 
 			const unitRow = db.prepare(`
-				SELECT u.id AS unit_id, u.tag, u.leader_user_id, u.slots_allocated, um.role AS membership_role
+				SELECT u.id AS unit_id, u.tag, u.slots_allocated, um.role AS membership_role
 				FROM unit_memberships um
 				JOIN units u ON u.id = um.unit_id
-				WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
+				WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader')
 				LIMIT 1
-			`).get(user.id) as { unit_id: number; tag: string; leader_user_id: number | null; slots_allocated: number; membership_role: string } | undefined;
+			`).get(user.id) as { unit_id: number; tag: string; slots_allocated: number; membership_role: string } | undefined;
 
-			if (!unitRow || (unitRow.leader_user_id !== user.id && unitRow.membership_role !== 'deputy')) {
+			if (!unitRow || (unitRow.membership_role !== 'leader' && unitRow.membership_role !== 'deputy')) {
 				return { success: false, error: 'not_unit_leader' };
 			}
 
@@ -244,7 +244,7 @@ export function releaseUnitSlot(input: {
 	try {
 		const run = db.transaction((): ReleaseUnitSlotRepoResult => {
 			const row = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'mission_not_found' };
 			}
 
@@ -258,14 +258,14 @@ export function releaseUnitSlot(input: {
 			}
 
 			const unitRow = db.prepare(`
-				SELECT u.id AS unit_id, u.tag, u.leader_user_id, um.role AS membership_role
+				SELECT u.id AS unit_id, u.tag, um.role AS membership_role
 				FROM unit_memberships um
 				JOIN units u ON u.id = um.unit_id
-				WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
+				WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader')
 				LIMIT 1
-			`).get(user.id) as { unit_id: number; tag: string; leader_user_id: number | null; membership_role: string } | undefined;
+			`).get(user.id) as { unit_id: number; tag: string; membership_role: string } | undefined;
 
-			if (!unitRow || (unitRow.leader_user_id !== user.id && unitRow.membership_role !== 'deputy')) {
+			if (!unitRow || (unitRow.membership_role !== 'leader' && unitRow.membership_role !== 'deputy')) {
 				return { success: false, error: 'not_unit_leader' };
 			}
 

@@ -258,6 +258,45 @@ describe('Admin game release endpoints (integration)', () => {
 		expect(snapshotRows).toEqual([{ user_id: userA }, { user_id: userB }]);
 	});
 
+	it('closes regular join when releasing regular gameplay', async () => {
+		const { dbOperations, POST_RELEASE_REGULAR, NextRequest } = await loadAdminGameReleaseHarness();
+		const missionId = insertPublishedMission({
+			shortCode: 'OP-REGULAR-CLOSE-JOIN',
+			priorityGameplayReleasedAt: '2026-03-20T19:10:00.000Z',
+			regularJoinEnabled: true
+		});
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: ADMIN_STEAM_ID,
+			redirectPath: '/en/admin/games'
+		});
+
+		const beforeRow = getDb()
+			.prepare('SELECT regular_join_enabled FROM missions WHERE id = ? LIMIT 1')
+			.get(missionId) as { regular_join_enabled: number };
+		expect(beforeRow.regular_join_enabled).toBe(1);
+
+		const res = await POST_RELEASE_REGULAR(
+			new NextRequest(`http://localhost/api/admin/games/${missionId}/release-regular`, {
+				method: 'POST',
+				headers: {
+					origin: 'http://localhost',
+					cookie: `tt_steam_session=${adminSid}`
+				}
+			}),
+			missionRouteContext(missionId)
+		);
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json.success).toBe(true);
+		expect(json.mission.regularJoinEnabled).toBe(false);
+
+		const afterRow = getDb()
+			.prepare('SELECT regular_join_enabled FROM missions WHERE id = ? LIMIT 1')
+			.get(missionId) as { regular_join_enabled: number };
+		expect(afterRow.regular_join_enabled).toBe(0);
+	});
+
 	it('blocks regular gameplay release until priority gameplay has been released', async () => {
 		const { dbOperations, POST_RELEASE_REGULAR, NextRequest } = await loadAdminGameReleaseHarness();
 		const missionId = insertPublishedMission({ shortCode: 'OP-REGULAR-BLOCKED' });
