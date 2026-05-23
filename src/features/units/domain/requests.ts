@@ -43,7 +43,7 @@ export type AdminSetLeaderRequest = z.infer<typeof adminSetLeaderRequestSchema>;
 export const manageMemberRequestSchema = z.object({
 	userId: z.number().int().positive(),
 	action: z.enum(['approve', 'reject', 'remove', 'set_role']),
-	role: z.enum(['member', 'applicant']).optional()
+	role: z.enum(['member', 'applicant', 'deputy']).optional()
 });
 
 export type ManageMemberRequest = z.infer<typeof manageMemberRequestSchema>;

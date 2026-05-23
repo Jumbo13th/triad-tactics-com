@@ -252,8 +252,9 @@ export default function AdminBadgesPage() {
 												</AdminButton>
 											</div>
 											<div className="flex flex-wrap items-center gap-2">
-												<label className="text-xs text-neutral-500">{ta('badgesDiscordRoleId')}</label>
+												<label htmlFor={`discord-role-${badge.id}`} className="text-xs text-neutral-500">{ta('badgesDiscordRoleId')}</label>
 												<input
+													id={`discord-role-${badge.id}`}
 													value={discordRoleInputs[badge.id] ?? ''}
 													onChange={(e) => setDiscordRoleInputs({ ...discordRoleInputs, [badge.id]: e.target.value })}
 													placeholder={ta('badgesDiscordRoleIdPlaceholder')}

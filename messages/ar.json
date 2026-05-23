@@ -1289,6 +1289,9 @@
     "descriptionLabel": "الوصف",
     "descriptionPlaceholder": "أخبر الآخرين عن وحدتك",
     "commander": "القائد",
+    "deputy": "نائب",
+    "promoteDeputy": "ترقية إلى نائب",
+    "demoteDeputy": "إزالة من النائب",
     "members": "الأعضاء",
     "applicants": "طلبات الانضمام",
     "slotsAllocated": "المقاعد المخصصة",
@@ -1326,7 +1329,8 @@
     },
     "role": {
       "member": "عضو",
-      "applicant": "متقدم"
+      "applicant": "متقدم",
+      "deputy": "نائب"
     },
     "actions": {
       "approve": "قبول",
@@ -1388,7 +1392,9 @@
       "applicant_rejected": "تم رفض طلب {target} بواسطة {actor}",
       "application_withdrawn": "سحب {actor} طلبه",
       "leader_changed": "تم نقل القيادة إلى {target}",
-      "slots_changed": "تم تغيير المقاعد إلى {meta}"
+      "slots_changed": "تم تغيير المقاعد إلى {meta}",
+      "deputy_promoted": "تمت ترقية {target} إلى نائب بواسطة {actor}",
+      "deputy_demoted": "تمت إزالة {target} من النائب بواسطة {actor}"
     },
     "adminSection": "إدارة",
     "deleteUnitSection": "حذف الوحدة",

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { runEmailOutboxOnce } from '@/platform/outbox/emailOutboxWorker';
-import { pruneOldAuditEvents, claimPendingPriorityDiscordNotifications } from '@/features/games/infra/sqliteGames';
-import { notifyPrioritySlottingInDiscord } from '@/features/games/useCases/notifyMissionPublishedInDiscord';
+import { runGamesCronTasks } from '@/features/games/useCases/runCronTasks';
 import { processStrikeEscalation } from '@/features/sanctions/useCases/processStrikeEscalation';
 import { processStrikeEscalationDeps } from '@/features/sanctions/deps';
 import { DISCORD_BOT_TOKEN } from '@/platform/env';
@@ -27,21 +26,16 @@ export async function GET(request: NextRequest) {
 
 	await runEmailOutboxOnce();
 
-	const auditDeleted = pruneOldAuditEvents(30);
-	if (auditDeleted > 0) {
-		logger.info({ deleted: auditDeleted }, 'audit_events_pruned');
-	}
+	await runGamesCronTasks({
+		actorSteamId64: 'system',
+		discordBotToken: DISCORD_BOT_TOKEN,
+		logger,
+		errorToLogObject
+	});
 
 	const escalationResult = processStrikeEscalation(processStrikeEscalationDeps, { createdBySteamId64: 'system' });
 	if (escalationResult.autoBansCreated > 0) {
 		logger.info({ autoBansCreated: escalationResult.autoBansCreated }, 'sanctions_strike_escalation');
-	}
-
-	const pendingPriorityNotifications = claimPendingPriorityDiscordNotifications();
-	for (const pending of pendingPriorityNotifications) {
-		notifyPrioritySlottingInDiscord(pending, DISCORD_BOT_TOKEN).catch((err: unknown) => {
-			logger.error({ ...errorToLogObject(err), missionId: pending.missionId }, 'discord_priority_cron_notify_failed');
-		});
 	}
 
 	return new Response('OK', { status: 200 });

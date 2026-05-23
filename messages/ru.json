@@ -1289,6 +1289,9 @@
     "descriptionLabel": "Описание",
     "descriptionPlaceholder": "Расскажите о отряде",
     "commander": "Командир",
+    "deputy": "Заместитель",
+    "promoteDeputy": "Назначить заместителем",
+    "demoteDeputy": "Снять с заместителя",
     "members": "Участники",
     "applicants": "Заявки",
     "slotsAllocated": "Выделено слотов",
@@ -1326,7 +1329,8 @@
     },
     "role": {
       "member": "Участник",
-      "applicant": "Заявка"
+      "applicant": "Заявка",
+      "deputy": "Заместитель"
     },
     "actions": {
       "approve": "Принять",
@@ -1388,7 +1392,9 @@
       "applicant_rejected": "Заявка {target} отклонена игроком {actor}",
       "application_withdrawn": "{actor} отозвал заявку",
       "leader_changed": "Командование передано {target}",
-      "slots_changed": "Количество слотов изменено на {meta}"
+      "slots_changed": "Количество слотов изменено на {meta}",
+      "deputy_promoted": "{target} назначен заместителем ({actor})",
+      "deputy_demoted": "{target} снят с заместителя ({actor})"
     },
     "adminSection": "Управление",
     "deleteUnitSection": "Удалить отряд",

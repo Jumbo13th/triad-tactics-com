@@ -359,9 +359,8 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 							<h4 className="text-sm font-semibold text-neutral-300">{t('members')} & {t('applicants')}</h4>
 							<div className="mt-2 space-y-1">
 								{[...members].sort((a, b) => {
-								const aScore = detail.leaderUserId === a.userId ? 0 : a.role === 'member' ? 1 : 2;
-								const bScore = detail.leaderUserId === b.userId ? 0 : b.role === 'member' ? 1 : 2;
-								return aScore - bScore;
+								const roleOrder = (m: UnitMembership) => detail.leaderUserId === m.userId ? 0 : m.role === 'deputy' ? 1 : m.role === 'member' ? 2 : 3;
+								return roleOrder(a) - roleOrder(b);
 							}).map(m => (
 									<div key={m.id} className="rounded-lg border border-neutral-800 px-3 py-2 text-sm">
 										<div className="flex items-center justify-between">
@@ -374,7 +373,7 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 											) : (
 												<span className={
 													'rounded px-1.5 py-0.5 text-xs ' +
-													(m.role === 'member' ? 'bg-white/10 text-neutral-400' : 'bg-yellow-900/40 text-yellow-400')
+													(m.role === 'deputy' ? 'bg-purple-500/10 text-purple-400' : m.role === 'member' ? 'bg-white/10 text-neutral-400' : 'bg-yellow-900/40 text-yellow-400')
 												}>
 													{t(`role.${m.role}` as Parameters<typeof t>[0])}
 												</span>
@@ -399,7 +398,7 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 													</button>
 												</>
 											)}
-											{m.role === 'member' && detail.leaderUserId !== m.userId && (
+											{(m.role === 'member' || m.role === 'deputy') && detail.leaderUserId !== m.userId && (
 												<>
 													<button
 														type="button"
@@ -408,6 +407,23 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 													>
 														{t('actions.setLeader')}
 													</button>
+													{m.role === 'deputy' ? (
+														<button
+															type="button"
+															onClick={() => adminAction(`/api/admin/units/${unit.id}/members`, { userId: m.userId, action: 'set_role', role: 'member' })}
+															className="rounded bg-yellow-900/40 px-1.5 py-0.5 text-xs text-yellow-400 hover:bg-yellow-900/60"
+														>
+															{t('demoteDeputy')}
+														</button>
+													) : (
+														<button
+															type="button"
+															onClick={() => adminAction(`/api/admin/units/${unit.id}/members`, { userId: m.userId, action: 'set_role', role: 'deputy' })}
+															className="rounded bg-purple-500/10 px-1.5 py-0.5 text-xs text-purple-400 hover:bg-purple-500/20"
+														>
+															{t('promoteDeputy')}
+														</button>
+													)}
 													<button
 														type="button"
 														onClick={() => adminAction(`/api/admin/units/${unit.id}/members`, { userId: m.userId, action: 'remove' })}

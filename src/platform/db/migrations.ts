@@ -851,5 +851,34 @@ export const migrations: Migration[] = [
 		up: `
 			ALTER TABLE badge_types ADD COLUMN discord_role_id TEXT DEFAULT NULL;
 		`
+	},
+	{
+		id: 23,
+		name: 'unit_deputy_role',
+		up: `
+			CREATE TABLE unit_memberships_new (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				unit_id INTEGER NOT NULL,
+				user_id INTEGER NOT NULL,
+				role TEXT NOT NULL CHECK(role IN ('member', 'applicant', 'deputy')),
+				message TEXT NOT NULL DEFAULT '',
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE,
+				FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+				UNIQUE(unit_id, user_id)
+			);
+
+			INSERT INTO unit_memberships_new (id, unit_id, user_id, role, message, created_at, updated_at)
+			SELECT id, unit_id, user_id, role, message, created_at, updated_at
+			FROM unit_memberships;
+
+			DROP TABLE unit_memberships;
+			ALTER TABLE unit_memberships_new RENAME TO unit_memberships;
+
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_unit ON unit_memberships(unit_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_user ON unit_memberships(user_id);
+			CREATE INDEX IF NOT EXISTS idx_unit_memberships_role ON unit_memberships(role);
+		`
 	}
 ];

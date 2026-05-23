@@ -51,6 +51,7 @@ function adminRequest(NextRequest: typeof import('next/server').NextRequest, url
 
 describe('Sanctions API routes (integration)', () => {
 	beforeAll(async () => {
+		process.env.DISCORD_BOT_TOKEN = '';
 		await setupIsolatedDb({
 			prefix: 'triad-tactics-sanctions-test',
 			adminSteamIds: ADMIN_STEAM_ID

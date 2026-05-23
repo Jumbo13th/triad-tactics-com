@@ -1,6 +1,6 @@
 import type { UnitDeps } from '../ports';
 import { adminSetLeaderRequestSchema } from '../domain/requests';
-import { canManageMembers } from '../domain/rules';
+import { isUnitLeader } from '../domain/rules';
 
 export type TransferLeadershipResult =
 	| { ok: true; status: 200; json: { success: true } }
@@ -19,7 +19,7 @@ export function transferLeadership(deps: UnitDeps, input: {
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
 	const actor = deps.users.getUserBySteamId64(input.steamid64);
-	if (!actor || !canManageMembers(unit, actor.id, input.isAdmin)) {
+	if (!actor || (!input.isAdmin && !isUnitLeader(unit, actor.id))) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 

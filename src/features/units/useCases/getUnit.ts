@@ -11,16 +11,17 @@ export function getUnit(deps: UnitDeps, input: { unitId: number; viewerSteamId64
 
 	const members = deps.memberships.listUnitMembers(input.unitId);
 
-	let viewer: UnitViewerContext = { isMember: false, isApplicant: false, isLeader: false, isAdmin: input.isAdmin ?? false, hasUnitElsewhere: false, membership: null };
+	let viewer: UnitViewerContext = { isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: input.isAdmin ?? false, hasUnitElsewhere: false, membership: null };
 	if (input.viewerSteamId64) {
 		const user = deps.users.getUserBySteamId64(input.viewerSteamId64);
 		if (user) {
 			const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
 			const memberUnit = deps.memberships.getActiveMemberUnit(user.id);
 			viewer = {
-				isMember: membership?.role === 'member',
+				isMember: membership?.role === 'member' || membership?.role === 'deputy',
 				isApplicant: membership?.role === 'applicant',
 				isLeader: unit.leaderUserId === user.id,
+				isDeputy: membership?.role === 'deputy',
 				isAdmin: input.isAdmin ?? false,
 				hasUnitElsewhere: !!memberUnit && memberUnit.id !== input.unitId,
 				membership
