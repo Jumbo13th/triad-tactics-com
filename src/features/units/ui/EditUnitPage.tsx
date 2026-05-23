@@ -60,7 +60,7 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 				if (data.unit) {
 					setUnit(data.unit);
 					setMembers(data.members ?? []);
-					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isDeputy: false });
+					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false });
 					setDescription(data.unit.description);
 					setJoinMessage(data.unit.joinMessage ?? '');
 				}
