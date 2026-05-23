@@ -62,6 +62,7 @@ type SettingsFormState = {
 	regularJoinEnabled: boolean;
 	serverDetailsHidden: boolean;
 	priorityBadgeTypeIds: number[];
+	skipPriorityDiscord: boolean;
 };
 
 function buildLocalizedPath(locale: string, pathname: string) {
@@ -82,6 +83,25 @@ function fromLocalInputValue(value: string) {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return null;
 	return date.toISOString();
+}
+
+function getNextSunday1445Utc(): string {
+	const now = new Date();
+	const day = now.getUTCDay();
+	let daysUntilSunday = (7 - day) % 7;
+	if (daysUntilSunday === 0) {
+		const pastTime = now.getUTCHours() > 14 || (now.getUTCHours() === 14 && now.getUTCMinutes() >= 45);
+		if (pastTime) daysUntilSunday = 7;
+	}
+	const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilSunday, 14, 45, 0));
+	return toLocalInputValue(target.toISOString());
+}
+
+function startsAtMinus24h(startsAt: string): string {
+	const date = new Date(startsAt);
+	if (Number.isNaN(date.getTime())) return '';
+	const utc = new Date(date.getTime() - 24 * 60 * 60 * 1000);
+	return toLocalInputValue(utc.toISOString());
 }
 
 function formatErrorCode(code: string) {
@@ -180,7 +200,8 @@ function missionToSettingsForm(mission: AdminGameMissionDetail): SettingsFormSta
 		unitSlottingManualState: mission.unitSlottingManualState,
 		regularJoinEnabled: mission.regularJoinEnabled,
 		serverDetailsHidden: mission.serverDetailsHidden,
-		priorityBadgeTypeIds: mission.priorityBadgeTypeIds
+		priorityBadgeTypeIds: mission.priorityBadgeTypeIds,
+		skipPriorityDiscord: mission.skipPriorityDiscord
 	};
 }
 
@@ -224,6 +245,95 @@ async function fetchAdminStatus(): Promise<AdminStatus> {
 	}
 }
 
+function ImageUploadArea({ mission, ta, setFeedback, onImageChanged }: {
+	mission: AdminGameMissionDetail;
+	ta: ReturnType<typeof useTranslations<'admin'>>;
+	setFeedback: (fb: { tone: 'success' | 'error'; message: string } | null) => void;
+	onImageChanged: (m: AdminGameMissionDetail) => void;
+}) {
+	return (
+		<div className="grid gap-2">
+			<span className="text-sm text-neutral-300">{ta('gamesMissionImageLabel')}</span>
+			<p className="text-xs text-neutral-500">{ta('gamesMissionImageHelp')}</p>
+			<div className="flex items-center gap-3">
+				{mission.imageMime ? (
+					<img
+						src={`/api/admin/games/${mission.id}/image?v=${encodeURIComponent(mission.updatedAt)}`}
+						alt=""
+						className="h-20 max-w-[160px] rounded border border-neutral-700 object-cover"
+					/>
+				) : (
+					<div className="flex h-20 w-[160px] items-center justify-center rounded border border-dashed border-neutral-700 text-xs text-neutral-500">
+						{ta('gamesMissionImageEmpty')}
+					</div>
+				)}
+				<div className="flex flex-col gap-2">
+					<label className="cursor-pointer text-sm text-[color:var(--accent)] hover:underline">
+						{ta('gamesMissionImageUpload')}
+						<input
+							type="file"
+							accept="image/png,image/jpeg,image/webp"
+							className="hidden"
+							onChange={(e) => {
+								const file = e.target.files?.[0];
+								if (!file) return;
+								const reader = new FileReader();
+								reader.onload = async () => {
+									const base64 = (reader.result as string).split(',')[1];
+									const mime = file.type as 'image/png' | 'image/jpeg' | 'image/webp';
+									try {
+										const res = await fetch(`/api/admin/games/${mission.id}/image`, {
+											method: 'POST',
+											headers: { 'content-type': 'application/json' },
+											body: JSON.stringify({ data: base64, mime })
+										});
+										if (res.ok) {
+											const refreshRes = await fetch(`/api/admin/games/${mission.id}`, { headers: { Accept: 'application/json' } });
+											if (refreshRes.ok) {
+												const refreshData = parseAdminGameMissionResponse(await refreshRes.json());
+												if (refreshData && 'mission' in refreshData) onImageChanged(refreshData.mission);
+											}
+										} else {
+											const data = await res.json() as { error?: string };
+											setFeedback({ tone: 'error', message: data?.error === 'too_large' ? ta('gamesMissionImageTooLarge') : ta('gamesMissionImageUploadFailed') });
+										}
+									} catch {
+										setFeedback({ tone: 'error', message: ta('gamesMissionImageUploadFailed') });
+									}
+								};
+								reader.readAsDataURL(file);
+								e.target.value = '';
+							}}
+						/>
+					</label>
+					{mission.imageMime && (
+						<button
+							type="button"
+							className="text-left text-sm text-red-400 hover:underline"
+							onClick={async () => {
+								try {
+									const res = await fetch(`/api/admin/games/${mission.id}/image`, { method: 'DELETE' });
+									if (res.ok) {
+										const refreshRes = await fetch(`/api/admin/games/${mission.id}`, { headers: { Accept: 'application/json' } });
+										if (refreshRes.ok) {
+											const refreshData = parseAdminGameMissionResponse(await refreshRes.json());
+											if (refreshData && 'mission' in refreshData) onImageChanged(refreshData.mission);
+										}
+									}
+								} catch {
+									setFeedback({ tone: 'error', message: ta('gamesMissionImageDeleteFailed') });
+								}
+							}}
+						>
+							{ta('gamesMissionImageDelete')}
+						</button>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export default function AdminGameMissionPage() {
 	const ta = useTranslations('admin');
 	const tg = useTranslations('games');
@@ -256,6 +366,9 @@ export default function AdminGameMissionPage() {
 	const [badgeCatalogState, setBadgeCatalogState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 	const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
 	const [activeAction, setActiveAction] = useState<string | null>(null);
+	const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+	const [skipPublishDiscord, setSkipPublishDiscord] = useState(isLocalhost);
+	const initialLoadRef = useRef(true);
 	const [confirmAction, setConfirmAction] = useState<{
 		title: string;
 		description: string;
@@ -281,7 +394,12 @@ export default function AdminGameMissionPage() {
 
 	const syncMissionState = (nextMission: AdminGameMissionDetail) => {
 		setMission(nextMission);
-		setSettingsForm(missionToSettingsForm(nextMission));
+		const form = missionToSettingsForm(nextMission);
+		if (initialLoadRef.current && isLocalhost) {
+			form.skipPriorityDiscord = true;
+			initialLoadRef.current = false;
+		}
+		setSettingsForm(form);
 		const episodeData = nextMission.episodeSlottings?.find((e) => e.episodeNumber === selectedSlottingEpisode);
 		setSlottingText(JSON.stringify(episodeData?.slotting ?? nextMission.slotting, null, 2));
 		setWinnerSideId(nextMission.archiveResult?.winnerSideId ?? '');
@@ -569,7 +687,8 @@ export default function AdminGameMissionPage() {
 					unitSlottingManualState: settingsForm.unitSlottingManualState,
 					regularJoinEnabled: settingsForm.regularJoinEnabled,
 					serverDetailsHidden: settingsForm.serverDetailsHidden,
-					priorityBadgeTypeIds: settingsForm.priorityBadgeTypeIds
+					priorityBadgeTypeIds: settingsForm.priorityBadgeTypeIds,
+					skipPriorityDiscord: settingsForm.skipPriorityDiscord
 				})
 			});
 			const json: unknown = (await res.json()) as unknown;
@@ -639,34 +758,43 @@ export default function AdminGameMissionPage() {
 		}
 	};
 
-	const handlePublish = async () => {
+	const handlePublish = () => {
 		if (!mission) return;
-		try {
-			setFeedback(null);
-			setActiveAction('publish');
-			const res = await fetch(`/api/admin/games/${mission.id}/publish`, {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ settingsRevision: mission.settingsRevision })
-			});
-			const json = (await res.json()) as AdminGamesErrorView & { reasons?: GamePublishValidationError[] };
-			const handled = await applyLifecycleResponse(res, json, ta('gamesPublishAction'), (errorPayload) => {
-				if (errorPayload.error !== 'publish_validation_failed' || !errorPayload.reasons?.length) {
-					return false;
-				}
-
-				setFeedback({
-					tone: 'error',
-					message: `${ta('gamesPublishBlockedPrefix')} ${errorPayload.reasons.map(formatPublishReason).join(', ')}`
-				});
-				return true;
-			});
-			if (handled) return;
-		} catch {
-			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesPublishAction')}: server error` });
-		} finally {
-			setActiveAction(null);
-		}
+		const skip = skipPublishDiscord;
+		setConfirmAction({
+			title: skip ? ta('gamesConfirmPublishTitle') : ta('gamesConfirmPublishDiscordTitle'),
+			description: skip ? ta('gamesConfirmPublishText') : ta('gamesConfirmPublishDiscordText'),
+			confirmLabel: ta('gamesPublishAction'),
+			onConfirm: () => {
+				setConfirmAction(null);
+				void (async () => {
+					try {
+						setFeedback(null);
+						setActiveAction('publish');
+						const res = await fetch(`/api/admin/games/${mission.id}/publish`, {
+							method: 'POST',
+							headers: { 'content-type': 'application/json' },
+							body: JSON.stringify({ settingsRevision: mission.settingsRevision, skipDiscord: skip })
+						});
+						const json = (await res.json()) as AdminGamesErrorView & { reasons?: GamePublishValidationError[] };
+						await applyLifecycleResponse(res, json, ta('gamesPublishAction'), (errorPayload) => {
+							if (errorPayload.error !== 'publish_validation_failed' || !errorPayload.reasons?.length) {
+								return false;
+							}
+							setFeedback({
+								tone: 'error',
+								message: `${ta('gamesPublishBlockedPrefix')} ${errorPayload.reasons.map(formatPublishReason).join(', ')}`
+							});
+							return true;
+						});
+					} catch {
+						setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta('gamesPublishAction')}: server error` });
+					} finally {
+						setActiveAction(null);
+					}
+				})();
+			}
+		});
 	};
 
 	const handleSimpleMissionAction = async (url: string, actionKey: string) => {
@@ -941,6 +1069,9 @@ export default function AdminGameMissionPage() {
 												<div className={`${editorCardClass} grid gap-4`}>
 													<Field label={ta('gamesFieldStartsAt')}>
 														<input type="datetime-local" value={settingsForm.startsAt} onChange={(event) => setSettingsForm({ ...settingsForm, startsAt: event.target.value })} className={editorDateTimeClass} />
+														<AdminButton variant="secondary" className="mt-1 w-fit text-xs" onClick={() => setSettingsForm({ ...settingsForm, startsAt: getNextSunday1445Utc() })}>
+															{ta("gamesNextSundayQuickPick")}
+														</AdminButton>
 													</Field>
 													<Field label={ta('gamesFieldServerName')}>
 														<input value={settingsForm.serverName} onChange={(event) => setSettingsForm({ ...settingsForm, serverName: event.target.value })} className={editorInputClass} />
@@ -951,6 +1082,10 @@ export default function AdminGameMissionPage() {
 													<Field label={ta('gamesFieldServerPort')}>
 														<input type="number" min={1} max={65535} inputMode="numeric" value={settingsForm.serverPort} onChange={(event) => setSettingsForm({ ...settingsForm, serverPort: event.target.value })} className={editorInputClass} />
 													</Field>
+													<label className="flex items-center gap-3 text-sm text-neutral-200">
+														<input type="checkbox" checked={settingsForm.serverDetailsHidden} onChange={(event) => setSettingsForm({ ...settingsForm, serverDetailsHidden: event.target.checked })} className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-[color:var(--accent)] focus:ring-[color:var(--accent)]" />
+														<span>{ta('gamesFieldServerDetailsHidden')}</span>
+													</label>
 													<Field label={ta('gamesFieldEarlyPassword')}>
 														<input value={settingsForm.earlyPassword} onChange={(event) => setSettingsForm({ ...settingsForm, earlyPassword: event.target.value })} className={editorInputClass} />
 													</Field>
@@ -990,10 +1125,17 @@ export default function AdminGameMissionPage() {
 																<option value="closed">{ta('slottingPhasePriorityForceClosed')}</option>
 															</select>
 														</div>
-														<div className="mt-2">
+														<div className="mt-3 grid gap-2">
 															<label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">{ta('slottingPhasePriorityOpensAt')}</label>
-															<input type="datetime-local" value={settingsForm.priorityClaimOpensAt} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimOpensAt: event.target.value })} className={`mt-1 ${editorDateTimeClass}`} />
+															<input type="datetime-local" value={settingsForm.priorityClaimOpensAt} onChange={(event) => setSettingsForm({ ...settingsForm, priorityClaimOpensAt: event.target.value })} className={editorDateTimeClass} />
+															<AdminButton variant="secondary" className="w-fit text-xs" onClick={() => { const v = startsAtMinus24h(settingsForm.startsAt); if (v) setSettingsForm({ ...settingsForm, priorityClaimOpensAt: v }); }} disabled={!settingsForm.startsAt}>
+																{ta('gamesPriorityMinus24hQuickPick')}
+															</AdminButton>
 														</div>
+														<label className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
+															<input type="checkbox" checked={settingsForm.skipPriorityDiscord} onChange={(e) => setSettingsForm({ ...settingsForm, skipPriorityDiscord: e.target.checked })} disabled={activeAction !== null} className="accent-[color:var(--accent)]" />
+															{ta('gamesPrioritySlottingSkipDiscord')}
+														</label>
 													</div>
 
 													<div className="rounded-xl border border-neutral-800 bg-white/[0.02] p-3">
@@ -1065,20 +1207,15 @@ export default function AdminGameMissionPage() {
 															{ta('gamesManageBadgesLink')}
 														</Link>
 													</p>
-													<label className="flex items-center gap-3 text-sm text-neutral-200">
-														<input type="checkbox" checked={settingsForm.serverDetailsHidden} onChange={(event) => setSettingsForm({ ...settingsForm, serverDetailsHidden: event.target.checked })} className="h-4 w-4 rounded border-neutral-700 bg-neutral-900 text-[color:var(--accent)] focus:ring-[color:var(--accent)]" />
-														<span>{ta('gamesFieldServerDetailsHidden')}</span>
-													</label>
 												</div>
 
-												<div className="flex flex-wrap items-center gap-3">
-													<AdminButton variant="primary" onClick={() => void handleSaveSettings()} disabled={activeAction !== null}>
-														{activeAction === 'settings' ? ta('gamesSavingSettings') : ta('gamesSaveSettingsAction')}
-													</AdminButton>
-													<AdminButton variant="secondary" onClick={() => setSettingsForm(missionToSettingsForm(mission))} disabled={activeAction !== null}>
-														{ta('gamesResetFormAction')}
-													</AdminButton>
+												<div className={editorCardClass}>
+													<ImageUploadArea mission={mission} ta={ta} setFeedback={setFeedback} onImageChanged={setMission} />
 												</div>
+
+												<AdminButton variant="primary" onClick={() => void handleSaveSettings()} disabled={activeAction !== null}>
+													{activeAction === 'settings' ? ta('gamesSavingSettings') : ta('gamesSaveSettingsAction')}
+												</AdminButton>
 											</div>
 										</section>
 
@@ -1212,12 +1349,39 @@ export default function AdminGameMissionPage() {
 												<p className="mt-1 text-sm text-neutral-400">{ta('gamesLifecycleSectionText')}</p>
 											</div>
 
-												<div className="grid gap-4">
+														<div className="grid gap-4">
 													<ActionCard title={ta('gamesPublishCardTitle')} description={ta('gamesPublishCardText')}>
-														<AdminButton variant="primary" onClick={() => void handlePublish()} disabled={activeAction !== null || mission.status !== 'draft'}>
-															{activeAction === 'publish' ? ta('gamesPublishing') : ta('gamesPublishAction')}
-														</AdminButton>
+														<div className="flex flex-col gap-3">
+															<div>
+																<AdminButton variant="primary" onClick={() => handlePublish()} disabled={activeAction !== null || mission.status !== 'draft'}>
+																	{activeAction === 'publish' ? ta('gamesPublishing') : ta('gamesPublishAction')}
+																</AdminButton>
+															</div>
+															<label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer select-none">
+																<input
+																	type="checkbox"
+																	checked={skipPublishDiscord}
+																	onChange={(e) => setSkipPublishDiscord(e.target.checked)}
+																	className="accent-[color:var(--accent)]"
+																	disabled={mission.status !== 'draft'}
+																/>
+																{ta('gamesPublishSkipDiscord')}
+															</label>
+														</div>
 													</ActionCard>
+
+													{mission.status === 'published' && (
+														<ActionCard title={ta('gamesDiscordNotifyCardTitle')} description={ta('gamesDiscordNotifyCardText')}>
+															<div className="flex flex-wrap gap-3">
+																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmDiscordNotifyTitle'), description: ta('gamesConfirmDiscordNotifyText'), confirmLabel: ta('gamesDiscordNotifyAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/notify-discord`, 'gamesDiscordNotifyAction'); } })} disabled={activeAction !== null}>
+																	{activeAction === 'gamesDiscordNotifyAction' ? ta('gamesDiscordNotifySending') : ta('gamesDiscordNotifyAction')}
+																</AdminButton>
+																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmPriorityDiscordNotifyTitle'), description: ta('gamesConfirmPriorityDiscordNotifyText'), confirmLabel: ta('gamesPriorityDiscordNotifyAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/notify-priority-discord`, 'gamesPriorityDiscordNotifyAction'); } })} disabled={activeAction !== null}>
+																	{activeAction === 'gamesPriorityDiscordNotifyAction' ? ta('gamesPriorityDiscordNotifySending') : ta('gamesPriorityDiscordNotifyAction')}
+																</AdminButton>
+															</div>
+														</ActionCard>
+													)}
 
 													<ActionCard title={ta('gamesReleaseCardTitle')} description={ta('gamesReleaseCardText')}>
 														<div className="flex flex-wrap gap-3">

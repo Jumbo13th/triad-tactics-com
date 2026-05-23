@@ -119,6 +119,9 @@ export type GameAdminMission = {
 	updates: GameMissionUpdate[];
 	slotting: CanonicalSlotting;
 	episodeSlottings: EpisodeSlotting[];
+	imageMime: string | null;
+	priorityDiscordSent: boolean;
+	skipPriorityDiscord: boolean;
 };
 
 export type AdminGamesOverview = {

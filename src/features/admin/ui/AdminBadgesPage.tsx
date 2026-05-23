@@ -46,6 +46,8 @@ export default function AdminBadgesPage() {
 	const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
 	const [creating, setCreating] = useState(false);
 	const [statusMutationId, setStatusMutationId] = useState<number | null>(null);
+	const [discordRoleInputs, setDiscordRoleInputs] = useState<Record<number, string>>({});
+	const [discordRoleSavingId, setDiscordRoleSavingId] = useState<number | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -77,6 +79,7 @@ export default function AdminBadgesPage() {
 			}
 
 			setBadgeCatalog(parsed.badges);
+			setDiscordRoleInputs(Object.fromEntries(parsed.badges.map((b: AdminBadgeType) => [b.id, b.discord_role_id ?? ''])));
 			setCatalogState('ready');
 		} catch {
 			setCatalogState('error');
@@ -142,6 +145,31 @@ export default function AdminBadgesPage() {
 		}
 	};
 
+	const handleSaveDiscordRole = async (badgeTypeId: number) => {
+		try {
+			setFeedback(null);
+			setDiscordRoleSavingId(badgeTypeId);
+			const value = discordRoleInputs[badgeTypeId]?.trim() || null;
+			const res = await fetch(`/api/admin/badges/${badgeTypeId}/discord-role`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ discordRoleId: value })
+			});
+			const json: unknown = (await res.json()) as unknown;
+			const parsed = parseAdminBadgeMutationResponse(json);
+			if (!res.ok || !parsed || 'error' in parsed) {
+				setFeedback({ tone: 'error', message: ta('badgesDiscordRoleUpdateError') });
+				return;
+			}
+			setFeedback({ tone: 'success', message: ta('badgesDiscordRoleUpdateSuccess') });
+			await loadBadges();
+		} catch {
+			setFeedback({ tone: 'error', message: ta('badgesDiscordRoleUpdateError') });
+		} finally {
+			setDiscordRoleSavingId(null);
+		}
+	};
+
 	return (
 		<AdminSurface>
 			<AdminGate status={status} redirectPath={redirectPath} t={ta}>
@@ -197,19 +225,18 @@ export default function AdminBadgesPage() {
 									const isMutating = statusMutationId === badge.id;
 									const isActive = badge.status === 'active';
 									return (
-										<div key={badge.id} className="grid gap-4 rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-											<div className="grid gap-3">
-												<div className="flex flex-wrap items-center gap-2">
-													<p className="text-base font-semibold text-neutral-50">{badge.label}</p>
-
-													{renderStateBadge(isActive ? ta('badgesStatusActive') : ta('badgesStatusRetired'), isActive ? 'success' : 'danger')}
+										<div key={badge.id} className="grid gap-3 rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4">
+											<div className="flex flex-wrap items-center justify-between gap-3">
+												<div className="grid gap-1">
+													<div className="flex flex-wrap items-center gap-2">
+														<p className="text-base font-semibold text-neutral-50">{badge.label}</p>
+														{renderStateBadge(isActive ? ta('badgesStatusActive') : ta('badgesStatusRetired'), isActive ? 'success' : 'danger')}
+													</div>
+													<div className="flex flex-wrap gap-3 text-sm text-neutral-400">
+														<span>{ta('badgesUserCount', { count: badge.user_count })}</span>
+														<span>{ta('badgesMissionCount', { count: badge.mission_count })}</span>
+													</div>
 												</div>
-												<div className="flex flex-wrap gap-3 text-sm text-neutral-400">
-													<span>{ta('badgesUserCount', { count: badge.user_count })}</span>
-													<span>{ta('badgesMissionCount', { count: badge.mission_count })}</span>
-												</div>
-											</div>
-											<div>
 												<AdminButton
 													variant="secondary"
 													onClick={() => void handleSetBadgeStatus(badge.id, isActive ? 'retired' : 'active')}
@@ -222,6 +249,22 @@ export default function AdminBadgesPage() {
 														: isActive
 															? ta('badgesRetireAction')
 															: ta('badgesActivateAction')}
+												</AdminButton>
+											</div>
+											<div className="flex flex-wrap items-center gap-2">
+												<label className="text-xs text-neutral-500">{ta('badgesDiscordRoleId')}</label>
+												<input
+													value={discordRoleInputs[badge.id] ?? ''}
+													onChange={(e) => setDiscordRoleInputs({ ...discordRoleInputs, [badge.id]: e.target.value })}
+													placeholder={ta('badgesDiscordRoleIdPlaceholder')}
+													className="w-48 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-50 placeholder-neutral-600 focus:border-[color:var(--accent)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/20"
+												/>
+												<AdminButton
+													variant="secondary"
+													onClick={() => void handleSaveDiscordRole(badge.id)}
+													disabled={discordRoleSavingId === badge.id || (discordRoleInputs[badge.id] ?? '') === (badge.discord_role_id ?? '')}
+												>
+													{discordRoleSavingId === badge.id ? ta('badgesDiscordRoleSaving') : ta('badgesDiscordRoleSave')}
 												</AdminButton>
 											</div>
 										</div>

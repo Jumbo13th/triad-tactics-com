@@ -497,6 +497,7 @@ export function updateSettings(
 			unit_slotting_manual_state = ?,
 			regular_join_enabled = ?,
 			server_details_hidden = ?,
+			skip_priority_discord = ?,
 			settings_revision = settings_revision + 1,
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?
@@ -566,6 +567,7 @@ export function updateSettings(
 				input.unitSlottingManualState,
 				input.regularJoinEnabled ? 1 : 0,
 				input.serverDetailsHidden ? 1 : 0,
+				input.skipPriorityDiscord ? 1 : 0,
 				input.updatedBySteamId64,
 				input.missionId,
 				input.settingsRevision
@@ -588,6 +590,13 @@ export function updateSettings(
 						ensureAutoConversion(db, freshRow, ep.episodeNumber);
 					}
 				}
+			}
+
+			const priorityConfigChanged =
+				input.priorityClaimManualState !== row.priority_claim_manual_state ||
+				(input.priorityClaimOpensAt ?? null) !== (row.priority_claim_opens_at ?? null);
+			if (priorityConfigChanged) {
+				db.prepare(`UPDATE missions SET priority_discord_sent = 0 WHERE id = ?`).run(input.missionId);
 			}
 
 			const updated = selectMission.get(input.missionId) as MissionRow | undefined;
@@ -866,6 +875,8 @@ export function archiveGame(input: {
 			archive_result_json = ?,
 			priority_claim_manual_state = 'closed',
 			regular_join_enabled = 0,
+			image_data = NULL,
+			image_mime = NULL,
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?,
 			archived_by_steamid64 = ?
@@ -1104,6 +1115,8 @@ export function cancelGame(input: {
 			archive_result_json = NULL,
 			priority_claim_manual_state = 'closed',
 			regular_join_enabled = 0,
+			image_data = NULL,
+			image_mime = NULL,
 			updated_at = CURRENT_TIMESTAMP,
 			updated_by_steamid64 = ?,
 			archived_by_steamid64 = ?
@@ -1382,4 +1395,97 @@ export function getCurrentPublishedSummary(): CurrentGameSummary | null {
 		description: parseLocalizedDescription(row.description),
 		startsAt: row.starts_at ?? null
 	};
+}
+
+export function setMissionImage(
+	missionId: number,
+	data: string,
+	mime: string
+): { success: true } | { success: false; error: 'not_found' | 'database_error' } {
+	const db = getDb();
+	try {
+		const result = db.prepare(`
+			UPDATE missions
+			SET image_data = ?, image_mime = ?, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+			WHERE id = ?
+		`).run(data, mime, missionId);
+		if (result.changes === 0) return { success: false, error: 'not_found' };
+		return { success: true };
+	} catch {
+		return { success: false, error: 'database_error' };
+	}
+}
+
+export function getMissionImage(missionId: number): { data: string; mime: string } | null {
+	const db = getDb();
+	const row = db.prepare('SELECT image_data, image_mime FROM missions WHERE id = ? AND image_data IS NOT NULL').get(missionId) as
+		{ image_data: string; image_mime: string } | undefined;
+	return row ? { data: row.image_data, mime: row.image_mime } : null;
+}
+
+export function deleteMissionImage(missionId: number): { success: true } | { success: false; error: 'not_found' | 'database_error' } {
+	const db = getDb();
+	try {
+		const result = db.prepare(`
+			UPDATE missions
+			SET image_data = NULL, image_mime = NULL, updated_at = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+			WHERE id = ?
+		`).run(missionId);
+		if (result.changes === 0) return { success: false, error: 'not_found' };
+		return { success: true };
+	} catch {
+		return { success: false, error: 'database_error' };
+	}
+}
+
+export type PendingPriorityNotification = {
+	missionId: number;
+	title: string;
+	shortCode: string;
+	startsAt: string;
+	discordRoleIds: string[];
+};
+
+export function claimPendingPriorityDiscordNotifications(): PendingPriorityNotification[] {
+	const db = getDb();
+	const now = new Date().toISOString();
+
+	const rows = db.prepare(`
+		SELECT id, title, short_code, starts_at
+		FROM missions
+		WHERE status = 'published'
+			AND priority_discord_sent = 0
+			AND skip_priority_discord = 0
+			AND (
+				priority_claim_manual_state = 'open'
+				OR (priority_claim_manual_state = 'default' AND priority_claim_opens_at IS NOT NULL AND priority_claim_opens_at <= ?)
+			)
+	`).all(now) as Array<{ id: number; title: string; short_code: string; starts_at: string }>;
+
+	if (rows.length === 0) return [];
+
+	const markSent = db.prepare(`UPDATE missions SET priority_discord_sent = 1 WHERE id = ?`);
+	const selectRoleIds = db.prepare(`
+		SELECT bt.discord_role_id
+		FROM mission_priority_badges mpb
+		JOIN badge_types bt ON bt.id = mpb.badge_type_id
+		WHERE mpb.mission_id = ? AND bt.discord_role_id IS NOT NULL
+	`);
+	const markAll = db.transaction(() => {
+		for (const row of rows) {
+			markSent.run(row.id);
+		}
+	});
+	markAll();
+
+	return rows.map((row) => {
+		const roleRows = selectRoleIds.all(row.id) as Array<{ discord_role_id: string }>;
+		return {
+			missionId: row.id,
+			title: row.title,
+			shortCode: row.short_code,
+			startsAt: row.starts_at,
+			discordRoleIds: roleRows.map((r) => r.discord_role_id),
+		};
+	});
 }

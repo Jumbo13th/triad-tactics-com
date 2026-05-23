@@ -63,6 +63,9 @@ export type MissionRow = {
 	unit_slotting_manual_state: 'closed' | 'open';
 	unit_gameplay_released_at: string | null;
 	unit_gameplay_ever_released: number | boolean;
+	image_mime: string | null;
+	priority_discord_sent: number | boolean;
+	skip_priority_discord: number | boolean;
 };
 
 export type MissionParticipationUserRow = {
@@ -197,7 +200,10 @@ export function selectMissionColumns() {
 		slotting_json,
 		unit_slotting_manual_state,
 		unit_gameplay_released_at,
-		unit_gameplay_ever_released
+		unit_gameplay_ever_released,
+		image_mime,
+		priority_discord_sent,
+		skip_priority_discord
 	`;
 }
 
@@ -212,6 +218,19 @@ export function selectPriorityBadgeTypeIds(db: DbConnection, missionId: number):
 		.all(missionId) as Array<{ badge_type_id: number }>;
 
 	return rows.map((row) => row.badge_type_id);
+}
+
+export function selectPriorityBadgeDiscordRoleIds(db: DbConnection, missionId: number): string[] {
+	const rows = db
+		.prepare(`
+			SELECT bt.discord_role_id
+			FROM mission_priority_badges mpb
+			JOIN badge_types bt ON bt.id = mpb.badge_type_id
+			WHERE mpb.mission_id = ? AND bt.discord_role_id IS NOT NULL
+		`)
+		.all(missionId) as Array<{ discord_role_id: string }>;
+
+	return rows.map((row) => row.discord_role_id);
 }
 
 export function selectMissionUpdates(db: DbConnection, missionId: number): GameMissionUpdate[] {
@@ -412,7 +431,10 @@ export function mapMissionRow(db: DbConnection, row: MissionRow): GameAdminMissi
 		unitAssignments: selectMissionUnitAssignments(db, row.id),
 		updates: selectMissionUpdates(db, row.id),
 		slotting: parseCanonicalSlotting(row.slotting_json),
-		episodeSlottings: selectEpisodeSlottings(db, row.id)
+		episodeSlottings: selectEpisodeSlottings(db, row.id),
+		imageMime: row.image_mime ?? null,
+		priorityDiscordSent: !!row.priority_discord_sent,
+		skipPriorityDiscord: !!row.skip_priority_discord
 	};
 }
 

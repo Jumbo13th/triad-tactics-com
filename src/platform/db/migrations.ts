@@ -828,5 +828,28 @@ export const migrations: Migration[] = [
 			ALTER TABLE rotation_config ADD COLUMN side_a_color TEXT NOT NULL DEFAULT '#3b82f6';
 			ALTER TABLE rotation_config ADD COLUMN side_b_color TEXT NOT NULL DEFAULT '#ef4444';
 		`
+	},
+	{
+		id: 20,
+		name: 'mission_image',
+		up: `
+			ALTER TABLE missions ADD COLUMN image_data TEXT;
+			ALTER TABLE missions ADD COLUMN image_mime TEXT;
+		`
+	},
+	{
+		id: 21,
+		name: 'mission_priority_discord_flags',
+		up: `
+			ALTER TABLE missions ADD COLUMN priority_discord_sent INTEGER NOT NULL DEFAULT 0;
+			ALTER TABLE missions ADD COLUMN skip_priority_discord INTEGER NOT NULL DEFAULT 0;
+		`
+	},
+	{
+		id: 22,
+		name: 'badge_type_discord_role_id',
+		up: `
+			ALTER TABLE badge_types ADD COLUMN discord_role_id TEXT DEFAULT NULL;
+		`
 	}
 ];

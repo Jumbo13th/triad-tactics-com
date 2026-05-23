@@ -33,6 +33,17 @@ export const updateBadgeTypeStatusRequestSchema = z.object({
 	status: z.enum(['active', 'retired'])
 });
 
+export const updateBadgeTypeDiscordRoleRequestSchema = z.object({
+	discordRoleId: z.preprocess((value) => {
+		if (value === null || value === undefined) return null;
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			return trimmed === '' ? null : trimmed;
+		}
+		return value;
+	}, z.string().min(1).max(64).nullable())
+});
+
 export const mutateUserBadgeRequestSchema = z.object({
 	badgeTypeId: z.number().int().positive()
 });
