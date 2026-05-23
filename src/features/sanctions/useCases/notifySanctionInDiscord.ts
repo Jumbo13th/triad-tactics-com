@@ -59,7 +59,9 @@ const SANCTION_TYPE_EMOJI: Record<SanctionType, string> = {
 
 function formatExpiresAt(expiresAt: string | null): string {
 	if (!expiresAt) return 'Перманентно';
-	return `<t:${Math.floor(new Date(expiresAt.replace(' ', 'T') + 'Z').getTime() / 1000)}:f>`;
+	const ms = new Date(expiresAt.replace(' ', 'T') + 'Z').getTime();
+	if (isNaN(ms)) return 'Перманентно';
+	return `<t:${Math.floor(ms / 1000)}:f>`;
 }
 
 function formatSanctionMessage(data: SanctionNotificationData): string {

@@ -1287,6 +1287,9 @@
     "descriptionLabel": "Опис",
     "descriptionPlaceholder": "Розкажіть про загін",
     "commander": "Командир",
+    "deputy": "Заступник",
+    "promoteDeputy": "Призначити заступником",
+    "demoteDeputy": "Зняти із заступника",
     "members": "Учасники",
     "applicants": "Заявки",
     "slotsAllocated": "Виділено слотів",
@@ -1324,7 +1327,8 @@
     },
     "role": {
       "member": "Учасник",
-      "applicant": "Заявка"
+      "applicant": "Заявка",
+      "deputy": "Заступник"
     },
     "actions": {
       "approve": "Прийняти",
@@ -1386,7 +1390,9 @@
       "applicant_rejected": "Заявку {target} відхилено гравцем {actor}",
       "application_withdrawn": "{actor} відкликав заявку",
       "leader_changed": "Командування передано {target}",
-      "slots_changed": "Кількість слотів змінено на {meta}"
+      "slots_changed": "Кількість слотів змінено на {meta}",
+      "deputy_promoted": "{target} призначено заступником ({actor})",
+      "deputy_demoted": "{target} знято із заступника ({actor})"
     },
     "adminSection": "Керування",
     "deleteUnitSection": "Видалити загін",

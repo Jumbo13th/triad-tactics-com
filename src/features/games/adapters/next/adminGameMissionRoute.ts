@@ -1017,6 +1017,9 @@ export async function getAdminGameImageRoute(
 	context: AdminGameMissionRouteContext
 ): Promise<NextResponse> {
 	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
 		const missionId = await readMissionId(context);
 		if (!missionId) return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 

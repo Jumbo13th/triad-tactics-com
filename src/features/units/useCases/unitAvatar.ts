@@ -19,7 +19,10 @@ export function uploadAvatar(deps: UnitDeps, input: {
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
 	const user = deps.users.getUserBySteamId64(input.steamid64);
-	if (!user || !canEditUnit(unit, user.id, input.isAdmin)) {
+	if (!user) return { ok: false, status: 403, json: { error: 'forbidden' } };
+
+	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
+	if (!canEditUnit(unit, user.id, input.isAdmin, membership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 
@@ -50,7 +53,10 @@ export function deleteAvatar(deps: UnitDeps, input: {
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
 	const user = deps.users.getUserBySteamId64(input.steamid64);
-	if (!user || !canEditUnit(unit, user.id, input.isAdmin)) {
+	if (!user) return { ok: false, status: 403, json: { error: 'forbidden' } };
+
+	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
+	if (!canEditUnit(unit, user.id, input.isAdmin, membership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 

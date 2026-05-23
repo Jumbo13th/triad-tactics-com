@@ -131,7 +131,7 @@ export async function postAdminCreateSanctionRoute(request: NextRequest): Promis
 			expiresAt,
 			autoEscalation: result.autoEscalation ?? false,
 			adminCallsign
-		}, DISCORD_BOT_TOKEN).catch((error) => {
+		}, DISCORD_BOT_TOKEN).catch(error => {
 			logger.error({ ...errorToLogObject(error) }, 'discord_sanction_notification_failed');
 		});
 
@@ -148,7 +148,7 @@ export async function postAdminCreateSanctionRoute(request: NextRequest): Promis
 				expiresAt: autoBanExpiresAt,
 				autoEscalation: false,
 				adminCallsign
-			}, DISCORD_BOT_TOKEN).catch((error) => {
+			}, DISCORD_BOT_TOKEN).catch(error => {
 				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_autoban_notification_failed');
 			});
 		}
@@ -204,7 +204,7 @@ export async function postAdminCancelSanctionRoute(
 				originalReason: sanctionRow.reason,
 				cancelReason: parsed.data.reason.trim(),
 				adminCallsign
-			}, DISCORD_BOT_TOKEN).catch((error) => {
+			}, DISCORD_BOT_TOKEN).catch(error => {
 				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_cancel_notification_failed');
 			});
 		}
@@ -270,7 +270,7 @@ export async function postAdminUpdateSanctionExpiryRoute(
 				originalReason: sanctionRow.reason,
 				newExpiresAt: expiresAt,
 				adminCallsign
-			}, DISCORD_BOT_TOKEN).catch((error) => {
+			}, DISCORD_BOT_TOKEN).catch(error => {
 				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_expiry_notification_failed');
 			});
 		}

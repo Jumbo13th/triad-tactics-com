@@ -38,6 +38,7 @@ type ViewerContext = {
 	isMember: boolean;
 	isApplicant: boolean;
 	isLeader: boolean;
+	isDeputy: boolean;
 	isAdmin: boolean;
 	hasUnitElsewhere: boolean;
 	membership: { message: string } | null;
@@ -67,7 +68,7 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 	const [unit, setUnit] = useState<Unit | null>(null);
 	const [members, setMembers] = useState<UnitMembership[]>([]);
 	const [events, setEvents] = useState<UnitEvent[]>([]);
-	const [viewer, setViewer] = useState<ViewerContext>({ isMember: false, isApplicant: false, isLeader: false, isAdmin: false, hasUnitElsewhere: false, membership: null });
+	const [viewer, setViewer] = useState<ViewerContext>({ isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false, hasUnitElsewhere: false, membership: null });
 	const [loading, setLoading] = useState(true);
 	const [actionError, setActionError] = useState<string | null>(null);
 	const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 					setUnit(data.unit);
 					setMembers(data.members ?? []);
 					setEvents(data.events ?? []);
-					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isAdmin: false, hasUnitElsewhere: false, membership: null });
+					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false, hasUnitElsewhere: false, membership: null });
 				}
 				setLoading(false);
 			})
@@ -117,7 +118,7 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 	if (loading) return <p className="py-8 text-center text-sm text-neutral-500">Loading…</p>;
 	if (!unit) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.not_found')}</p>;
 
-	const membersList = members.filter(m => m.role === 'member');
+	const membersList = members.filter(m => m.role === 'member' || m.role === 'deputy');
 	const applicantsList = members.filter(m => m.role === 'applicant');
 
 	return (
@@ -199,7 +200,7 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 					)}
 
 					<div className="flex flex-wrap gap-2">
-						{viewer.isLeader && (
+						{(viewer.isLeader || viewer.isDeputy) && (
 							<Link
 								href={`/units/${unit.tag}/edit`}
 								className="inline-flex min-h-11 items-center rounded-lg border border-neutral-700 bg-white/5 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/10"
@@ -271,8 +272,13 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 										{t('commander')}
 									</span>
 								)}
+								{m.role === 'deputy' && unit.leaderUserId !== m.userId && (
+									<span className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
+										{t('deputy')}
+									</span>
+								)}
 							</div>
-							{viewer.isLeader && m.userId !== unit.leaderUserId && (
+							{(viewer.isLeader || (viewer.isDeputy && m.role !== 'deputy')) && m.userId !== unit.leaderUserId && (
 								<button
 									type="button"
 									onClick={() => setPendingConfirm({ title: t('actions.remove'), text: t('confirmRemove'), action: () => handleAction(`/api/units/${unitId}/members`, { userId: m.userId, action: 'remove' }) })}
@@ -286,7 +292,7 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 				</div>
 			</div>
 
-			{viewer.isLeader && applicantsList.length > 0 && (
+			{(viewer.isLeader || viewer.isDeputy) && applicantsList.length > 0 && (
 				<div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-6">
 					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">
 						{t('applicants')} ({applicantsList.length})

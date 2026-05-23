@@ -1,5 +1,5 @@
 export type UnitStatus = 'unverified' | 'verified';
-export type UnitMemberRole = 'member' | 'applicant';
+export type UnitMemberRole = 'member' | 'applicant' | 'deputy';
 
 export interface Unit {
 	id: number;
@@ -62,7 +62,9 @@ export type UnitEventKind =
 	| 'applicant_rejected'
 	| 'application_withdrawn'
 	| 'leader_changed'
-	| 'slots_changed';
+	| 'slots_changed'
+	| 'deputy_promoted'
+	| 'deputy_demoted';
 
 export interface UnitEvent {
 	id: number;
@@ -78,6 +80,7 @@ export interface UnitViewerContext {
 	isMember: boolean;
 	isApplicant: boolean;
 	isLeader: boolean;
+	isDeputy: boolean;
 	isAdmin: boolean;
 	hasUnitElsewhere: boolean;
 	membership: UnitMembership | null;

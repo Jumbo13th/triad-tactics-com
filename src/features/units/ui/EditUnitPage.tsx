@@ -25,12 +25,14 @@ type UnitMembership = {
 	userId: number;
 	callsign: string | null;
 	role: string;
+	message: string;
 };
 
 type ViewerContext = {
 	isMember: boolean;
 	isApplicant: boolean;
 	isLeader: boolean;
+	isDeputy: boolean;
 	isAdmin: boolean;
 };
 
@@ -39,7 +41,7 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 	const router = useRouter();
 	const [unit, setUnit] = useState<Unit | null>(null);
 	const [members, setMembers] = useState<UnitMembership[]>([]);
-	const [viewer, setViewer] = useState<ViewerContext>({ isMember: false, isApplicant: false, isLeader: false, isAdmin: false });
+	const [viewer, setViewer] = useState<ViewerContext>({ isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false });
 	const [loading, setLoading] = useState(true);
 
 	const [description, setDescription] = useState('');
@@ -58,7 +60,7 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 				if (data.unit) {
 					setUnit(data.unit);
 					setMembers(data.members ?? []);
-					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false });
+					setViewer(data.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false });
 					setDescription(data.unit.description);
 					setJoinMessage(data.unit.joinMessage ?? '');
 				}
@@ -95,13 +97,15 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 		}
 	}
 
-	async function handleMemberAction(userId: number, action: string) {
+	async function handleMemberAction(userId: number, action: string, role?: string) {
 		setActionError(null);
 		try {
+			const payload: Record<string, unknown> = { userId, action };
+			if (role) payload.role = role;
 			const res = await fetch(`/api/units/${unitId}/members`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ userId, action })
+				body: JSON.stringify(payload)
 			});
 			if (!res.ok) {
 				const data = await res.json();
@@ -150,9 +154,9 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 
 	if (loading) return <p className="py-8 text-center text-sm text-neutral-500">Loading…</p>;
 	if (!unit) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.not_found')}</p>;
-	if (!viewer.isLeader) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.forbidden')}</p>;
+	if (!viewer.isLeader && !viewer.isDeputy) return <p className="py-8 text-center text-sm text-neutral-500">{t('errors.forbidden')}</p>;
 
-	const membersList = members.filter(m => m.role === 'member');
+	const membersList = members.filter(m => m.role === 'member' || m.role === 'deputy');
 	const applicantsList = members.filter(m => m.role === 'applicant');
 
 	const inputClass =
@@ -249,16 +253,42 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 										{t('commander')}
 									</span>
 								)}
+								{m.role === 'deputy' && unit.leaderUserId !== m.userId && (
+									<span className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-400">
+										{t('deputy')}
+									</span>
+								)}
 							</div>
-							{m.userId !== unit.leaderUserId && (
+							{m.userId !== unit.leaderUserId && (viewer.isLeader || (viewer.isDeputy && m.role !== 'deputy')) && (
 								<div className="flex gap-2">
-									<button
-										type="button"
-										onClick={() => setPendingConfirm({ title: t('transferLeadership'), text: t('confirmTransfer'), action: () => handleTransferLeadership(m.userId) })}
-										className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-800"
-									>
-										{t('transferLeadership')}
-									</button>
+									{viewer.isLeader && (
+										<>
+											<button
+												type="button"
+												onClick={() => setPendingConfirm({ title: t('transferLeadership'), text: t('confirmTransfer'), action: () => handleTransferLeadership(m.userId) })}
+												className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:bg-neutral-800"
+											>
+												{t('transferLeadership')}
+											</button>
+											{m.role === 'deputy' ? (
+												<button
+													type="button"
+													onClick={() => handleMemberAction(m.userId, 'set_role', 'member')}
+													className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-yellow-400 transition hover:bg-neutral-800"
+												>
+													{t('demoteDeputy')}
+												</button>
+											) : (
+												<button
+													type="button"
+													onClick={() => handleMemberAction(m.userId, 'set_role', 'deputy')}
+													className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-purple-400 transition hover:bg-neutral-800"
+												>
+													{t('promoteDeputy')}
+												</button>
+											)}
+										</>
+									)}
 									<button
 										type="button"
 										onClick={() => setPendingConfirm({ title: t('actions.remove'), text: t('confirmRemove'), action: () => handleMemberAction(m.userId, 'remove') })}
@@ -280,40 +310,47 @@ export default function EditUnitPage({ unitId }: { unitId: number }) {
 					</p>
 					<div className="mt-4 grid gap-3">
 						{applicantsList.map(m => (
-							<div key={m.id} className="flex items-center justify-between rounded-2xl border border-neutral-800 bg-white/[0.03] px-4 py-3">
-								<span className="text-sm font-medium text-neutral-200">{m.callsign ?? '—'}</span>
-								<div className="flex gap-2">
-									<button
-										type="button"
-										onClick={() => handleMemberAction(m.userId, 'approve')}
-										className="inline-flex items-center rounded-lg bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
-									>
-										{t('actions.approve')}
-									</button>
-									<button
-										type="button"
-										onClick={() => setPendingConfirm({ title: t('actions.reject'), text: t('confirmReject'), action: () => handleMemberAction(m.userId, 'reject') })}
-										className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-neutral-800"
-									>
-										{t('actions.reject')}
-									</button>
+							<div key={m.id} className="rounded-2xl border border-neutral-800 bg-white/[0.03] px-4 py-3">
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium text-neutral-200">{m.callsign ?? '—'}</span>
+									<div className="flex gap-2">
+										<button
+											type="button"
+											onClick={() => handleMemberAction(m.userId, 'approve')}
+											className="inline-flex items-center rounded-lg bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
+										>
+											{t('actions.approve')}
+										</button>
+										<button
+											type="button"
+											onClick={() => setPendingConfirm({ title: t('actions.reject'), text: t('confirmReject'), action: () => handleMemberAction(m.userId, 'reject') })}
+											className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-neutral-800"
+										>
+											{t('actions.reject')}
+										</button>
+									</div>
 								</div>
+								{m.message && (
+									<p className="mt-2 whitespace-pre-line text-sm text-neutral-400">{m.message}</p>
+								)}
 							</div>
 						))}
 					</div>
 				</div>
 			)}
-			<div className="rounded-2xl border border-red-500/20 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-6">
-				<p className="text-xs font-semibold uppercase tracking-[0.3em] text-red-400">{t('deleteUnitSection')}</p>
-				<p className="mt-2 text-sm text-neutral-400">{t('deleteUnitWarning')}</p>
-				<button
-					type="button"
-					onClick={() => setShowDeleteModal(true)}
-					className="mt-4 inline-flex items-center rounded-lg border border-red-500/35 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/15"
-				>
-					{t('actions.delete')}
-				</button>
-			</div>
+			{viewer.isLeader && (
+				<div className="rounded-2xl border border-red-500/20 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-6">
+					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-red-400">{t('deleteUnitSection')}</p>
+					<p className="mt-2 text-sm text-neutral-400">{t('deleteUnitWarning')}</p>
+					<button
+						type="button"
+						onClick={() => setShowDeleteModal(true)}
+						className="mt-4 inline-flex items-center rounded-lg border border-red-500/35 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/15"
+					>
+						{t('actions.delete')}
+					</button>
+				</div>
+			)}
 
 			{pendingConfirm && typeof document !== 'undefined'
 				? createPortal(

@@ -8,14 +8,22 @@ export function isUnitLeader(unit: Unit, userId: number): boolean {
 	return unit.leaderUserId === userId;
 }
 
-export function canEditUnit(unit: Unit, userId: number, isAdmin: boolean): boolean {
-	if (isAdmin) return true;
-	return isUnitLeader(unit, userId);
+export function isUnitDeputy(membership: UnitMembership | null): boolean {
+	return membership?.role === 'deputy';
 }
 
-export function canManageMembers(unit: Unit, userId: number, isAdmin: boolean): boolean {
+function hasLeadershipAccess(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
 	if (isAdmin) return true;
-	return isUnitLeader(unit, userId);
+	if (isUnitLeader(unit, userId)) return true;
+	return membership !== undefined && isUnitDeputy(membership);
+}
+
+export function canEditUnit(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
+	return hasLeadershipAccess(unit, userId, isAdmin, membership);
+}
+
+export function canManageMembers(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
+	return hasLeadershipAccess(unit, userId, isAdmin, membership);
 }
 
 export function canApplyToUnit(

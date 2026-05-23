@@ -706,14 +706,14 @@ export function mapMissionDetailForViewer(input: {
 	const unitSlottingOpen = isPublished && input.row.unit_slotting_manual_state === 'open';
 
 	const viewerUnit = input.db.prepare(`
-		SELECT u.id AS unit_id, u.tag, u.leader_user_id, u.slots_allocated
+		SELECT u.id AS unit_id, u.tag, u.leader_user_id, u.slots_allocated, um.role AS membership_role
 		FROM unit_memberships um
 		JOIN units u ON u.id = um.unit_id
-		WHERE um.user_id = ? AND um.role = 'member'
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
 		LIMIT 1
-	`).get(input.viewer.id) as { unit_id: number; tag: string; leader_user_id: number | null; slots_allocated: number } | undefined;
+	`).get(input.viewer.id) as { unit_id: number; tag: string; leader_user_id: number | null; slots_allocated: number; membership_role: string } | undefined;
 
-	const viewerIsUnitLeader = viewerUnit != null && viewerUnit.leader_user_id === input.viewer.id;
+	const viewerIsUnitLeader = viewerUnit != null && (viewerUnit.leader_user_id === input.viewer.id || viewerUnit.membership_role === 'deputy');
 	const updates = selectMissionUpdates(input.db, input.row.id);
 	const activeEpisodeNumber = deriveActiveEpisode(updates);
 	const viewerUnitAssignment = viewerUnit

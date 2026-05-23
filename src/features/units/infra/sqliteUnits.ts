@@ -85,7 +85,7 @@ const UNIT_SELECT = `
 		u.created_by_user_id, u.verified_at, u.verified_by_steamid64,
 		u.unverified_at, u.unverified_by_steamid64, u.created_at, u.updated_at,
 		lu.current_callsign AS leader_callsign,
-		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role = 'member') AS member_count,
+		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy')) AS member_count,
 		(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role = 'applicant') AS applicant_count
 	FROM units u
 	LEFT JOIN users lu ON lu.id = u.leader_user_id
@@ -187,7 +187,7 @@ export function listUnits(input: {
 			u.id, u.name, u.tag, u.description, u.status,
 			u.avatar_mime, u.slots_allocated, u.updated_at,
 			lu.current_callsign AS leader_callsign,
-			(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role = 'member') AS member_count
+			(SELECT COUNT(*) FROM unit_memberships m WHERE m.unit_id = u.id AND m.role IN ('member', 'deputy')) AS member_count
 		FROM units u
 		LEFT JOIN users lu ON lu.id = u.leader_user_id
 		${where}
@@ -368,7 +368,7 @@ export function setUnitLeader(
 	const db = getDb();
 	try {
 		const membership = db.prepare(
-			`SELECT id FROM unit_memberships WHERE unit_id = ? AND user_id = ? AND role = 'member'`
+			`SELECT id FROM unit_memberships WHERE unit_id = ? AND user_id = ? AND role IN ('member', 'deputy')`
 		).get(unitId, userId);
 		if (!membership) return { success: false, error: 'not_member' };
 
@@ -465,7 +465,7 @@ export function getActiveMemberUnit(userId: number): { id: number; name: string;
 		SELECT u.id, u.name, u.tag
 		FROM unit_memberships um
 		JOIN units u ON u.id = um.unit_id
-		WHERE um.user_id = ? AND um.role = 'member'
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
 	`).get(userId) as { id: number; name: string; tag: string } | undefined;
 	return row ?? null;
 }
