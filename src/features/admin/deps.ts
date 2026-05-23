@@ -19,8 +19,8 @@ import {
 	listUsers,
 	listUsersPage,
 	removeBadgeFromUser,
-	setUserRenameRequiredBySteamId64
-	,
+	setUserRenameRequiredBySteamId64,
+	updateBadgeTypeDiscordRoleId,
 	updateBadgeTypeStatus
 } from '@/features/admin/infra/sqliteAdmin';
 import { getUserBySteamId64 } from '@/features/users/infra/sqliteUsers';
@@ -34,8 +34,8 @@ import type {
 	ListRenameRequestsDeps,
 	ListUsersDeps,
 	RemoveUserBadgeDeps,
-	RenameRequiredDeps
-	,
+	RenameRequiredDeps,
+	UpdateBadgeTypeDiscordRoleDeps,
 	UpdateBadgeTypeStatusDeps
 } from './ports';
 import { enqueueOutboxEmail } from '@/platform/outbox/emailOutbox';
@@ -137,5 +137,11 @@ export const assignUserBadgeDeps: AssignUserBadgeDeps = {
 export const removeUserBadgeDeps: RemoveUserBadgeDeps = {
 	repo: {
 		removeBadgeFromUser
+	}
+};
+
+export const updateBadgeTypeDiscordRoleDeps: UpdateBadgeTypeDiscordRoleDeps = {
+	repo: {
+		updateBadgeTypeDiscordRoleId
 	}
 };

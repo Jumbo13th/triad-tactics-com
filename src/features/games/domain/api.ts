@@ -49,6 +49,9 @@ const adminGameMissionOverviewSchema = z.object({
 	serverDetailsHidden: z.boolean(),
 	priorityBadgeTypeIds: z.array(z.number().int().positive()),
 	unitSlottingManualState: z.enum(['closed', 'open']),
+	imageMime: z.string().nullable().default(null),
+	priorityDiscordSent: z.boolean().default(false),
+	skipPriorityDiscord: z.boolean().default(false),
 	unitAssignments: z.array(z.object({
 		unitId: z.number().int().positive(),
 		unitTag: z.string(),

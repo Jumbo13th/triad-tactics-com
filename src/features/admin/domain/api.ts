@@ -80,6 +80,7 @@ const adminBadgeTypeSchema = z.object({
 	id: z.number(),
 	label: z.string(),
 	status: z.enum(['active', 'retired']),
+	discord_role_id: z.string().nullable().default(null),
 	created_at: z.string().optional(),
 	updated_at: z.string().optional(),
 	created_by_steamid64: z.string().nullable().optional(),

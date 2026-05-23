@@ -8,6 +8,9 @@ import { cancelSanction } from '@/features/sanctions/useCases/cancelSanction';
 import { updateSanctionExpiry } from '@/features/sanctions/useCases/updateSanctionExpiry';
 import { listSanctionsDeps, createSanctionDeps, cancelSanctionDeps, updateSanctionExpiryDeps } from '@/features/sanctions/deps';
 import type { SanctionType } from '@/features/sanctions/domain/types';
+import { notifySanctionInDiscord } from '@/features/sanctions/useCases/notifySanctionInDiscord';
+import { DISCORD_BOT_TOKEN } from '@/platform/env';
+import { getDb } from '@/platform/db/connection';
 
 const createSanctionSchema = z.object({
 	userId: z.number().int().min(1),
@@ -25,6 +28,14 @@ const updateExpirySchema = z.object({
 });
 
 const DEFAULT_PAGE_SIZE = 50;
+
+function getCallsignBySteamId64(steamid64: string): string {
+	const db = getDb();
+	const row = db.prepare(
+		'SELECT u.current_callsign FROM user_identities ui JOIN users u ON u.id = ui.user_id WHERE ui.provider = ? AND ui.provider_user_id = ?'
+	).get('steam', steamid64) as { current_callsign: string | null } | undefined;
+	return row?.current_callsign ?? steamid64;
+}
 
 function normalizeTypeFilter(value: string | null): SanctionType | null {
 	if (!value) return null;
@@ -94,6 +105,54 @@ export async function postAdminCreateSanctionRoute(request: NextRequest): Promis
 			return NextResponse.json({ success: false, error: result.error }, { status: 400 });
 		}
 
+		const db = getDb();
+		const row = db.prepare('SELECT current_callsign FROM users WHERE id = ?').get(userId) as
+			{ current_callsign: string | null } | undefined;
+		const callsign = row?.current_callsign ?? `User #${userId}`;
+		const adminCallsign = getCallsignBySteamId64(admin.identity.steamid64);
+
+		const effectiveDuration = type === 'strike' ? null : (durationMinutes ?? null);
+		let expiresAt: string | null = null;
+		if (type === 'strike') {
+			const d = new Date();
+			d.setMonth(d.getMonth() + 1);
+			expiresAt = d.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
+		} else if (effectiveDuration !== null) {
+			const d = new Date();
+			d.setMinutes(d.getMinutes() + effectiveDuration);
+			expiresAt = d.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
+		}
+
+		notifySanctionInDiscord({
+			kind: 'created',
+			callsign,
+			type,
+			reason,
+			expiresAt,
+			autoEscalation: result.autoEscalation ?? false,
+			adminCallsign
+		}, DISCORD_BOT_TOKEN).catch((error) => {
+			logger.error({ ...errorToLogObject(error) }, 'discord_sanction_notification_failed');
+		});
+
+		if (result.autoEscalation) {
+			const autoBanExpires = new Date();
+			autoBanExpires.setDate(autoBanExpires.getDate() + 7);
+			const autoBanExpiresAt = autoBanExpires.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19);
+
+			notifySanctionInDiscord({
+				kind: 'created',
+				callsign,
+				type: 'server_ban',
+				reason: 'Автоматически: 3 активных предупреждения',
+				expiresAt: autoBanExpiresAt,
+				autoEscalation: false,
+				adminCallsign
+			}, DISCORD_BOT_TOKEN).catch((error) => {
+				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_autoban_notification_failed');
+			});
+		}
+
 		return NextResponse.json({ success: true, autoEscalation: result.autoEscalation ?? false });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_create_sanction_failed');
@@ -129,6 +188,25 @@ export async function postAdminCancelSanctionRoute(
 
 		if (!result.success) {
 			return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+		}
+
+		const db = getDb();
+		const sanctionRow = db.prepare(
+			'SELECT s.type, s.reason, u.current_callsign AS callsign FROM sanctions s JOIN users u ON u.id = s.user_id WHERE s.id = ?'
+		).get(sanctionId) as { type: SanctionType; reason: string; callsign: string | null } | undefined;
+
+		if (sanctionRow) {
+			const adminCallsign = getCallsignBySteamId64(admin.identity.steamid64);
+			notifySanctionInDiscord({
+				kind: 'cancelled',
+				callsign: sanctionRow.callsign ?? `Sanction #${sanctionId}`,
+				type: sanctionRow.type,
+				originalReason: sanctionRow.reason,
+				cancelReason: parsed.data.reason.trim(),
+				adminCallsign
+			}, DISCORD_BOT_TOKEN).catch((error) => {
+				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_cancel_notification_failed');
+			});
 		}
 
 		return NextResponse.json({ success: true });
@@ -176,6 +254,25 @@ export async function postAdminUpdateSanctionExpiryRoute(
 
 		if (!result.success) {
 			return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+		}
+
+		const db = getDb();
+		const sanctionRow = db.prepare(
+			'SELECT s.type, s.reason, u.current_callsign AS callsign FROM sanctions s JOIN users u ON u.id = s.user_id WHERE s.id = ?'
+		).get(sanctionId) as { type: SanctionType; reason: string; callsign: string | null } | undefined;
+
+		if (sanctionRow) {
+			const adminCallsign = getCallsignBySteamId64(admin.identity.steamid64);
+			notifySanctionInDiscord({
+				kind: 'expiry_changed',
+				callsign: sanctionRow.callsign ?? `Sanction #${sanctionId}`,
+				type: sanctionRow.type,
+				originalReason: sanctionRow.reason,
+				newExpiresAt: expiresAt,
+				adminCallsign
+			}, DISCORD_BOT_TOKEN).catch((error) => {
+				logger.error({ ...errorToLogObject(error) }, 'discord_sanction_expiry_notification_failed');
+			});
 		}
 
 		return NextResponse.json({ success: true });

@@ -49,10 +49,16 @@ import { updateMissionUpdate } from '@/features/games/useCases/updateMissionUpda
 import { updateGameSettings } from '@/features/games/useCases/updateGameSettings';
 import { updateGameSlotting } from '@/features/games/useCases/updateGameSlotting';
 import { updateUnitAssignments } from '@/features/games/useCases/updateUnitAssignments';
-import { DISCORD_BOT_TOKEN } from '@/platform/env';
+import { DISCORD_BOT_TOKEN, DISCORD_CONFIRMED_ROLE_ID } from '@/platform/env';
 import { errorToLogObject, logger } from '@/platform/logger';
+import { getMissionImage, setMissionImage, deleteMissionImage } from '@/features/games/infra/sqliteGames';
+import { selectPriorityBadgeDiscordRoleIds } from '@/features/games/infra/sqliteGamesShared';
+import { getDb } from '@/platform/db';
+import { createHash } from 'node:crypto';
+import { validateImageMagicBytes } from '@/features/units/domain/requests';
 import type { ZodIssue } from 'zod';
 import {notifyMissionUpdateInDiscord} from "@/features/games/useCases/notifyMissionUpdateInDiscord";
+import {notifyMissionPublishedInDiscord, notifyPrioritySlottingInDiscord} from "@/features/games/useCases/notifyMissionPublishedInDiscord";
 
 type AdminGameMissionRouteContext = {
 	params: Promise<{ missionId: string }>;
@@ -404,9 +410,118 @@ export async function postAdminGamePublishRoute(
 			return NextResponse.json({ error: published.error }, { status });
 		}
 
+		if (!parsed.data.skipDiscord) {
+			const mission = published.mission;
+			const episodeCount = mission.episodeSlottings.length || 1;
+			const slotting = mission.episodeSlottings[0]?.slotting ?? mission.slotting;
+			const image = getMissionImage(missionId);
+
+			notifyMissionPublishedInDiscord({
+				title: mission.title,
+				descriptionRu: mission.description.ru,
+				shortCode: mission.shortCode!,
+				startsAt: mission.startsAt!,
+				episodeCount,
+				slotting,
+				priorityClaimOpensAt: mission.priorityClaimOpensAt,
+				regularJoinEnabled: mission.regularJoinEnabled,
+				confirmedRoleId: DISCORD_CONFIRMED_ROLE_ID,
+				imageData: image?.data ?? null,
+				imageMime: image?.mime ?? null,
+			}, DISCORD_BOT_TOKEN).catch((err: unknown) => {
+				logger.error({ ...errorToLogObject(err) }, 'discord_publish_notify_failed');
+			});
+		}
+
 		return NextResponse.json({ success: true, mission: published.mission });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_game_publish_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminGameNotifyDiscordRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const missionResult = getAdminGameMission(getAdminGameMissionDeps, { missionId });
+		if (!missionResult.ok) {
+			return NextResponse.json({ error: missionResult.error }, { status: missionResult.error === 'not_found' ? 404 : 500 });
+		}
+
+		const mission = missionResult.mission;
+		if (mission.status !== 'published') {
+			return NextResponse.json({ error: 'not_published' }, { status: 409 });
+		}
+
+		const episodeCount = mission.episodeSlottings.length || 1;
+		const slotting = mission.episodeSlottings[0]?.slotting ?? mission.slotting;
+		const image = getMissionImage(missionId);
+
+		await notifyMissionPublishedInDiscord({
+			title: mission.title,
+			descriptionRu: mission.description.ru,
+			shortCode: mission.shortCode!,
+			startsAt: mission.startsAt!,
+			episodeCount,
+			slotting,
+			priorityClaimOpensAt: mission.priorityClaimOpensAt,
+			regularJoinEnabled: mission.regularJoinEnabled,
+			confirmedRoleId: DISCORD_CONFIRMED_ROLE_ID,
+			imageData: image?.data ?? null,
+			imageMime: image?.mime ?? null,
+		}, DISCORD_BOT_TOKEN);
+
+		return NextResponse.json({ success: true });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_notify_discord_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminGameNotifyPriorityDiscordRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const missionResult = getAdminGameMission(getAdminGameMissionDeps, { missionId });
+		if (!missionResult.ok) {
+			return NextResponse.json({ error: missionResult.error }, { status: missionResult.error === 'not_found' ? 404 : 500 });
+		}
+
+		const mission = missionResult.mission;
+		if (mission.status !== 'published') {
+			return NextResponse.json({ error: 'not_published' }, { status: 409 });
+		}
+
+		const discordRoleIds = selectPriorityBadgeDiscordRoleIds(getDb(), missionId);
+		await notifyPrioritySlottingInDiscord({
+			title: mission.title,
+			shortCode: mission.shortCode!,
+			startsAt: mission.startsAt!,
+			discordRoleIds,
+		}, DISCORD_BOT_TOKEN);
+
+		return NextResponse.json({ success: true });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_notify_priority_discord_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }
@@ -885,6 +1000,112 @@ export async function putAdminGameUnitAssignmentsRoute(
 		return NextResponse.json({ success: true, mission: result.mission });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_game_unit_assignments_update_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+const ALLOWED_IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const MAX_IMAGE_BASE64_SIZE = 2_000_000;
+
+const uploadImageRequestSchema = z.object({
+	data: z.string().min(1),
+	mime: z.enum(['image/png', 'image/jpeg', 'image/webp'])
+});
+
+export async function getAdminGameImageRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const missionId = await readMissionId(context);
+		if (!missionId) return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+
+		const image = getMissionImage(missionId);
+		if (!image) return new NextResponse(null, { status: 404 });
+
+		const mime = ALLOWED_IMAGE_MIMES.has(image.mime) ? image.mime : 'image/png';
+		const etag = `W/"${createHash('sha1').update(image.data).digest('hex')}"`;
+		const cacheControl = 'public, no-cache, max-age=0, must-revalidate';
+
+		if (request.headers.get('if-none-match') === etag) {
+			return new NextResponse(null, {
+				status: 304,
+				headers: { ETag: etag, 'Cache-Control': cacheControl, Vary: 'Accept-Encoding' }
+			});
+		}
+
+		const buffer = Buffer.from(image.data, 'base64');
+		return new NextResponse(buffer, {
+			status: 200,
+			headers: {
+				'Content-Type': mime,
+				ETag: etag,
+				'X-Content-Type-Options': 'nosniff',
+				'Content-Security-Policy': "default-src 'none'; style-src 'none'; script-src 'none'",
+				'Cache-Control': cacheControl,
+				Vary: 'Accept-Encoding'
+			}
+		});
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_image_get_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminGameImageRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+
+		const body: unknown = await request.json();
+		const parsed = uploadImageRequestSchema.safeParse(body);
+		if (!parsed.success) return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+
+		if (parsed.data.data.length > MAX_IMAGE_BASE64_SIZE) {
+			return NextResponse.json({ error: 'too_large' }, { status: 400 });
+		}
+
+		if (!validateImageMagicBytes(parsed.data.data, parsed.data.mime)) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const result = setMissionImage(missionId, parsed.data.data, parsed.data.mime);
+		if (!result.success) {
+			return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 });
+		}
+
+		return NextResponse.json({ success: true });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_image_upload_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function deleteAdminGameImageRoute(
+	request: NextRequest,
+	context: AdminGameMissionRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const missionId = await readMissionId(context);
+		if (!missionId) return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+
+		const result = deleteMissionImage(missionId);
+		if (!result.success) {
+			return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 });
+		}
+
+		return NextResponse.json({ success: true });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_game_image_delete_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }

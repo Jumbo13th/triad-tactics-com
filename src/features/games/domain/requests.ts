@@ -63,11 +63,13 @@ export const updateGameSettingsRequestSchema = z.object({
 	unitSlottingManualState: z.enum(['closed', 'open']),
 	regularJoinEnabled: z.boolean(),
 	serverDetailsHidden: z.boolean(),
-	priorityBadgeTypeIds: z.array(z.number().int().positive()).max(100).transform((ids) => [...new Set(ids)])
+	priorityBadgeTypeIds: z.array(z.number().int().positive()).max(100).transform((ids) => [...new Set(ids)]),
+	skipPriorityDiscord: z.boolean().default(false)
 });
 
 export const publishGameRequestSchema = z.object({
-	settingsRevision: z.number().int().positive()
+	settingsRevision: z.number().int().positive(),
+	skipDiscord: z.boolean().default(false)
 });
 
 export const updateGameSlottingRequestSchema = z.object({

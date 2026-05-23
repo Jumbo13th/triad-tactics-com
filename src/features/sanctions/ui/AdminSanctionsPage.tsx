@@ -240,8 +240,7 @@ export default function AdminSanctionsPage() {
 									active={tab === t_item.key}
 									onClick={() => { setTab(t_item.key); setPage(1); }}
 								>
-									{ts(t_item.labelKey)}
-									{data ? <span className="ml-1 opacity-60">({data.counts[t_item.key === 'all' ? 'all' : t_item.key]})</span> : null}
+									{ts(t_item.labelKey)} {data ? `(${data.counts[t_item.key === 'all' ? 'all' : t_item.key]})` : null}
 								</AdminTabButton>
 							))}
 							<AdminSearchInput

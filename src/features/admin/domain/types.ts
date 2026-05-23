@@ -10,6 +10,7 @@ export type AdminBadgeType = {
 	id: number;
 	label: string;
 	status: 'active' | 'retired';
+	discord_role_id: string | null;
 	created_at?: string;
 	updated_at?: string;
 	created_by_steamid64?: string | null;

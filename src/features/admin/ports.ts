@@ -148,6 +148,11 @@ export type AdminBadgesRepo = {
 		userId: number;
 		badgeTypeId: number;
 	}) => { success: true; badges: AdminUserBadge[] } | { success: false; error: 'not_found' | 'database_error' };
+	updateBadgeTypeDiscordRoleId: (input: {
+		badgeTypeId: number;
+		discordRoleId: string | null;
+		updatedBySteamId64: string;
+	}) => { success: true; badge: AdminBadgeType } | { success: false; error: 'not_found' | 'database_error' };
 };
 
 export type ListBadgeTypesDeps = {
@@ -168,4 +173,8 @@ export type AssignUserBadgeDeps = {
 
 export type RemoveUserBadgeDeps = {
 	repo: Pick<AdminBadgesRepo, 'removeBadgeFromUser'>;
+};
+
+export type UpdateBadgeTypeDiscordRoleDeps = {
+	repo: Pick<AdminBadgesRepo, 'updateBadgeTypeDiscordRoleId'>;
 };

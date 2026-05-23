@@ -88,6 +88,7 @@ function getBadgeTypeById(badgeTypeId: number): AdminBadgeType | null {
 			bt.id,
 			bt.label,
 			bt.status,
+			bt.discord_role_id,
 			bt.created_at,
 			bt.updated_at,
 			bt.created_by_steamid64,
@@ -224,6 +225,7 @@ export function listBadgeTypes(): AdminBadgeType[] {
 			bt.id,
 			bt.label,
 			bt.status,
+			bt.discord_role_id,
 			bt.created_at,
 			bt.updated_at,
 			bt.created_by_steamid64,
@@ -286,6 +288,36 @@ export function updateBadgeTypeStatus(input: {
 				updated_by_steamid64 = ?
 			WHERE id = ?
 		`).run(input.status, input.updatedBySteamId64, input.badgeTypeId);
+
+		if (result.changes < 1) {
+			return { success: false as const, error: 'not_found' as const };
+		}
+
+		const badge = getBadgeTypeById(input.badgeTypeId);
+		if (!badge) {
+			return { success: false as const, error: 'database_error' as const };
+		}
+
+		return { success: true as const, badge };
+	} catch {
+		return { success: false as const, error: 'database_error' as const };
+	}
+}
+
+export function updateBadgeTypeDiscordRoleId(input: {
+	badgeTypeId: number;
+	discordRoleId: string | null;
+	updatedBySteamId64: string;
+}) {
+	const db = getDb();
+	try {
+		const result = db.prepare(`
+			UPDATE badge_types
+			SET discord_role_id = ?,
+				updated_at = CURRENT_TIMESTAMP,
+				updated_by_steamid64 = ?
+			WHERE id = ?
+		`).run(input.discordRoleId, input.updatedBySteamId64, input.badgeTypeId);
 
 		if (result.changes < 1) {
 			return { success: false as const, error: 'not_found' as const };

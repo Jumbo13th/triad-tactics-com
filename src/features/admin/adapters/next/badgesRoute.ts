@@ -3,6 +3,7 @@ import { requireAdmin } from './adminAuth';
 import {
 	createBadgeTypeRequestSchema,
 	mutateUserBadgeRequestSchema,
+	updateBadgeTypeDiscordRoleRequestSchema,
 	updateBadgeTypeStatusRequestSchema
 } from '@/features/admin/domain/requests';
 import {
@@ -10,12 +11,14 @@ import {
 	createBadgeTypeDeps,
 	listBadgeTypesDeps,
 	removeUserBadgeDeps,
+	updateBadgeTypeDiscordRoleDeps,
 	updateBadgeTypeStatusDeps
 } from '@/features/admin/deps';
 import { assignUserBadge } from '@/features/admin/useCases/assignUserBadge';
 import { createBadgeType } from '@/features/admin/useCases/createBadgeType';
 import { listBadgeTypes } from '@/features/admin/useCases/listBadgeTypes';
 import { removeUserBadge } from '@/features/admin/useCases/removeUserBadge';
+import { updateBadgeTypeDiscordRole } from '@/features/admin/useCases/updateBadgeTypeDiscordRole';
 import { updateBadgeTypeStatus } from '@/features/admin/useCases/updateBadgeTypeStatus';
 import { errorToLogObject, logger } from '@/platform/logger';
 
@@ -138,6 +141,47 @@ export async function postAdminBadgeStatusRoute(
 		return NextResponse.json({ success: true, badge: updated.badge });
 	} catch (error: unknown) {
 		logger.error({ ...errorToLogObject(error) }, 'admin_badges_status_update_failed');
+		return NextResponse.json({ error: 'server_error' }, { status: 500 });
+	}
+}
+
+export async function postAdminBadgeDiscordRoleRoute(
+	request: NextRequest,
+	context: BadgeStatusRouteContext
+): Promise<NextResponse> {
+	try {
+		const admin = requireAdmin(request);
+		if (!admin.ok) return admin.response;
+
+		const badgeTypeId = await readPositiveParam(context.params, 'badgeTypeId');
+		if (!badgeTypeId) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		let body: unknown;
+		try {
+			body = await readRequestBody(request);
+		} catch {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const parsed = updateBadgeTypeDiscordRoleRequestSchema.safeParse(body);
+		if (!parsed.success) {
+			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+		}
+
+		const updated = updateBadgeTypeDiscordRole(updateBadgeTypeDiscordRoleDeps, {
+			badgeTypeId,
+			discordRoleId: parsed.data.discordRoleId,
+			updatedBySteamId64: admin.identity.steamid64
+		});
+		if (!updated.ok) {
+			return mapBadgeError(updated.error);
+		}
+
+		return NextResponse.json({ success: true, badge: updated.badge });
+	} catch (error: unknown) {
+		logger.error({ ...errorToLogObject(error) }, 'admin_badges_discord_role_update_failed');
 		return NextResponse.json({ error: 'server_error' }, { status: 500 });
 	}
 }
