@@ -18,61 +18,7 @@ function missionRouteContext(missionId: number | string) {
 	};
 }
 
-function createCanonicalSlotting(opts: { includePriorityUser?: boolean; repeatedPriorityRoles?: boolean }) {
-	const slots: Array<Record<string, unknown>> = [
-		{
-			id: 'slot-squad',
-			role: 'Squad Leader',
-			access: 'unit',
-			occupant: { type: 'placeholder', label: 'Alpha Squad' }
-		}
-	];
-
-	if (opts.repeatedPriorityRoles) {
-		slots.push({
-			id: 'slot-mg-1',
-			role: 'Machine Gunner',
-			access: 'priority',
-			occupant: opts.includePriorityUser
-				? {
-					type: 'user',
-					userId: 44,
-					callsign: 'Nomad',
-					assignedBy: 'self',
-					assignedAt: '2026-03-10T10:00:00.000Z'
-				}
-				: null
-		});
-		slots.push({
-			id: 'slot-mg-2',
-			role: 'Machine Gunner',
-			access: 'priority',
-			occupant: null
-		});
-	} else {
-		slots.push({
-			id: 'slot-priority',
-			role: 'Machine Gunner',
-			access: 'priority',
-			occupant: opts.includePriorityUser
-				? {
-					type: 'user',
-					userId: 44,
-					callsign: 'Nomad',
-					assignedBy: 'self',
-					assignedAt: '2026-03-10T10:00:00.000Z'
-				}
-				: null
-		});
-	}
-
-	slots.push({
-		id: 'slot-regular',
-		role: 'Rifleman',
-		access: 'regular',
-		occupant: null
-	});
-
+function createUnitOnlySlotting() {
 	return {
 		sides: [
 			{
@@ -83,7 +29,26 @@ function createCanonicalSlotting(opts: { includePriorityUser?: boolean; repeated
 					{
 						id: 'usk-1-1',
 						name: '1-1',
-						slots
+						slots: [
+							{
+								id: 'slot-squad',
+								role: 'Squad Leader',
+								access: 'unit',
+								occupant: { type: 'placeholder', label: 'Alpha Squad' }
+							},
+							{
+								id: 'slot-mg',
+								role: 'Machine Gunner',
+								access: 'unit',
+								occupant: null
+							},
+							{
+								id: 'slot-rifle',
+								role: 'Rifleman',
+								access: 'unit',
+								occupant: null
+							}
+						]
 					}
 				]
 			}
@@ -91,8 +56,58 @@ function createCanonicalSlotting(opts: { includePriorityUser?: boolean; repeated
 	};
 }
 
-function insertMission(opts: { status?: 'draft' | 'published'; slotting: unknown; regularJoinEnabled?: boolean }): number {
+function createEpisodeSlottingWithUser() {
+	return {
+		sides: [
+			{
+				id: 'usk',
+				name: 'USK',
+				color: '#3B82F6',
+				squads: [
+					{
+						id: 'usk-1-1',
+						name: '1-1',
+						slots: [
+							{
+								id: 'slot-squad',
+								role: 'Squad Leader',
+								access: 'unit',
+								occupant: { type: 'placeholder', label: 'Alpha Squad' }
+							},
+							{
+								id: 'slot-mg',
+								role: 'priority',
+								access: 'priority',
+								occupant: {
+									type: 'user',
+									userId: 44,
+									callsign: 'Nomad',
+									assignedBy: 'self',
+									assignedAt: '2026-03-10T10:00:00.000Z'
+								}
+							},
+							{
+								id: 'slot-rifle',
+								role: 'Rifleman',
+								access: 'regular',
+								occupant: null
+							}
+						]
+					}
+				]
+			}
+		]
+	};
+}
+
+function insertMission(opts: {
+	status?: 'draft' | 'published';
+	slotting: unknown;
+	episodeSlotting?: unknown;
+	regularJoinEnabled?: boolean;
+}): number {
 	const db = getDb();
+	const slottingJson = JSON.stringify(opts.slotting);
 	const result = db.prepare(`
 		INSERT INTO missions (
 			status,
@@ -109,7 +124,7 @@ function insertMission(opts: { status?: 'draft' | 'published'; slotting: unknown
 	`).run(
 		opts.status ?? 'draft',
 		opts.regularJoinEnabled ? 1 : 0,
-		JSON.stringify(opts.slotting),
+		slottingJson,
 		ADMIN_STEAM_ID,
 		ADMIN_STEAM_ID,
 		opts.status === 'published' ? '2026-03-10T10:00:00.000Z' : null,
@@ -117,7 +132,17 @@ function insertMission(opts: { status?: 'draft' | 'published'; slotting: unknown
 	);
 
 	const rowId = result.lastInsertRowid;
-	return typeof rowId === 'bigint' ? Number(rowId) : rowId;
+	const missionId = typeof rowId === 'bigint' ? Number(rowId) : rowId;
+
+	if (opts.episodeSlotting) {
+		db.prepare(`
+			UPDATE mission_episode_slotting
+			SET slotting_json = ?
+			WHERE mission_id = ? AND episode_number = 1
+		`).run(JSON.stringify(opts.episodeSlotting), missionId);
+	}
+
+	return missionId;
 }
 
 describe('Admin game slotting endpoints (integration)', () => {
@@ -135,7 +160,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 
 	it('updates canonical slotting and increments the slotting revision', async () => {
 		const { dbOperations, PUT, NextRequest } = await loadAdminGameSlottingHarness();
-		const missionId = insertMission({ status: 'draft', slotting: createCanonicalSlotting({ includePriorityUser: false }) });
+		const missionId = insertMission({ status: 'draft', slotting: createUnitOnlySlotting() });
 		const adminSid = createSteamSession(dbOperations, {
 			steamid64: ADMIN_STEAM_ID,
 			redirectPath: '/en/admin/games'
@@ -159,15 +184,15 @@ describe('Admin game slotting endpoints (integration)', () => {
 									occupant: { type: 'placeholder', label: 'Bravo Squad' }
 								},
 								{
-									id: 'slot-priority',
+									id: 'slot-mg',
 									role: 'Autorifleman',
-									access: 'priority',
+									access: 'unit',
 									occupant: null
 								},
 								{
-									id: 'slot-regular',
+									id: 'slot-rifle',
 									role: 'Rifleman',
-									access: 'regular',
+									access: 'unit',
 									occupant: null
 								}
 							]
@@ -193,14 +218,14 @@ describe('Admin game slotting endpoints (integration)', () => {
 		expect(res.status).toBe(200);
 		const json = await res.json();
 		expect(json.success).toBe(true);
-		expect(json.mission.slottingRevision).toBe(2);
-		expect(json.mission.slotting.sides[0].color).toBe('#1D4ED8');
-		expect(json.mission.slotting.sides[0].squads[0].slots[1].role).toBe('Autorifleman');
+		expect(json.mission.episodeSlottings[0].slottingRevision).toBe(2);
+		expect(json.mission.episodeSlottings[0].slotting.sides[0].color).toBe('#1D4ED8');
+		expect(json.mission.episodeSlottings[0].slotting.sides[0].squads[0].slots[1].role).toBe('Autorifleman');
 	});
 
 	it('rejects stale slotting revisions', async () => {
 		const { dbOperations, PUT, NextRequest } = await loadAdminGameSlottingHarness();
-		const missionId = insertMission({ status: 'draft', slotting: createCanonicalSlotting({ includePriorityUser: false }) });
+		const missionId = insertMission({ status: 'draft', slotting: createUnitOnlySlotting() });
 		const adminSid = createSteamSession(dbOperations, {
 			steamid64: ADMIN_STEAM_ID,
 			redirectPath: '/en/admin/games'
@@ -216,7 +241,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 				},
 				body: JSON.stringify({
 					slottingRevision: 99,
-					slotting: createCanonicalSlotting({ includePriorityUser: false })
+					slotting: createUnitOnlySlotting()
 				})
 			}),
 			missionRouteContext(missionId)
@@ -232,7 +257,8 @@ describe('Admin game slotting endpoints (integration)', () => {
 		const missionId = insertMission({
 			status: 'published',
 			regularJoinEnabled: true,
-			slotting: createCanonicalSlotting({ includePriorityUser: true })
+			slotting: createUnitOnlySlotting(),
+			episodeSlotting: createEpisodeSlottingWithUser()
 		});
 		const adminSid = createSteamSession(dbOperations, {
 			steamid64: ADMIN_STEAM_ID,
@@ -254,12 +280,12 @@ describe('Admin game slotting endpoints (integration)', () => {
 									id: 'slot-squad',
 									role: 'Squad Leader',
 									access: 'unit',
-									occupant: { type: 'placeholder', label: 'Alpha Squad' }
+									occupant: null
 								},
 								{
-									id: 'slot-regular',
+									id: 'slot-rifle',
 									role: 'Rifleman',
-									access: 'regular',
+									access: 'unit',
 									occupant: null
 								}
 							]
@@ -287,7 +313,7 @@ describe('Admin game slotting endpoints (integration)', () => {
 		expect(json.error).toBe('destructive_change_requires_confirmation');
 		expect(json.destructiveChanges).toEqual(
 			expect.arrayContaining([
-				expect.objectContaining({ reason: 'occupied_slot_removed', slotId: 'slot-priority' })
+				expect.objectContaining({ reason: 'occupied_slot_removed', slotId: 'slot-mg' })
 			])
 		);
 	});
@@ -297,7 +323,8 @@ describe('Admin game slotting endpoints (integration)', () => {
 		const missionId = insertMission({
 			status: 'published',
 			regularJoinEnabled: true,
-			slotting: createCanonicalSlotting({ includePriorityUser: true })
+			slotting: createUnitOnlySlotting(),
+			episodeSlotting: createEpisodeSlottingWithUser()
 		});
 		const adminSid = createSteamSession(dbOperations, {
 			steamid64: ADMIN_STEAM_ID,
@@ -319,12 +346,12 @@ describe('Admin game slotting endpoints (integration)', () => {
 									id: 'slot-squad',
 									role: 'Squad Leader',
 									access: 'unit',
-									occupant: { type: 'placeholder', label: 'Alpha Squad' }
+									occupant: null
 								},
 								{
-									id: 'slot-regular',
+									id: 'slot-rifle',
 									role: 'Rifleman',
-									access: 'regular',
+									access: 'unit',
 									occupant: null
 								}
 							]
@@ -354,8 +381,8 @@ describe('Admin game slotting endpoints (integration)', () => {
 		expect(res.status).toBe(200);
 		const json = await res.json();
 		expect(json.success).toBe(true);
-		expect(json.mission.slottingRevision).toBe(2);
-		expect(json.mission.slotting.sides[0].squads[0].slots).toHaveLength(2);
+		expect(json.mission.episodeSlottings[0].slottingRevision).toBe(2);
+		expect(json.mission.episodeSlottings[0].slotting.sides[0].squads[0].slots).toHaveLength(2);
 	});
 
 });

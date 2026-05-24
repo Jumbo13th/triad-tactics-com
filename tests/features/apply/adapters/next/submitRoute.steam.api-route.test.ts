@@ -133,9 +133,9 @@ describeSteam('Apply workflow: submit route (live Steam via API route)', () => {
 			body: buildApplySubmitPayload({ locale: 'en' }),
 			ip: '203.0.113.12'
 		});
-		expect(res2.status).toBe(403);
+		expect(res2.status).toBe(409);
 		const json2 = await res2.json();
-		expect(json2.error).toBe('forbidden');
+		expect(json2.error).toBe('duplicate');
 	});
 
 	it('returns duplicate for a confirmed applicant', async () => {
