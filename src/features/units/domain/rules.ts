@@ -4,26 +4,26 @@ export function isConfirmedPlayer(user: { player_confirmed_at?: string | null })
 	return !!user.player_confirmed_at;
 }
 
-export function isUnitLeader(unit: Unit, userId: number): boolean {
-	return unit.leaderUserId === userId;
+export function isUnitLeader(membership: UnitMembership | null): boolean {
+	return membership?.role === 'leader';
 }
 
 export function isUnitDeputy(membership: UnitMembership | null): boolean {
 	return membership?.role === 'deputy';
 }
 
-function hasLeadershipAccess(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
+function hasLeadershipAccess(isAdmin: boolean, membership?: UnitMembership | null): boolean {
 	if (isAdmin) return true;
-	if (isUnitLeader(unit, userId)) return true;
+	if (isUnitLeader(membership ?? null)) return true;
 	return membership !== undefined && isUnitDeputy(membership);
 }
 
-export function canEditUnit(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
-	return hasLeadershipAccess(unit, userId, isAdmin, membership);
+export function canEditUnit(isAdmin: boolean, membership?: UnitMembership | null): boolean {
+	return hasLeadershipAccess(isAdmin, membership);
 }
 
-export function canManageMembers(unit: Unit, userId: number, isAdmin: boolean, membership?: UnitMembership | null): boolean {
-	return hasLeadershipAccess(unit, userId, isAdmin, membership);
+export function canManageMembers(isAdmin: boolean, membership?: UnitMembership | null): boolean {
+	return hasLeadershipAccess(isAdmin, membership);
 }
 
 export function canApplyToUnit(
@@ -37,7 +37,7 @@ export function canApplyToUnit(
 	return { allowed: true };
 }
 
-export function canLeaveUnit(unit: Unit, userId: number): { allowed: true } | { allowed: false; reason: 'is_leader' } {
-	if (isUnitLeader(unit, userId)) return { allowed: false, reason: 'is_leader' };
+export function canLeaveUnit(membership: UnitMembership | null): { allowed: true } | { allowed: false; reason: 'is_leader' } {
+	if (isUnitLeader(membership)) return { allowed: false, reason: 'is_leader' };
 	return { allowed: true };
 }

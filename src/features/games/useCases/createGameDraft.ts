@@ -1,4 +1,4 @@
-import type { GameDraftCreateMode, GameAdminMission } from '../domain/types';
+import type { GameDraftCreateMode, GameMode, GameAdminMission } from '../domain/types';
 import type { CreateGameDraftDeps } from '../ports';
 
 export type CreateGameDraftResult =
@@ -7,7 +7,7 @@ export type CreateGameDraftResult =
 
 export function createGameDraft(
 	deps: CreateGameDraftDeps,
-	input: { mode: GameDraftCreateMode; createdBySteamId64: string }
+	input: { mode: GameDraftCreateMode; gameMode?: GameMode; createdBySteamId64: string }
 ): CreateGameDraftResult {
 	const result = deps.repo.createDraft(input);
 	if (result.success) return { ok: true, mission: result.mission };

@@ -254,6 +254,7 @@ export function getAdminGamesOverview(): AdminGamesOverview {
 
 export function createDraft(input: {
 	mode: 'blank' | 'duplicate_previous';
+	gameMode?: 'standard' | 'simple';
 	createdBySteamId64: string;
 }): CreateGameDraftRepoResult {
 	const db = getDb();
@@ -280,6 +281,7 @@ export function createDraft(input: {
 		INSERT INTO missions (
 			short_code,
 			status,
+			game_mode,
 			title,
 			description,
 			starts_at,
@@ -304,7 +306,7 @@ export function createDraft(input: {
 			created_by_steamid64,
 			updated_by_steamid64
 		)
-		VALUES (?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?)
 	`);
 	const selectInserted = db.prepare(`
 		SELECT ${selectMissionColumns()}
@@ -333,6 +335,7 @@ export function createDraft(input: {
 				return { success: false, error: 'draft_exists' };
 			}
 
+			const gameMode = input.gameMode ?? 'standard';
 			let slottingJson = JSON.stringify(emptyCanonicalSlotting);
 			let sourceEpisodeSlottings: Array<{ episode_number: number; slotting_json: string }> = [];
 			if (input.mode === 'duplicate_previous') {
@@ -358,6 +361,7 @@ export function createDraft(input: {
 
 			const inserted = insertDraft.run(
 				null,
+				gameMode,
 				'',
 				JSON.stringify(emptyLocalizedDescription),
 				null,
@@ -1371,7 +1375,7 @@ export function getCurrentPublishedSummary(): CurrentGameSummary | null {
 	const db = getDb();
 	const row = db
 		.prepare(`
-			SELECT short_code, title, description, starts_at
+			SELECT short_code, title, description, starts_at, game_mode
 			FROM missions
 			WHERE status = 'published'
 			LIMIT 1
@@ -1382,6 +1386,7 @@ export function getCurrentPublishedSummary(): CurrentGameSummary | null {
 				title: string;
 				description: string;
 				starts_at: string | null;
+				game_mode: 'standard' | 'simple';
 		  }
 		| undefined;
 
@@ -1391,6 +1396,7 @@ export function getCurrentPublishedSummary(): CurrentGameSummary | null {
 
 	return {
 		shortCode: row.short_code,
+		gameMode: row.game_mode,
 		title: row.title,
 		description: parseLocalizedDescription(row.description),
 		startsAt: row.starts_at ?? null

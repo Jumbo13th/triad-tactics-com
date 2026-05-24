@@ -302,6 +302,8 @@
     "gamesStatDraft": "Draft missions",
     "gamesStatPublished": "Published missions",
     "gamesStatArchive": "Archive",
+    "gamesGameModeStandard": "Standard",
+    "gamesGameModeSimple": "Simple",
     "gamesCreateBlank": "New blank draft",
     "gamesCreatingBlank": "Creating blank draft...",
     "gamesCreateDuplicate": "Duplicate previous",
@@ -450,7 +452,7 @@
     "gamesConfirmPublishDiscordText": "The mission will be published and an announcement will be sent to the Discord channel. Continue?",
     "gamesDiscordNotifyCardTitle": "Discord notification",
     "gamesDiscordNotifyCardText": "Send a mission announcement to the Discord channel.",
-    "gamesDiscordNotifyAction": "Send to Discord",
+    "gamesDiscordNotifyAction": "Mission announcement",
     "gamesDiscordNotifySending": "Sending...",
     "gamesConfirmDiscordNotifyTitle": "Send Discord notification",
     "gamesConfirmDiscordNotifyText": "An announcement about this mission will be sent to the Discord channel. Continue?",
@@ -473,7 +475,7 @@
     "gamesPrioritySlottingSkipDiscord": "Don't send priority notification to Discord",
     "gamesPriorityDiscordCardTitle": "Priority slotting Discord notification",
     "gamesPriorityDiscordCardText": "Send a priority slotting announcement to the Discord channel.",
-    "gamesPriorityDiscordNotifyAction": "Send priority notification",
+    "gamesPriorityDiscordNotifyAction": "Priority slotting opened",
     "gamesPriorityDiscordNotifySending": "Sending...",
     "gamesConfirmPriorityDiscordNotifyTitle": "Send priority slotting notification",
     "gamesConfirmPriorityDiscordNotifyText": "A notification about priority slotting being open will be sent to the Discord channel. Continue?",
@@ -1330,7 +1332,8 @@
     "role": {
       "member": "Member",
       "applicant": "Applicant",
-      "deputy": "Deputy"
+      "deputy": "Deputy",
+      "leader": "Commander"
     },
     "actions": {
       "approve": "Approve",
@@ -1424,6 +1427,7 @@
     "createdBy": "Issued by",
     "cancelledBy": "Cancelled by",
     "noSanctions": "No sanctions to display.",
+    "cancelButton": "Cancel",
     "cancelAction": "Confirm",
     "cancelReason": "Cancellation reason",
     "cancelReasonPlaceholder": "Reason for cancellation",

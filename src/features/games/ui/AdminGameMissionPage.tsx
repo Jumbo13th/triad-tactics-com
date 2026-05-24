@@ -802,7 +802,25 @@ export default function AdminGameMissionPage() {
 			setFeedback(null);
 			setActiveAction(actionKey);
 			const res = await fetch(url, { method: 'POST', headers: { Accept: 'application/json' } });
-			const json: unknown = (await res.json()) as unknown;
+			const json = (await res.json()) as { success?: boolean; error?: string };
+			if (res.ok && json.success) {
+				setFeedback({ tone: 'success', message: `${ta('gamesActionSucceededPrefix')} ${ta(actionKey)}.` });
+			} else {
+				setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta(actionKey)}: ${json.error ?? 'server_error'}` });
+			}
+		} catch {
+			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta(actionKey)}: server error` });
+		} finally {
+			setActiveAction(null);
+		}
+	};
+
+	const handleGameplayAction = async (url: string, actionKey: string) => {
+		try {
+			setFeedback(null);
+			setActiveAction(actionKey);
+			const res = await fetch(url, { method: 'POST', headers: { Accept: 'application/json' } });
+			const json = await res.json();
 			await applyLifecycleResponse(res, json, ta(actionKey));
 		} catch {
 			setFeedback({ tone: 'error', message: `${ta('gamesActionFailedPrefix')} ${ta(actionKey)}: server error` });
@@ -1094,7 +1112,7 @@ export default function AdminGameMissionPage() {
 													</Field>
 												</div>
 
-												<div className={`${editorCardClass} grid gap-4`}>
+												{mission.gameMode !== 'simple' && <div className={`${editorCardClass} grid gap-4`}>
 													<div>
 														<p className="text-sm font-semibold text-neutral-200">{ta('slottingPhasesTitle')}</p>
 														<p className="mt-1 text-xs text-neutral-500">{ta('slottingPhasesDescription')}</p>
@@ -1152,9 +1170,9 @@ export default function AdminGameMissionPage() {
 													</div>
 
 													<p className="text-[11px] text-neutral-500">{ta('slottingPhasesNote')}</p>
-												</div>
+												</div>}
 
-												<div className={`${editorCardClass} grid gap-3`}>
+												{mission.gameMode !== 'simple' && <div className={`${editorCardClass} grid gap-3`}>
 													<Field label={ta('gamesFieldPriorityBadgeIds')}>
 														{badgeCatalogState === 'loading' ? (
 															<p className="mt-2 text-sm text-neutral-400">{ta('gamesBadgeCatalogLoading')}</p>
@@ -1207,7 +1225,7 @@ export default function AdminGameMissionPage() {
 															{ta('gamesManageBadgesLink')}
 														</Link>
 													</p>
-												</div>
+												</div>}
 
 												<div className={editorCardClass}>
 													<ImageUploadArea mission={mission} ta={ta} setFeedback={setFeedback} onImageChanged={setMission} />
@@ -1219,7 +1237,7 @@ export default function AdminGameMissionPage() {
 											</div>
 										</section>
 
-										<section className={editorSectionClass}>
+										{mission.gameMode !== 'simple' && <section className={editorSectionClass}>
 										<div className="grid gap-4">
 											<div>
 												<h2 className="text-lg font-semibold tracking-tight text-neutral-50">{ta('gamesSlottingSectionTitle')}</h2>
@@ -1340,7 +1358,7 @@ export default function AdminGameMissionPage() {
 												/>
 											</AdminDisclosure>
 										</div>
-										</section>
+										</section>}
 
 										<section className={editorSectionClass}>
 										<div className="grid gap-4">
@@ -1376,31 +1394,35 @@ export default function AdminGameMissionPage() {
 																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmDiscordNotifyTitle'), description: ta('gamesConfirmDiscordNotifyText'), confirmLabel: ta('gamesDiscordNotifyAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/notify-discord`, 'gamesDiscordNotifyAction'); } })} disabled={activeAction !== null}>
 																	{activeAction === 'gamesDiscordNotifyAction' ? ta('gamesDiscordNotifySending') : ta('gamesDiscordNotifyAction')}
 																</AdminButton>
-																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmPriorityDiscordNotifyTitle'), description: ta('gamesConfirmPriorityDiscordNotifyText'), confirmLabel: ta('gamesPriorityDiscordNotifyAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/notify-priority-discord`, 'gamesPriorityDiscordNotifyAction'); } })} disabled={activeAction !== null}>
-																	{activeAction === 'gamesPriorityDiscordNotifyAction' ? ta('gamesPriorityDiscordNotifySending') : ta('gamesPriorityDiscordNotifyAction')}
-																</AdminButton>
+																{mission.gameMode !== 'simple' && (
+																	<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmPriorityDiscordNotifyTitle'), description: ta('gamesConfirmPriorityDiscordNotifyText'), confirmLabel: ta('gamesPriorityDiscordNotifyAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/notify-priority-discord`, 'gamesPriorityDiscordNotifyAction'); } })} disabled={activeAction !== null}>
+																		{activeAction === 'gamesPriorityDiscordNotifyAction' ? ta('gamesPriorityDiscordNotifySending') : ta('gamesPriorityDiscordNotifyAction')}
+																	</AdminButton>
+																)}
 															</div>
 														</ActionCard>
 													)}
 
 													<ActionCard title={ta('gamesReleaseCardTitle')} description={ta('gamesReleaseCardText')}>
 														<div className="flex flex-wrap gap-3">
-															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseUnitTitle'), description: ta('gamesConfirmReleaseUnitText'), confirmLabel: ta('gamesReleaseUnitAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-unit`, 'gamesReleaseUnitAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.unitGameplayReleasedAt}>
+															{mission.gameMode !== 'simple' && <>
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseUnitTitle'), description: ta('gamesConfirmReleaseUnitText'), confirmLabel: ta('gamesReleaseUnitAction'), onConfirm: () => { setConfirmAction(null); void handleGameplayAction(`/api/admin/games/${mission.id}/release-unit`, 'gamesReleaseUnitAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.unitGameplayReleasedAt}>
 																{activeAction === 'gamesReleaseUnitAction' ? ta('gamesReleasingUnit') : ta('gamesReleaseUnitAction')}
 															</AdminButton>
-															<AdminButton variant="secondary" onClick={() => void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-unit`, 'gamesHideUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !mission.unitGameplayReleasedAt || !!mission.priorityGameplayReleasedAt}>
+															<AdminButton variant="secondary" onClick={() => void handleGameplayAction(`/api/admin/games/${mission.id}/hide-unit`, 'gamesHideUnitAction')} disabled={activeAction !== null || mission.status !== 'published' || !mission.unitGameplayReleasedAt || !!mission.priorityGameplayReleasedAt}>
 																{activeAction === 'gamesHideUnitAction' ? ta('gamesHidingUnit') : ta('gamesHideUnitAction')}
 															</AdminButton>
-															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleasePriorityTitle'), description: ta('gamesConfirmReleasePriorityText'), confirmLabel: ta('gamesReleasePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-priority`, 'gamesReleasePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.priorityGameplayReleasedAt}>
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleasePriorityTitle'), description: ta('gamesConfirmReleasePriorityText'), confirmLabel: ta('gamesReleasePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleGameplayAction(`/api/admin/games/${mission.id}/release-priority`, 'gamesReleasePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.priorityGameplayReleasedAt}>
 																{activeAction === 'gamesReleasePriorityAction' ? ta('gamesReleasingPriority') : ta('gamesReleasePriorityAction')}
 															</AdminButton>
-																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHidePriorityTitle'), description: ta('gamesConfirmHidePriorityText'), confirmLabel: ta('gamesHidePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-priority`, 'gamesHidePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.priorityGameplayReleasedAt || !!mission.regularGameplayReleasedAt}>
+																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHidePriorityTitle'), description: ta('gamesConfirmHidePriorityText'), confirmLabel: ta('gamesHidePriorityAction'), onConfirm: () => { setConfirmAction(null); void handleGameplayAction(`/api/admin/games/${mission.id}/hide-priority`, 'gamesHidePriorityAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.priorityGameplayReleasedAt || !!mission.regularGameplayReleasedAt}>
 																	{activeAction === 'gamesHidePriorityAction' ? ta('gamesHidingPriority') : ta('gamesHidePriorityAction')}
 																</AdminButton>
-															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseRegularTitle'), description: ta('gamesConfirmReleaseRegularText'), confirmLabel: ta('gamesReleaseRegularAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/release-regular`, 'gamesReleaseRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.regularGameplayReleasedAt}>
+															</>}
+															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmReleaseRegularTitle'), description: ta('gamesConfirmReleaseRegularText'), confirmLabel: ta('gamesReleaseRegularAction'), onConfirm: () => { setConfirmAction(null); void handleGameplayAction(`/api/admin/games/${mission.id}/release-regular`, 'gamesReleaseRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !!mission.regularGameplayReleasedAt}>
 																{activeAction === 'gamesReleaseRegularAction' ? ta('gamesReleasingRegular') : ta('gamesReleaseRegularAction')}
 															</AdminButton>
-																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHideRegularTitle'), description: ta('gamesConfirmHideRegularText'), confirmLabel: ta('gamesHideRegularAction'), onConfirm: () => { setConfirmAction(null); void handleSimpleMissionAction(`/api/admin/games/${mission.id}/hide-regular`, 'gamesHideRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.regularGameplayReleasedAt}>
+																<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmHideRegularTitle'), description: ta('gamesConfirmHideRegularText'), confirmLabel: ta('gamesHideRegularAction'), onConfirm: () => { setConfirmAction(null); void handleGameplayAction(`/api/admin/games/${mission.id}/hide-regular`, 'gamesHideRegularAction'); } })} disabled={activeAction !== null || mission.status !== 'published' || !mission.regularGameplayReleasedAt}>
 																	{activeAction === 'gamesHideRegularAction' ? ta('gamesHidingRegular') : ta('gamesHideRegularAction')}
 																</AdminButton>
 														</div>
@@ -1481,6 +1503,7 @@ export default function AdminGameMissionPage() {
 													<ActionCard title={ta('gamesArchiveCardTitle')} description={ta('gamesArchiveCardText')}>
 														<div className="grid gap-3">
 															{(() => { const allSides = collectAllSides(mission); return (<>
+															{mission.gameMode !== 'simple' && (<>
 															<label className="grid gap-2 text-sm text-neutral-200">
 																<span>{ta('gamesArchiveWinnerLabel')}</span>
 																<select value={winnerSideId} onChange={(event) => setWinnerSideId(event.target.value)} className={editorInputClass}>
@@ -1498,6 +1521,7 @@ export default function AdminGameMissionPage() {
 																	</label>
 																))}
 															</div>
+															</>)}
 															<AdminButton variant="secondary" onClick={() => setConfirmAction({ title: ta('gamesConfirmArchiveTitle'), description: ta('gamesConfirmArchiveText'), confirmLabel: ta('gamesArchiveAction'), onConfirm: () => { setConfirmAction(null); void handleArchive(); } })} disabled={activeAction !== null || mission.status !== 'published'}>
 																{activeAction === 'archive' ? ta('gamesArchiving') : ta('gamesArchiveAction')}
 															</AdminButton>

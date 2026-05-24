@@ -251,7 +251,7 @@ describe('Unit CRUD (integration)', () => {
 		);
 		const detail = await detailRes.json();
 		expect(detail.unit.slotsAllocated).toBe(12);
-		expect(detail.unit.leaderUserId).toBe(player2.userId);
+		expect(detail.members.find((m: { role: string }) => m.role === 'leader')?.userId).toBe(player2.userId);
 	});
 
 	it('leader can edit description and join message', async () => {

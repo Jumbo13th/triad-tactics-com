@@ -18,9 +18,9 @@ export function getUnit(deps: UnitDeps, input: { unitId: number; viewerSteamId64
 			const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
 			const memberUnit = deps.memberships.getActiveMemberUnit(user.id);
 			viewer = {
-				isMember: membership?.role === 'member' || membership?.role === 'deputy',
+				isMember: membership?.role === 'member' || membership?.role === 'deputy' || membership?.role === 'leader',
 				isApplicant: membership?.role === 'applicant',
-				isLeader: unit.leaderUserId === user.id,
+				isLeader: membership?.role === 'leader',
 				isDeputy: membership?.role === 'deputy',
 				isAdmin: input.isAdmin ?? false,
 				hasUnitElsewhere: !!memberUnit && memberUnit.id !== input.unitId,

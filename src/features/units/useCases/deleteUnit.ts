@@ -17,7 +17,8 @@ export function deleteUnitAsLeader(deps: UnitDeps, input: {
 	const unit = deps.repo.getUnitById(input.unitId);
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
-	if (!isUnitLeader(unit, user.id)) return { ok: false, status: 403, json: { error: 'forbidden' } };
+	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
+	if (!isUnitLeader(membership)) return { ok: false, status: 403, json: { error: 'forbidden' } };
 
 	const result = deps.repo.deleteUnit(input.unitId);
 	if (!result.success) {

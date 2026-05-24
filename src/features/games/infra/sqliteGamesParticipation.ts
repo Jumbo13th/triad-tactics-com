@@ -58,7 +58,7 @@ export function claimPrioritySlot(input: {
 	try {
 		const run = db.transaction((): ClaimPrioritySlotRepoResult => {
 			const row = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'mission_not_found' };
 			}
 
@@ -189,7 +189,7 @@ export function switchPrioritySlot(input: {
 	try {
 		const run = db.transaction((): SwitchPrioritySlotRepoResult => {
 			const row = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'mission_not_found' };
 			}
 
@@ -325,7 +325,7 @@ export function leavePrioritySlot(input: {
 	try {
 		const run = db.transaction((): LeavePrioritySlotRepoResult => {
 			const row = selectMission.get(input.shortCode) as MissionRow | undefined;
-			if (!row) {
+			if (!row || row.game_mode === 'simple') {
 				return { success: false, error: 'mission_not_found' };
 			}
 

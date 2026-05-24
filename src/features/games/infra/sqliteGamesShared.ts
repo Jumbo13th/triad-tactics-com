@@ -66,6 +66,7 @@ export type MissionRow = {
 	image_mime: string | null;
 	priority_discord_sent: number | boolean;
 	skip_priority_discord: number | boolean;
+	game_mode: 'standard' | 'simple';
 };
 
 export type MissionParticipationUserRow = {
@@ -203,7 +204,8 @@ export function selectMissionColumns() {
 		unit_gameplay_ever_released,
 		image_mime,
 		priority_discord_sent,
-		skip_priority_discord
+		skip_priority_discord,
+		game_mode
 	`;
 }
 
@@ -398,6 +400,7 @@ export function mapMissionRow(db: DbConnection, row: MissionRow): GameAdminMissi
 		id: row.id,
 		shortCode: row.short_code ?? null,
 		status: row.status,
+		gameMode: row.game_mode,
 		title: row.title,
 		description: parseLocalizedDescription(row.description),
 		startsAt: row.starts_at ?? null,
@@ -465,8 +468,8 @@ export function isPriorityClaimOpen(row: MissionRow): boolean {
 }
 
 export function isRegularJoinOpen(row: MissionRow): boolean {
+	if (row.game_mode === 'simple') return !row.regular_gameplay_released_at;
 	if (!row.regular_join_enabled) return false;
-	if (row.priority_gameplay_released_at) return false;
 	if (row.regular_gameplay_released_at) return false;
 	return true;
 }
@@ -604,7 +607,7 @@ export function viewerHasUnitGameplayAccess(db: DbConnection, missionId: number,
 	const row = db.prepare(`
 		SELECT 1 FROM unit_memberships um
 		JOIN mission_unit_assignments mua ON mua.unit_id = um.unit_id
-		WHERE um.user_id = ? AND um.role = 'member' AND mua.mission_id = ?
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader') AND mua.mission_id = ?
 		LIMIT 1
 	`).get(userId, missionId) as { 1: number } | undefined;
 	return row !== undefined;
@@ -613,6 +616,7 @@ export function resolveMissionPasswordForViewer(input: {
 	db: DbConnection;
 	row: MissionRow;
 	slotting: ReturnType<typeof parseCanonicalSlotting>;
+	episodeSlottings: EpisodeSlotting[];
 	viewerUserId: number;
 	joinedRegular: boolean;
 }): GameMissionPassword {
@@ -620,7 +624,11 @@ export function resolveMissionPasswordForViewer(input: {
 	const hasUnitAccess = input.row.unit_gameplay_released_at
 		? viewerHasUnitGameplayAccess(input.db, input.row.id, input.viewerUserId)
 		: false;
-	const hasPriorityAccess = heldSlot?.slot.access === 'priority';
+	const hasPriorityAccess = heldSlot?.slot.access === 'priority'
+		|| input.episodeSlottings.some(ep => {
+			const epSlot = findUserHeldSlot(ep.slotting, input.viewerUserId);
+			return epSlot?.slot.access === 'priority';
+		});
 	const hasRegularAccess = input.row.regular_gameplay_released_at
 		? userHasMissionRegularGameplayAccess(input.db, input.row.id, input.viewerUserId)
 		: false;
@@ -628,13 +636,26 @@ export function resolveMissionPasswordForViewer(input: {
 	const missionStarted = input.row.starts_at ? new Date(input.row.starts_at).getTime() <= Date.now() : false;
 
 	const allPhasesReleased = !!(input.row.priority_gameplay_released_at && input.row.regular_gameplay_released_at);
+	const heldSlotAnyEpisode = heldSlot || input.episodeSlottings.some(ep => findUserHeldSlot(ep.slotting, input.viewerUserId) != null);
 	const missedJoinWindow =
-		allPhasesReleased && !hasGameplayAccess && !heldSlot && missionStarted;
+		allPhasesReleased && !hasGameplayAccess && !heldSlotAnyEpisode && missionStarted;
 
 	const passwordStageAndValue = (): Pick<GameMissionPassword, 'stage' | 'value'> => ({
 		stage: input.row.final_password ? 'final' : 'early',
 		value: input.row.final_password ?? input.row.early_password ?? null
 	});
+
+	// Simple mode: early password visible to all for mod downloads;
+	// after regular release, final/gameplay password only for joined players
+	if (input.row.game_mode === 'simple') {
+		if (input.row.regular_gameplay_released_at && hasRegularAccess) {
+			return { ...passwordStageAndValue(), waitingForViewerAccess: false, missedJoinWindow: false };
+		}
+		if (input.row.regular_gameplay_released_at) {
+			return { stage: null, value: null, waitingForViewerAccess: !missionStarted, missedJoinWindow: missionStarted };
+		}
+		return { stage: 'early', value: input.row.early_password ?? null, waitingForViewerAccess: false, missedJoinWindow: false };
+	}
 
 	// Unit released, priority not yet → only unit members see password
 	if (input.row.unit_gameplay_released_at && !input.row.priority_gameplay_released_at) {
@@ -696,6 +717,7 @@ export function mapMissionDetailForViewer(input: {
 	}
 
 	const slotting = parseCanonicalSlotting(input.row.slotting_json);
+	const episodeSlottings = selectEpisodeSlottings(input.db, input.row.id);
 	const heldSlot = findUserHeldSlot(slotting, input.viewer.id);
 	const regularJoiners = selectMissionRegularJoiners(input.db, input.row.id);
 	const joinedRegular = regularJoiners.some((joiner) => joiner.userId === input.viewer.id);
@@ -706,14 +728,14 @@ export function mapMissionDetailForViewer(input: {
 	const unitSlottingOpen = isPublished && input.row.unit_slotting_manual_state === 'open';
 
 	const viewerUnit = input.db.prepare(`
-		SELECT u.id AS unit_id, u.tag, u.leader_user_id, u.slots_allocated, um.role AS membership_role
+		SELECT u.id AS unit_id, u.tag, u.slots_allocated, um.role AS membership_role
 		FROM unit_memberships um
 		JOIN units u ON u.id = um.unit_id
-		WHERE um.user_id = ? AND um.role IN ('member', 'deputy')
+		WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader')
 		LIMIT 1
-	`).get(input.viewer.id) as { unit_id: number; tag: string; leader_user_id: number | null; slots_allocated: number; membership_role: string } | undefined;
+	`).get(input.viewer.id) as { unit_id: number; tag: string; slots_allocated: number; membership_role: string } | undefined;
 
-	const viewerIsUnitLeader = viewerUnit != null && (viewerUnit.leader_user_id === input.viewer.id || viewerUnit.membership_role === 'deputy');
+	const viewerIsUnitLeader = viewerUnit != null && (viewerUnit.membership_role === 'leader' || viewerUnit.membership_role === 'deputy');
 	const updates = selectMissionUpdates(input.db, input.row.id);
 	const activeEpisodeNumber = deriveActiveEpisode(updates);
 	const viewerUnitAssignment = viewerUnit
@@ -738,6 +760,7 @@ export function mapMissionDetailForViewer(input: {
 	return {
 		status: input.row.status,
 		shortCode: input.row.short_code ?? '',
+		gameMode: input.row.game_mode,
 		title: input.row.title,
 		description: parseLocalizedDescription(input.row.description),
 		startsAt: input.row.starts_at ?? null,
@@ -762,7 +785,7 @@ export function mapMissionDetailForViewer(input: {
 		availablePrioritySlotCount,
 		updates,
 		slotting,
-		episodeSlottings: selectEpisodeSlottings(input.db, input.row.id),
+		episodeSlottings,
 		activeEpisode: activeEpisodeNumber,
 		regularJoiners,
 		password: isPublished
@@ -770,6 +793,7 @@ export function mapMissionDetailForViewer(input: {
 				db: input.db,
 				row: input.row,
 				slotting,
+				episodeSlottings,
 				viewerUserId: input.viewer.id,
 				joinedRegular
 			})
@@ -880,19 +904,22 @@ export function validatePublishableMission(input: {
 	priorityBadgeCount: number;
 }): GamePublishValidationError[] {
 	const reasons: GamePublishValidationError[] = [];
+	const isSimple = input.row.game_mode === 'simple';
 	let anyEpisodeHasPrioritySlots = false;
 
-	const episodes = selectEpisodeSlottings(input.db, input.row.id);
-	if (episodes.length > 0) {
-		for (const ep of episodes) {
-			if (hasPrioritySlots(ep.slotting)) anyEpisodeHasPrioritySlots = true;
-		}
-	} else {
-		try {
-			const slotting = parseCanonicalSlotting(input.row.slotting_json);
-			anyEpisodeHasPrioritySlots = hasPrioritySlots(slotting);
-		} catch {
-			reasons.push('slotting_invalid');
+	if (!isSimple) {
+		const episodes = selectEpisodeSlottings(input.db, input.row.id);
+		if (episodes.length > 0) {
+			for (const ep of episodes) {
+				if (hasPrioritySlots(ep.slotting)) anyEpisodeHasPrioritySlots = true;
+			}
+		} else {
+			try {
+				const slotting = parseCanonicalSlotting(input.row.slotting_json);
+				anyEpisodeHasPrioritySlots = hasPrioritySlots(slotting);
+			} catch {
+				reasons.push('slotting_invalid');
+			}
 		}
 	}
 
@@ -909,7 +936,7 @@ export function validatePublishableMission(input: {
 	if (!isNonEmptyText(input.row.early_password)) {
 		reasons.push('early_password_required');
 	}
-	if (anyEpisodeHasPrioritySlots && input.priorityBadgeCount < 1) {
+	if (!isSimple && anyEpisodeHasPrioritySlots && input.priorityBadgeCount < 1) {
 		reasons.push('priority_badge_required');
 	}
 

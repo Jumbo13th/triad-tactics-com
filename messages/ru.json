@@ -302,6 +302,8 @@
     "gamesStatDraft": "Черновики",
     "gamesStatPublished": "Опубликованные",
     "gamesStatArchive": "Архив",
+    "gamesGameModeStandard": "Стандартный",
+    "gamesGameModeSimple": "Простой",
     "gamesCreateBlank": "Новый пустой черновик",
     "gamesCreatingBlank": "Создаём пустой черновик...",
     "gamesCreateDuplicate": "Дублировать прошлую",
@@ -450,7 +452,7 @@
     "gamesConfirmPublishDiscordText": "Миссия будет опубликована, и в канал Discord будет отправлен анонс. Продолжить?",
     "gamesDiscordNotifyCardTitle": "Уведомление в Discord",
     "gamesDiscordNotifyCardText": "Отправить анонс миссии в канал Discord.",
-    "gamesDiscordNotifyAction": "Отправить в Discord",
+    "gamesDiscordNotifyAction": "Анонс миссии",
     "gamesDiscordNotifySending": "Отправляем...",
     "gamesConfirmDiscordNotifyTitle": "Отправить уведомление в Discord",
     "gamesConfirmDiscordNotifyText": "В канал Discord будет отправлен анонс этой миссии. Продолжить?",
@@ -473,7 +475,7 @@
     "gamesPrioritySlottingSkipDiscord": "Не отправлять уведомление о приоритете в Discord",
     "gamesPriorityDiscordCardTitle": "Уведомление о приоритетной расстановке в Discord",
     "gamesPriorityDiscordCardText": "Отправить уведомление об открытии приоритетной расстановки в канал Discord.",
-    "gamesPriorityDiscordNotifyAction": "Отправить уведомление",
+    "gamesPriorityDiscordNotifyAction": "Открытие приоритетной расстановки",
     "gamesPriorityDiscordNotifySending": "Отправляем...",
     "gamesConfirmPriorityDiscordNotifyTitle": "Отправить уведомление о приоритетной расстановке",
     "gamesConfirmPriorityDiscordNotifyText": "Уведомление об открытии приоритетной расстановки будет отправлено в канал Discord. Продолжить?",
@@ -1330,7 +1332,8 @@
     "role": {
       "member": "Участник",
       "applicant": "Заявка",
-      "deputy": "Заместитель"
+      "deputy": "Заместитель",
+      "leader": "Командир"
     },
     "actions": {
       "approve": "Принять",
@@ -1424,6 +1427,7 @@
     "createdBy": "Выдал",
     "cancelledBy": "Отменил",
     "noSanctions": "Блокировки отсутствуют.",
+    "cancelButton": "Отменить",
     "cancelAction": "Подтвердить",
     "cancelReason": "Причина отмены",
     "cancelReasonPlaceholder": "Причина отмены блокировки",

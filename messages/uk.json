@@ -302,6 +302,8 @@
     "gamesStatDraft": "Чернетки",
     "gamesStatPublished": "Опубліковані",
     "gamesStatArchive": "Архів",
+    "gamesGameModeStandard": "Стандартний",
+    "gamesGameModeSimple": "Простий",
     "gamesCreateBlank": "Нова порожня чернетка",
     "gamesCreatingBlank": "Створюємо порожню чернетку...",
     "gamesCreateDuplicate": "Дублювати попередню",
@@ -448,7 +450,7 @@
     "gamesConfirmPublishDiscordText": "Місію буде опубліковано, і в канал Discord буде надіслано анонс. Продовжити?",
     "gamesDiscordNotifyCardTitle": "Сповіщення в Discord",
     "gamesDiscordNotifyCardText": "Надіслати анонс місії в канал Discord.",
-    "gamesDiscordNotifyAction": "Надіслати в Discord",
+    "gamesDiscordNotifyAction": "Анонс місії",
     "gamesDiscordNotifySending": "Надсилаємо...",
     "gamesConfirmDiscordNotifyTitle": "Надіслати сповіщення в Discord",
     "gamesConfirmDiscordNotifyText": "В канал Discord буде надіслано анонс цієї місії. Продовжити?",
@@ -471,7 +473,7 @@
     "gamesPrioritySlottingSkipDiscord": "Не надсилати сповіщення про пріоритет у Discord",
     "gamesPriorityDiscordCardTitle": "Сповіщення про пріоритетну розстановку в Discord",
     "gamesPriorityDiscordCardText": "Надіслати сповіщення про відкриття пріоритетної розстановки в канал Discord.",
-    "gamesPriorityDiscordNotifyAction": "Надіслати сповіщення",
+    "gamesPriorityDiscordNotifyAction": "Відкриття пріоритетної розстановки",
     "gamesPriorityDiscordNotifySending": "Надсилаємо...",
     "gamesConfirmPriorityDiscordNotifyTitle": "Надіслати сповіщення про пріоритетну розстановку",
     "gamesConfirmPriorityDiscordNotifyText": "Сповіщення про відкриття пріоритетної розстановки буде надіслано в канал Discord. Продовжити?",
@@ -1328,7 +1330,8 @@
     "role": {
       "member": "Учасник",
       "applicant": "Заявка",
-      "deputy": "Заступник"
+      "deputy": "Заступник",
+      "leader": "Командир"
     },
     "actions": {
       "approve": "Прийняти",
@@ -1422,6 +1425,7 @@
     "createdBy": "Видав",
     "cancelledBy": "Скасував",
     "noSanctions": "Блокування відсутні.",
+    "cancelButton": "Скасувати",
     "cancelAction": "Підтвердити",
     "cancelReason": "Причина скасування",
     "cancelReasonPlaceholder": "Причина скасування блокування",

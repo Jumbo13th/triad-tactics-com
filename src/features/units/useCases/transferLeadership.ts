@@ -19,7 +19,9 @@ export function transferLeadership(deps: UnitDeps, input: {
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
 	const actor = deps.users.getUserBySteamId64(input.steamid64);
-	if (!actor || (!input.isAdmin && !isUnitLeader(unit, actor.id))) {
+	if (!actor) return { ok: false, status: 403, json: { error: 'forbidden' } };
+	const actorMembership = deps.memberships.getMembershipByUserAndUnit(actor.id, input.unitId);
+	if (!input.isAdmin && !isUnitLeader(actorMembership)) {
 		return { ok: false, status: 403, json: { error: 'forbidden' } };
 	}
 

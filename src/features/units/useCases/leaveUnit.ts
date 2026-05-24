@@ -14,11 +14,11 @@ export function leaveUnit(deps: UnitDeps, input: { unitId: number; steamid64: st
 	const unit = deps.repo.getUnitById(input.unitId);
 	if (!unit) return { ok: false, status: 404, json: { error: 'not_found' } };
 
-	const check = canLeaveUnit(unit, user.id);
+	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
+	const check = canLeaveUnit(membership);
 	if (!check.allowed) return { ok: false, status: 403, json: { error: check.reason } };
 
 	const callsign = deps.users.getCallsign(user.id);
-	const membership = deps.memberships.getMembershipByUserAndUnit(user.id, input.unitId);
 	const wasApplicant = membership?.role === 'applicant';
 
 	const result = deps.memberships.removeMembership(input.unitId, user.id);

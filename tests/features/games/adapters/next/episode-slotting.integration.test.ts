@@ -505,9 +505,9 @@ describe('Episode slotting (integration)', () => {
 
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_STEAM_ID, 'Leader');
 			const db = getDb();
-			const unitRes = db.prepare("INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', ?, 2, ?)").run(leaderId, leaderId);
+			const unitRes = db.prepare("INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', 2, ?)").run(leaderId);
 			const unitId = Number(unitRes.lastInsertRowid);
-			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, leaderId);
+			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, leaderId);
 
 			// EP1: assign to side-a
 			const res1 = await PUT(
@@ -548,9 +548,9 @@ describe('Episode slotting (integration)', () => {
 
 			const db = getDb();
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_STEAM_ID, 'Leader');
-			const unitRes = db.prepare("INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', ?, 2, ?)").run(leaderId, leaderId);
+			const unitRes = db.prepare("INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', 2, ?)").run(leaderId);
 			const unitId = Number(unitRes.lastInsertRowid);
-			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, leaderId);
+			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, leaderId);
 
 			// Assign TT to side-a for both episodes
 			db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64) VALUES (?, ?, 'side-a', 1, ?)").run(missionId, unitId, ADMIN_STEAM_ID);
@@ -689,9 +689,9 @@ describe('Episode slotting (integration)', () => {
 			// Create a unit and assign to EP1
 			const db = getDb();
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_STEAM_ID, 'Leader');
-			const unitRes = db.prepare("INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', ?, 2, ?)").run(leaderId, leaderId);
+			const unitRes = db.prepare("INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', 2, ?)").run(leaderId);
 			const unitId = Number(unitRes.lastInsertRowid);
-			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, leaderId);
+			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, leaderId);
 			db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64) VALUES (?, ?, 'side-a', 1, ?)").run(missionId, unitId, ADMIN_STEAM_ID);
 
 			// Create EP2 via PUT
@@ -781,9 +781,9 @@ describe('Episode slotting (integration)', () => {
 
 			const db = getDb();
 			const leaderId = createConfirmedPlayer(dbOps, LEADER_STEAM_ID, 'Leader');
-			const unitRes = db.prepare("INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', ?, 2, ?)").run(leaderId, leaderId);
+			const unitRes = db.prepare("INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', 2, ?)").run(leaderId);
 			const unitId = Number(unitRes.lastInsertRowid);
-			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, leaderId);
+			db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, leaderId);
 
 			// EP1: side-a, EP2: side-b
 			db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64) VALUES (?, ?, 'side-a', 1, ?)").run(missionId, unitId, ADMIN_STEAM_ID);

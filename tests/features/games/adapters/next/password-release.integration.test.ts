@@ -58,9 +58,9 @@ function setupMission(dbOps: DbOperations) {
 
 	db.prepare("INSERT OR IGNORE INTO user_badges (user_id, badge_type_id, assigned_by_steamid64) VALUES (?, ?, ?)").run(priorityPlayerId, badgeId, ADMIN_STEAM_ID);
 
-	const unitRes = db.prepare("INSERT INTO units (name, tag, status, leader_user_id, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', ?, 1, ?)").run(unitMemberId, unitMemberId);
+	const unitRes = db.prepare("INSERT INTO units (name, tag, status, slots_allocated, created_by_user_id) VALUES ('Team', 'TT', 'verified', 1, ?)").run(unitMemberId);
 	const unitId = Number(unitRes.lastInsertRowid);
-	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'member')").run(unitId, unitMemberId);
+	db.prepare("INSERT INTO unit_memberships (unit_id, user_id, role) VALUES (?, ?, 'leader')").run(unitId, unitMemberId);
 	db.prepare("INSERT INTO mission_unit_assignments (mission_id, unit_id, side_id, episode_number, assigned_by_steamid64) VALUES (?, ?, 'side-a', 1, ?)").run(missionId, unitId, ADMIN_STEAM_ID);
 
 	// Give priority player a claimed slot

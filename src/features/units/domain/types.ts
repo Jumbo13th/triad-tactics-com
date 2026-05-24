@@ -1,5 +1,5 @@
 export type UnitStatus = 'unverified' | 'verified';
-export type UnitMemberRole = 'member' | 'applicant' | 'deputy';
+export type UnitMemberRole = 'member' | 'applicant' | 'deputy' | 'leader';
 
 export interface Unit {
 	id: number;
@@ -8,7 +8,6 @@ export interface Unit {
 	description: string;
 	status: UnitStatus;
 	avatarMime: string | null;
-	leaderUserId: number | null;
 	leaderCallsign: string | null;
 	slotsAllocated: number;
 	memberNames: string;

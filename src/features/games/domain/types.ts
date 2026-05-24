@@ -3,6 +3,7 @@ import type { AppLocale } from '@/i18n/locales';
 
 export type LocalizedDescription = Record<AppLocale, string>;
 
+export type GameMode = 'standard' | 'simple';
 export type GameStatus = 'draft' | 'published' | 'archived';
 export type GameArchiveStatus = 'completed' | 'canceled';
 export type GamePriorityClaimManualState = 'default' | 'open' | 'closed';
@@ -85,6 +86,7 @@ export type GameAdminMission = {
 	id: number;
 	shortCode: string | null;
 	status: GameStatus;
+	gameMode: GameMode;
 	title: string;
 	description: LocalizedDescription;
 	startsAt: string | null;
@@ -132,6 +134,7 @@ export type AdminGamesOverview = {
 
 export type CurrentGameSummary = {
 	shortCode: string;
+	gameMode: GameMode;
 	title: string;
 	description: LocalizedDescription;
 	startsAt: string | null;
@@ -190,6 +193,7 @@ export type GameMissionViewer = {
 export type GameMissionDetail = {
 	status: 'published' | 'archived';
 	shortCode: string;
+	gameMode: GameMode;
 	title: string;
 	description: LocalizedDescription;
 	startsAt: string | null;

@@ -13,7 +13,7 @@ import {
 	type AdminGameMissionOverview,
 	type AdminGamesOverviewView
 } from '@/features/games/domain/api';
-import type { GameDraftCreateMode } from '@/features/games/domain/types';
+import type { GameDraftCreateMode, GameMode } from '@/features/games/domain/types';
 import type { AppLocale } from '@/i18n/locales';
 import { formatLocalizedDateTime, type ViewerHourCycle } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
@@ -98,6 +98,7 @@ export default function AdminGamesPage() {
 	const [overview, setOverview] = useState<AdminGamesOverviewView | null>(null);
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
 	const [creatingMode, setCreatingMode] = useState<GameDraftCreateMode | null>(null);
+	const [selectedGameMode, setSelectedGameMode] = useState<GameMode>('standard');
 	const [deletingDraft, setDeletingDraft] = useState(false);
 	const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
 
@@ -138,7 +139,7 @@ export default function AdminGamesPage() {
 			const res = await fetch('/api/admin/games/draft', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ mode })
+				body: JSON.stringify({ mode, gameMode: selectedGameMode })
 			});
 			const json: unknown = (await res.json()) as unknown;
 			const parsed = parseAdminGameDraftMutationResponse(json);
@@ -202,7 +203,31 @@ export default function AdminGamesPage() {
 						countText={overviewLoaded ? ta('gamesArchiveCount', { count: overview.archivedMissions.length }) : undefined}
 						actions={
 							overviewLoaded && !overview.draft ? (
-								<>
+								<div className="flex flex-wrap items-center gap-3">
+									<div className="flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-900 p-0.5">
+										<button
+											type="button"
+											onClick={() => setSelectedGameMode('standard')}
+											className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+												selectedGameMode === 'standard'
+													? 'bg-[color:var(--accent)] text-neutral-950'
+													: 'text-neutral-400 hover:text-neutral-200'
+											}`}
+										>
+											{ta('gamesGameModeStandard')}
+										</button>
+										<button
+											type="button"
+											onClick={() => setSelectedGameMode('simple')}
+											className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+												selectedGameMode === 'simple'
+													? 'bg-[color:var(--accent)] text-neutral-950'
+													: 'text-neutral-400 hover:text-neutral-200'
+											}`}
+										>
+											{ta('gamesGameModeSimple')}
+										</button>
+									</div>
 									<AdminButton
 										variant="secondary"
 										onClick={() => void handleCreateDraft('duplicate_previous')}
@@ -219,7 +244,7 @@ export default function AdminGamesPage() {
 									>
 										{creatingMode === 'blank' ? ta('gamesCreatingBlank') : ta('gamesCreateBlank')}
 									</AdminButton>
-								</>
+								</div>
 							) : null
 						}
 					/>
@@ -423,6 +448,7 @@ function GameOverviewCard({
 					formatMissionStatus(mission, t),
 					mission.status === 'published' ? 'success' : mission.status === 'archived' ? 'danger' : 'neutral'
 				)}
+				{mission.gameMode === 'simple' ? renderStateBadge(t('gamesGameModeSimple'), 'neutral') : null}
 			</div>
 
 			<div>

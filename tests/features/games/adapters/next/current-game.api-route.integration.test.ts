@@ -62,6 +62,7 @@ describe('Current game endpoint (integration)', () => {
 		expect(json.success).toBe(true);
 		expect(json.current).toEqual({
 			shortCode: 'OP-42',
+			gameMode: 'standard',
 			title: 'Operation Forty Two',
 			description: { en: 'Hold the road junction.', ru: '', uk: '', ar: '' },
 			startsAt: '2026-03-15T18:00:00.000Z'

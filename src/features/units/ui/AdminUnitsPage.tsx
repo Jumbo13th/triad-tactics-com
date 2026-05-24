@@ -32,7 +32,6 @@ type Unit = {
 	status: string;
 	avatarMime: string | null;
 	updatedAt: string;
-	leaderUserId: number | null;
 	leaderCallsign: string | null;
 	slotsAllocated: number;
 	memberCount: number;
@@ -359,25 +358,19 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 							<h4 className="text-sm font-semibold text-neutral-300">{t('members')} & {t('applicants')}</h4>
 							<div className="mt-2 space-y-1">
 								{[...members].sort((a, b) => {
-								const roleOrder = (m: UnitMembership) => detail.leaderUserId === m.userId ? 0 : m.role === 'deputy' ? 1 : m.role === 'member' ? 2 : 3;
+								const roleOrder = (m: UnitMembership) => m.role === 'leader' ? 0 : m.role === 'deputy' ? 1 : m.role === 'member' ? 2 : 3;
 								return roleOrder(a) - roleOrder(b);
 							}).map(m => (
 									<div key={m.id} className="rounded-lg border border-neutral-800 px-3 py-2 text-sm">
 										<div className="flex items-center justify-between">
 											<div className="flex items-center gap-2">
 												<span className="text-neutral-200">{m.callsign ?? `User #${m.userId}`}</span>
-											{detail.leaderUserId === m.userId ? (
-												<span className="rounded px-1.5 py-0.5 text-xs bg-[color:var(--accent)]/10 text-[color:var(--accent)]">
-													{t('commander')}
-												</span>
-											) : (
 												<span className={
 													'rounded px-1.5 py-0.5 text-xs ' +
-													(m.role === 'deputy' ? 'bg-purple-500/10 text-purple-400' : m.role === 'member' ? 'bg-white/10 text-neutral-400' : 'bg-yellow-900/40 text-yellow-400')
+													(m.role === 'leader' ? 'bg-[color:var(--accent)]/10 text-[color:var(--accent)]' : m.role === 'deputy' ? 'bg-purple-500/10 text-purple-400' : m.role === 'member' ? 'bg-white/10 text-neutral-400' : 'bg-yellow-900/40 text-yellow-400')
 												}>
 													{t(`role.${m.role}` as Parameters<typeof t>[0])}
 												</span>
-											)}
 										</div>
 										<div className="flex gap-1">
 											{m.role === 'applicant' && (
@@ -398,7 +391,7 @@ function AdminUnitRow({ unit, onAction }: { unit: UnitSummary; onAction: () => v
 													</button>
 												</>
 											)}
-											{(m.role === 'member' || m.role === 'deputy') && detail.leaderUserId !== m.userId && (
+											{(m.role === 'member' || m.role === 'deputy') && (
 												<>
 													<button
 														type="button"

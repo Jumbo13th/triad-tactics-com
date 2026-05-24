@@ -7,7 +7,8 @@ const localizedDescriptionSchema = z.object(
 );
 
 export const createGameDraftRequestSchema = z.object({
-	mode: z.enum(['blank', 'duplicate_previous']).default('blank')
+	mode: z.enum(['blank', 'duplicate_previous']).default('blank'),
+	gameMode: z.enum(['standard', 'simple']).default('standard')
 });
 
 function nullableTrimmedString(maxLength: number) {

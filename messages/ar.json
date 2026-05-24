@@ -302,6 +302,8 @@
     "gamesStatDraft": "المسودات",
     "gamesStatPublished": "المنشورة",
     "gamesStatArchive": "الأرشيف",
+    "gamesGameModeStandard": "قياسي",
+    "gamesGameModeSimple": "بسيط",
     "gamesCreateBlank": "مسودة فارغة جديدة",
     "gamesCreatingBlank": "جارٍ إنشاء مسودة فارغة...",
     "gamesCreateDuplicate": "نسخ المهمة السابقة",
@@ -450,7 +452,7 @@
     "gamesConfirmPublishDiscordText": "سيتم نشر المهمة وإرسال إعلان إلى قناة Discord. هل تريد المتابعة؟",
     "gamesDiscordNotifyCardTitle": "إشعار Discord",
     "gamesDiscordNotifyCardText": "إرسال إعلان المهمة إلى قناة Discord.",
-    "gamesDiscordNotifyAction": "إرسال إلى Discord",
+    "gamesDiscordNotifyAction": "إعلان المهمة",
     "gamesDiscordNotifySending": "جارٍ الإرسال...",
     "gamesConfirmDiscordNotifyTitle": "إرسال إشعار Discord",
     "gamesConfirmDiscordNotifyText": "سيتم إرسال إعلان عن هذه المهمة إلى قناة Discord. هل تريد المتابعة؟",
@@ -473,7 +475,7 @@
     "gamesPrioritySlottingSkipDiscord": "عدم إرسال إشعار الأولوية إلى Discord",
     "gamesPriorityDiscordCardTitle": "إشعار الأولوية في Discord",
     "gamesPriorityDiscordCardText": "إرسال إشعار بفتح التوزيع ذي الأولوية إلى قناة Discord.",
-    "gamesPriorityDiscordNotifyAction": "إرسال إشعار الأولوية",
+    "gamesPriorityDiscordNotifyAction": "فتح التوزيع ذي الأولوية",
     "gamesPriorityDiscordNotifySending": "جارٍ الإرسال...",
     "gamesConfirmPriorityDiscordNotifyTitle": "إرسال إشعار التوزيع ذي الأولوية",
     "gamesConfirmPriorityDiscordNotifyText": "سيتم إرسال إشعار بفتح التوزيع ذي الأولوية إلى قناة Discord. هل تريد المتابعة؟",
@@ -1330,7 +1332,8 @@
     "role": {
       "member": "عضو",
       "applicant": "متقدم",
-      "deputy": "نائب"
+      "deputy": "نائب",
+      "leader": "القائد"
     },
     "actions": {
       "approve": "قبول",
@@ -1424,6 +1427,7 @@
     "createdBy": "صدر من",
     "cancelledBy": "ألغاه",
     "noSanctions": "لا توجد عقوبات للعرض.",
+    "cancelButton": "إلغاء",
     "cancelAction": "تأكيد",
     "cancelReason": "سبب الإلغاء",
     "cancelReasonPlaceholder": "سبب إلغاء العقوبة",
