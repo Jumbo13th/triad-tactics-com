@@ -655,7 +655,7 @@ export function updateSlotting(
 			}
 
 			const nextSlotting = parseCanonicalSlotting(input.slotting);
-			if (!validateAllSlotsAreUnit(nextSlotting)) {
+			if (row.status === 'draft' && !validateAllSlotsAreUnit(nextSlotting)) {
 				return { success: false, error: 'slotting_invalid' };
 			}
 			return saveSlottingUpdate({

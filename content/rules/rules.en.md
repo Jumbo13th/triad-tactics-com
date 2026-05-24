@@ -104,16 +104,19 @@
 
 ---
 
-## 9. Enforcement Measures
+## 9. Penalties
 
-9.1. The following measures may be applied for rule violations:
-9.1.1. Removal of content.
-9.1.2. Warning.
-9.1.3. Temporary access restriction.
-9.1.4. Full participation ban.
-9.2. The measure applied is determined by the administration based on the nature, severity, and context of the violation.
-9.3. The project is oriented toward unit-based players, so in certain cases serious violations by one player may result in measures being applied to the entire unit.
-9.4. Measures against an entire unit may be applied if the unit is involved in the violation, facilitates it, or benefits from it.
+9.1. The following penalties may be applied for rule violations:
+9.1.1. Strike — recorded against the player. Three active strikes automatically result in a server ban.
+9.1.2. Server ban — the player is barred from joining game servers for the specified duration or permanently. Banned players cannot claim slots or join missions.
+9.1.3. Site ban — the player is barred from using the website for the specified duration or permanently.
+9.1.4. Removal of content.
+9.2. The penalty is determined by the administration based on the nature, severity, and context of the violation.
+9.3. Active penalties are publicly visible on the Penalties page.
+9.4. The project is oriented toward unit-based players, so in certain cases serious violations by one player may result in penalties being applied to the entire unit.
+9.5. Penalties against an entire unit may be applied if the unit is involved in the violation, facilitates it, or benefits from it.
+9.6. The administration may cancel or modify a penalty at its discretion.
+9.7. Players may contact the administration to discuss a penalty applied to them. The administration's decision after review is final.
 
 ---
 
@@ -139,7 +142,7 @@
 1.2.1.1. Follow the established slotting order: unit slotting first, then priority, then regular.
 1.2.1.2. Respect the established priorities: unit slots, priority slots, regular slots.
 1.2.1.3. Follow the administrator's instructions during slotting.
-1.2.1.4. Unit leaders of units with allocated slots claim slots for their unit on their assigned side using the slotting board on the mission page. Each unit can claim up to their allocated slot count.
+1.2.1.4. Unit leaders and deputies of units with allocated slots claim slots for their unit on their assigned side using the slotting board on the mission page. Each unit can claim up to their allocated slot count.
 1.2.1.5. Priority players claim open priority slots on the slotting board after the priority phase opens.
 1.2.1.6. Regular players, including members of units without allocated slots, join the regular list using the Join mission button.
 1.2.2. A player is prohibited from:
@@ -165,6 +168,33 @@
 ### 1.4 Priorities and Balance
 
 1.4.1. Slot distribution priority is determined by the administration.
+
+---
+
+### 1.5 Game Modes
+
+1.5.1. Missions may operate in Standard or Simplified game mode. The applicable game mode is indicated on the mission page.
+1.5.2. In Simplified mode, the full slotting workflow (unit, priority, and regular phases) does not apply. Players join the mission directly through the Join mission button.
+1.5.3. Rules specific to unit slotting and priority phases (sections 1.2–1.4) apply only to Standard mode missions.
+
+---
+
+### 1.6 Multi-Episode Missions
+
+1.6.1. When a mission consists of multiple episodes, slotting is managed independently for each episode.
+1.6.2. Unit leaders, deputies, and priority players claim slots for each episode they intend to participate in.
+1.6.3. Regular players join the mission once — a single join covers all episodes.
+
+---
+
+### 1.7 Rotation
+
+1.7.1. Units participating in the rotation are assigned to sides and commander schedules by the administration. Side assignments and commander pairings follow a rotation system.
+1.7.2. Units in the rotation must participate in missions according to their assigned schedule. Participation in rotation games is mandatory.
+1.7.3. If a unit cannot participate in a scheduled game, the unit leader must arrange a swap with another unit on the same side before the mission. Failure to arrange a swap or to notify the administration in advance may result in removal from the rotation.
+1.7.4. Skipping a rotation game without a force majeure reason is a serious violation. Units that skip games without valid justification will be removed from the rotation.
+1.7.5. Force majeure reasons are evaluated by the administration on a case-by-case basis.
+1.7.6. Units assigned to the commander role for a game must fulfill that obligation. If a unit cannot take the commander role and has not arranged a swap with another unit on the same side, the unit may be removed from the rotation.
 
 ---
 
