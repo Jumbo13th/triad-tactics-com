@@ -80,7 +80,7 @@
             {
               "id": "side-1-squad-2-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]

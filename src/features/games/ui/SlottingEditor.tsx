@@ -213,7 +213,7 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 																				>
 																					<option value="">{tg('adminSlottingEditorSelectUnit')}</option>
 																					{unitAssignments
-																						.filter((ua) => ua.sideId === side.id)
+																						.filter((ua) => ua.sideId === side.id && ua.episodeNumber === episodeNumber)
 																						.map((ua) => (
 																							<option key={ua.unitId} value={ua.unitTag}>
 																								{ua.unitTag} ({ua.unitName})

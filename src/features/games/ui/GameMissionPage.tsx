@@ -321,7 +321,12 @@ function HeroSection({
 			<div className="pointer-events-none absolute -bottom-24 left-6 h-48 w-48 rounded-full bg-[color:var(--accent)]/10 blur-3xl" aria-hidden="true" />
 			<div className="relative grid gap-4">
 				<div className="space-y-3">
-					<p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">{heroEyebrow}</p>
+					<div className="flex flex-wrap items-center gap-2">
+						<p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">{heroEyebrow}</p>
+						<span className="inline-flex items-center rounded-full border border-neutral-800 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
+							{mission.gameMode === 'simple' ? t('gameModeSimple') : t('gameModeStandard')}
+						</span>
+					</div>
 					<h2 className="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">{mission.title}</h2>
 				</div>
 

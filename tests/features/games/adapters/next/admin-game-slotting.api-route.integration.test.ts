@@ -318,6 +318,141 @@ describe('Admin game slotting endpoints (integration)', () => {
 		);
 	});
 
+	it('rejects non-unit access slots when mission is in draft', async () => {
+		const { dbOperations, PUT, NextRequest } = await loadAdminGameSlottingHarness();
+		const missionId = insertMission({ status: 'draft', slotting: createUnitOnlySlotting() });
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: ADMIN_STEAM_ID,
+			redirectPath: '/en/admin/games'
+		});
+
+		const mixedAccessSlotting = {
+			sides: [
+				{
+					id: 'usk',
+					name: 'USK',
+					color: '#3B82F6',
+					squads: [
+						{
+							id: 'usk-1-1',
+							name: '1-1',
+							slots: [
+								{
+									id: 'slot-squad',
+									role: 'Squad Leader',
+									access: 'unit',
+									occupant: null
+								},
+								{
+									id: 'slot-mg',
+									role: 'Machine Gunner',
+									access: 'priority',
+									occupant: null
+								},
+								{
+									id: 'slot-rifle',
+									role: 'Rifleman',
+									access: 'regular',
+									occupant: null
+								}
+							]
+						}
+					]
+				}
+			]
+		};
+
+		const res = await PUT(
+			new NextRequest(`http://localhost/api/admin/games/${missionId}/slotting`, {
+				method: 'PUT',
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
+				body: JSON.stringify({ slottingRevision: 1, slotting: mixedAccessSlotting })
+			}),
+			missionRouteContext(missionId)
+		);
+
+		expect(res.status).toBe(400);
+		const json = await res.json();
+		expect(json.error).toBe('slotting_invalid');
+	});
+
+	it('allows non-unit access slots when mission is published', async () => {
+		const { dbOperations, PUT, NextRequest } = await loadAdminGameSlottingHarness();
+		const missionId = insertMission({
+			status: 'published',
+			regularJoinEnabled: true,
+			slotting: createUnitOnlySlotting(),
+			episodeSlotting: createEpisodeSlottingWithUser()
+		});
+		const adminSid = createSteamSession(dbOperations, {
+			steamid64: ADMIN_STEAM_ID,
+			redirectPath: '/en/admin/games'
+		});
+
+		const mixedAccessSlotting = {
+			sides: [
+				{
+					id: 'usk',
+					name: 'USK',
+					color: '#3B82F6',
+					squads: [
+						{
+							id: 'usk-1-1',
+							name: '1-1',
+							slots: [
+								{
+									id: 'slot-squad',
+									role: 'Squad Leader',
+									access: 'unit',
+									occupant: { type: 'placeholder', label: 'Alpha Squad' }
+								},
+								{
+									id: 'slot-mg',
+									role: 'Machine Gunner',
+									access: 'priority',
+									occupant: null
+								},
+								{
+									id: 'slot-rifle',
+									role: 'Rifleman',
+									access: 'regular',
+									occupant: null
+								}
+							]
+						}
+					]
+				}
+			]
+		};
+
+		const res = await PUT(
+			new NextRequest(`http://localhost/api/admin/games/${missionId}/slotting`, {
+				method: 'PUT',
+				headers: {
+					origin: 'http://localhost',
+					'content-type': 'application/json',
+					cookie: `tt_steam_session=${adminSid}`
+				},
+				body: JSON.stringify({
+					slottingRevision: 1,
+					slotting: mixedAccessSlotting,
+					confirmDestructive: true
+				})
+			}),
+			missionRouteContext(missionId)
+		);
+
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json.success).toBe(true);
+		expect(json.mission.episodeSlottings[0].slotting.sides[0].squads[0].slots[1].access).toBe('priority');
+		expect(json.mission.episodeSlottings[0].slotting.sides[0].squads[0].slots[2].access).toBe('regular');
+	});
+
 	it('allows destructive published slotting edits after explicit confirmation', async () => {
 		const { dbOperations, PUT, NextRequest } = await loadAdminGameSlottingHarness();
 		const missionId = insertMission({
