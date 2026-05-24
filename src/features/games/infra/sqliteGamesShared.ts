@@ -652,7 +652,7 @@ export function resolveMissionPasswordForViewer(input: {
 			return { ...passwordStageAndValue(), waitingForViewerAccess: false, missedJoinWindow: false };
 		}
 		if (input.row.regular_gameplay_released_at) {
-			return { stage: null, value: null, waitingForViewerAccess: false, missedJoinWindow: true };
+			return { stage: null, value: null, waitingForViewerAccess: !missionStarted, missedJoinWindow: missionStarted };
 		}
 		return { stage: 'early', value: input.row.early_password ?? null, waitingForViewerAccess: false, missedJoinWindow: false };
 	}
