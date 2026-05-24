@@ -14,19 +14,19 @@
             {
               "id": "side-1-squad-1-slot-1-platoon-leader-naval",
               "role": "Platoon Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-1-slot-2-deputy-platoon-leader-naval",
               "role": "Deputy Platoon Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-1-slot-3-sniper-naval",
               "role": "Sniper (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -38,43 +38,43 @@
             {
               "id": "side-1-squad-2-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-2-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
@@ -92,49 +92,49 @@
             {
               "id": "side-1-squad-3-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-3-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -146,49 +146,49 @@
             {
               "id": "side-1-squad-4-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-4-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -200,19 +200,19 @@
             {
               "id": "side-1-squad-5-slot-1-platoon-leader-naval",
               "role": "Platoon Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-5-slot-2-deputy-platoon-leader-naval",
               "role": "Deputy Platoon Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-5-slot-3-sniper-naval",
               "role": "Sniper (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -224,49 +224,49 @@
             {
               "id": "side-1-squad-6-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-6-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -278,49 +278,49 @@
             {
               "id": "side-1-squad-7-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-7-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -332,49 +332,49 @@
             {
               "id": "side-1-squad-8-slot-1-squad-leader-naval",
               "role": "Squad Leader (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-2-senior-rifleman-naval",
               "role": "Senior Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-3-automatic-rifleman-naval",
               "role": "Automatic Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-4-rifleman-anti-tank-naval",
               "role": "Rifleman Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-5-assistant-anti-tank-naval",
               "role": "Assistant Anti-Tank (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-6-rifleman-naval-1",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-7-rifleman-naval-2",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-8-slot-8-rifleman-naval-3",
               "role": "Rifleman (Naval)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -386,37 +386,37 @@
             {
               "id": "side-1-squad-9-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-9-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-9-slot-3-recon-at",
               "role": "Recon (AT)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-9-slot-4-recon-1",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-9-slot-5-recon-2",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-9-slot-6-recon-3",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -428,37 +428,37 @@
             {
               "id": "side-1-squad-10-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-10-slot-2-senior-recon",
               "role": "Senior Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-10-slot-3-recon-at",
               "role": "Recon (AT)",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-10-slot-4-recon-1",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-10-slot-5-recon-2",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-10-slot-6-recon-3",
               "role": "Recon",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -470,13 +470,13 @@
             {
               "id": "side-1-squad-11-slot-1-pilot-1",
               "role": "Pilot",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-11-slot-2-pilot-2",
               "role": "Pilot",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -488,13 +488,13 @@
             {
               "id": "side-1-squad-12-slot-1-pilot-1",
               "role": "Pilot",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-1-squad-12-slot-2-pilot-2",
               "role": "Pilot",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -515,13 +515,13 @@
             {
               "id": "side-2-squad-1-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-1-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -533,49 +533,49 @@
             {
               "id": "side-2-squad-2-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-5-rifleman",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-6-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-7-crew-1",
               "role": "Crew",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-2-slot-8-crew-2",
               "role": "Crew",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -587,49 +587,49 @@
             {
               "id": "side-2-squad-3-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-5-rifleman",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-6-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-7-crew-1",
               "role": "Crew",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-3-slot-8-crew-2",
               "role": "Crew",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -641,49 +641,49 @@
             {
               "id": "side-2-squad-4-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-5-rifleman-1",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-6-rifleman-2",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-7-rifleman-3",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-4-slot-8-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -695,13 +695,13 @@
             {
               "id": "side-2-squad-5-slot-1-platoon-leader",
               "role": "Platoon Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-5-slot-2-deputy-platoon-leader",
               "role": "Deputy Platoon Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -713,49 +713,49 @@
             {
               "id": "side-2-squad-6-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-5-rifleman-1",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-6-rifleman-2",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-7-rifleman-3",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-6-slot-8-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -767,49 +767,49 @@
             {
               "id": "side-2-squad-7-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-5-rifleman-1",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-6-rifleman-2",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-7-rifleman-3",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-7-slot-8-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -821,49 +821,49 @@
             {
               "id": "side-2-squad-8-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-2-senior-rifleman",
               "role": "Senior Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-3-machine-gunner",
               "role": "Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-4-assistant-machine-gunner",
               "role": "Assistant Machine Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-5-rifleman-1",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-6-rifleman-2",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-7-rifleman-3",
               "role": "Rifleman",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-8-slot-8-sharpshooter",
               "role": "Sharpshooter",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]
@@ -875,31 +875,31 @@
             {
               "id": "side-2-squad-9-slot-1-squad-leader",
               "role": "Squad Leader",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-9-slot-2-gunner-1",
               "role": "Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-9-slot-3-assistant-gunner-1",
               "role": "Assistant Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-9-slot-4-gunner-2",
               "role": "Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             },
             {
               "id": "side-2-squad-9-slot-5-assistant-gunner-2",
               "role": "Assistant Gunner",
-              "access": "regular",
+              "access": "unit",
               "occupant": null
             }
           ]

@@ -1,5 +1,5 @@
 export type GameserverActiveBan = {
-	type: 'site_ban' | 'server_ban';
+	type: 'server_ban';
 	reason: string;
 	expires_at: string | null;
 };

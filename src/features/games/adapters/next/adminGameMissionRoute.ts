@@ -124,7 +124,6 @@ function mapSlottingMutationError(result: {
 	error:
 		| 'not_found'
 		| 'slotting_invalid'
-		| 'legacy_slotting_invalid'
 		| 'slotting_revision_conflict'
 		| 'regular_join_requires_regular_slots'
 		| 'destructive_change_requires_confirmation'
@@ -136,7 +135,7 @@ function mapSlottingMutationError(result: {
 		return NextResponse.json({ error: 'not_found' }, { status: 404 });
 	}
 
-	if (result.error === 'slotting_invalid' || result.error === 'legacy_slotting_invalid') {
+	if (result.error === 'slotting_invalid') {
 		return NextResponse.json({ error: result.error }, { status: 400 });
 	}
 
