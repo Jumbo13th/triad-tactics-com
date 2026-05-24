@@ -20,7 +20,7 @@ type UnitRow = {
 };
 
 type BanRow = {
-	type: 'site_ban' | 'server_ban';
+	type: 'server_ban';
 	reason: string;
 	expires_at: string | null;
 };
@@ -66,7 +66,7 @@ export function getPlayerByArmaId(input: { armaId: string }): GameserverPlayer |
 	const bansStmt = db.prepare(`
 		SELECT type, reason, expires_at
 		FROM sanctions
-		WHERE user_id = ? AND type IN ('site_ban', 'server_ban') AND ${ACTIVE_BAN_CONDITION}
+		WHERE user_id = ? AND type = 'server_ban' AND ${ACTIVE_BAN_CONDITION}
 		ORDER BY created_at DESC
 	`);
 	const activeBans = bansStmt.all(player.user_id) as BanRow[];

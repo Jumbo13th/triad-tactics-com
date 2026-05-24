@@ -76,6 +76,12 @@ export function parseCanonicalSlotting(input: unknown): CanonicalSlotting {
 	return canonicalSlottingSchema.parse(parsed);
 }
 
+export function validateAllSlotsAreUnit(slotting: CanonicalSlotting): boolean {
+	return slotting.sides.every((side) =>
+		side.squads.every((squad) => squad.slots.every((slot) => slot.access === 'unit'))
+	);
+}
+
 export function clearUserOccupants(slotting: CanonicalSlotting): CanonicalSlotting {
 	return {
 		sides: slotting.sides.map((side) => ({

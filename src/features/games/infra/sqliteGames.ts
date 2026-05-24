@@ -2,7 +2,8 @@ import {
 	clearUserOccupants,
 	detectDestructiveSlottingChanges,
 	emptyCanonicalSlotting,
-	parseCanonicalSlotting
+	parseCanonicalSlotting,
+	validateAllSlotsAreUnit
 } from '@/features/games/domain/slotting';
 import type {
 	CreateMissionUpdateRequest,
@@ -92,7 +93,7 @@ function saveSlottingUpdate(input: {
 	nextSlotting: ReturnType<typeof parseCanonicalSlotting>;
 	updatedBySteamId64: string;
 	confirmDestructive: boolean;
-	source: 'canonical' | 'legacy_import';
+	source: 'canonical';
 }):
 	| { success: true; mission: GameAdminMission }
 	| {
@@ -654,6 +655,9 @@ export function updateSlotting(
 			}
 
 			const nextSlotting = parseCanonicalSlotting(input.slotting);
+			if (!validateAllSlotsAreUnit(nextSlotting)) {
+				return { success: false, error: 'slotting_invalid' };
+			}
 			return saveSlottingUpdate({
 				db,
 				row,
