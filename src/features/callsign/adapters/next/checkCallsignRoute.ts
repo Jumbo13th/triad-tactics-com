@@ -3,16 +3,12 @@ import { checkCallsign } from '@/features/callsign/useCases/checkCallsign';
 import { callsignDeps } from '@/features/callsign/deps';
 import { errorToLogObject, logger } from '@/platform/logger';
 import { consumeFixedWindowRateLimit } from '@/platform/rateLimit';
+import { getClientIp } from '@/platform/net/clientIp';
 import {
 	CALLSIGN_CHECK_RATE_LIMIT_MAX_REQUESTS,
 	CALLSIGN_CHECK_RATE_LIMIT_WINDOW_SECONDS,
 	DISABLE_RATE_LIMITS
 } from '@/platform/config';
-
-function getClientIp(request: NextRequest): string {
-	const forwardedFor = request.headers.get('x-forwarded-for');
-	return forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
-}
 
 export async function getCheckCallsignRoute(request: NextRequest): Promise<NextResponse> {
 	try {

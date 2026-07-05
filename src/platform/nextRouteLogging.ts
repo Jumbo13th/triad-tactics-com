@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createRequestId, errorToLogObject, logger } from './logger';
 import { runWithRequestContext } from './requestContext';
+import { getClientIp as resolveClientIp } from './net/clientIp';
 
 export type RouteHandler<TArgs extends unknown[] = []> = (
 	request: NextRequest,
@@ -17,9 +18,8 @@ export type ApiLoggingOptions = {
 };
 
 function getClientIp(request: NextRequest): string | undefined {
-	const forwardedFor = request.headers.get('x-forwarded-for');
-	const ip = forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || undefined;
-	return ip;
+	const ip = resolveClientIp(request);
+	return ip === 'unknown' ? undefined : ip;
 }
 
 function truncate(text: string, maxLen: number): string {

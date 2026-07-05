@@ -33,6 +33,11 @@ export const updateBadgeTypeStatusRequestSchema = z.object({
 	status: z.enum(['active', 'retired'])
 });
 
+// Discord snowflake IDs are 17-20 digit numeric strings. Constraining the shape
+// here prevents arbitrary content (spaces, markup) from later being interpolated
+// into a Discord role mention `<@&{id}>`.
+const discordSnowflakeSchema = z.string().regex(/^\d{17,20}$/);
+
 export const updateBadgeTypeDiscordRoleRequestSchema = z.object({
 	discordRoleId: z.preprocess((value) => {
 		if (value === null || value === undefined) return null;
@@ -41,7 +46,7 @@ export const updateBadgeTypeDiscordRoleRequestSchema = z.object({
 			return trimmed === '' ? null : trimmed;
 		}
 		return value;
-	}, z.string().min(1).max(64).nullable())
+	}, discordSnowflakeSchema.nullable())
 });
 
 export const mutateUserBadgeRequestSchema = z.object({

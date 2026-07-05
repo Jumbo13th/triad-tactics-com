@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ApiLoggingOptions, RouteHandler } from './nextRouteLogging';
 import { withApiLogging } from './nextRouteLogging';
+import { errorToLogObject, logger } from './logger';
 
 const SAFE_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -165,8 +166,12 @@ export async function enforceSteamGatesForApi(request: NextRequest): Promise<Res
 		}
 
 		return null;
-	} catch {
-		return null;
+	} catch (error) {
+		// Fail CLOSED: an exception here (DB fault, import failure, etc.) must not
+		// silently bypass the authentication/ban gates. Deny the request instead
+		// of letting it fall through to the handler.
+		logger.error({ ...errorToLogObject(error), pathname }, 'api_gate_evaluation_failed');
+		return jsonError('server_error', 500);
 	}
 }
 
