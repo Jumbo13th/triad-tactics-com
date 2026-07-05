@@ -9,6 +9,7 @@ import { submitApplicationLocaleSchema } from '@/features/apply/domain/requests'
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getSteamIdentity } from '@/features/steamAuth/useCases/getSteamIdentity';
 import { errorToLogObject, logger } from '@/platform/logger';
+import { getClientIp } from '@/platform/net/clientIp';
 
 function localeFromAcceptLanguage(header: string | null): string {
 	if (!header) return 'en';
@@ -29,11 +30,7 @@ export async function postSubmitApplicationRoute(request: NextRequest): Promise<
 		const steamid64 = identity.connected ? identity.steamid64 : null;
 		const personaName = identity.connected ? identity.personaName : null;
 
-		const forwardedFor = request.headers.get('x-forwarded-for');
-		const ip =
-			forwardedFor?.split(',')[0]?.trim() ||
-			request.headers.get('x-real-ip') ||
-			'unknown';
+		const ip = getClientIp(request);
 
 		const bypassRateLimit = DISABLE_RATE_LIMITS;
 		const rateLimitDecisionRaw = bypassRateLimit

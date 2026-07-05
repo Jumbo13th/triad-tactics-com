@@ -1,6 +1,11 @@
 import type { SteamSession } from '@/features/steamAuth/domain/types';
 import { getDb } from '@/platform/db/connection';
 
+// Server-side session lifetime. Matches the 10-day cookie maxAge so a stolen or
+// leaked session id stops working server-side once the cookie would have
+// expired, rather than remaining valid indefinitely.
+const SESSION_MAX_AGE_DAYS = 10;
+
 type SteamSessionRow = {
 	id: string;
 	redirect_path: string;
@@ -49,9 +54,10 @@ export function getSteamSession(sessionId: string): SteamSession | null {
 		SELECT id, redirect_path, steamid64, persona_name, created_at
 		FROM steam_sessions
 		WHERE id = ?
+			AND created_at > datetime('now', ?)
 	`);
 
-	const row = stmt.get(sessionId) as SteamSessionRow | undefined;
+	const row = stmt.get(sessionId, `-${SESSION_MAX_AGE_DAYS} days`) as SteamSessionRow | undefined;
 	if (!row) return null;
 	return row;
 }
