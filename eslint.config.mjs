@@ -5,6 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // eslint-plugin-react's version auto-detection ("detect") calls the
+    // context.getFilename() API that ESLint 10 removed; pin the version
+    // explicitly to skip detection until the plugin supports ESLint 10.
+    settings: {
+      react: { version: "19" },
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -44,6 +52,12 @@ const eslintConfig = defineConfig([
     rules: {
       // Unused-var tuning (allow underscore-prefixed params in route handlers etc.)
       "@typescript-eslint/no-unused-vars": ["warn", { "args": "after-used", "argsIgnorePattern": "^_", "ignoreRestSiblings": true }],
+
+      // New rules in eslint-plugin-react-hooks v7 that flag pre-existing
+      // patterns (props->state sync effects, fetch effects setting a loading
+      // flag). Kept visible as warnings until those screens are refactored.
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
 
       // Formatting hygiene
       "eol-last": ["error", "always"],
