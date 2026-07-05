@@ -17,7 +17,10 @@ type MissionPublishedData = {
 	imageMime: string | null;
 };
 
+// News channel: mission announcements only.
 const DISCORD_CHANNEL_ID = '1464208490410283071';
+// "Stage of games" channel: slotting/episode progress notifications.
+const DISCORD_GAME_STAGE_CHANNEL_ID = '1489978114971930684';
 const DISCORD_TIMEOUT_MS = 8000;
 const EMBED_COLOR = 0xC8A83E;
 
@@ -191,7 +194,7 @@ export async function notifyPrioritySlottingInDiscord(data: PrioritySlottingOpen
 		? data.discordRoleIds.map((id) => `<@&${id}>`).join(' ')
 		: undefined;
 
-	const response = await fetch(`https://discord.com/api/v10/channels/${DISCORD_CHANNEL_ID}/messages`, {
+	const response = await fetch(`https://discord.com/api/v10/channels/${DISCORD_GAME_STAGE_CHANNEL_ID}/messages`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bot ${botToken}`,

@@ -7,7 +7,9 @@ type ParsedUpdateRequestData = {
     totalEpisodes: number;
 }
 
-const DISCORD_MISSION_UPDATES_CHANNEL_ID = '1464208490410283071';
+// "Stage of games" channel: episode/slotting progress updates go here,
+// not the news channel (which is reserved for mission announcements).
+const DISCORD_MISSION_UPDATES_CHANNEL_ID = '1489978114971930684';
 const DISCORD_MISSION_UPDATES_TIMEOUT_MS = 8000;
 
 const getMissionUpdateDiscordMessages = (data: ParsedUpdateRequestData) => {
