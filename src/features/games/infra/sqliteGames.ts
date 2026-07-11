@@ -76,6 +76,8 @@ export {
 	leaveRegularGame
 } from './sqliteGamesParticipation';
 
+export { countCompletedGameParticipations, userIsInSquadOrHasBadge } from './sqliteGamesStats';
+
 export {
 	updateUnitAssignments,
 	claimUnitSlot,

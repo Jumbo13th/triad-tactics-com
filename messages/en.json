@@ -1156,33 +1156,26 @@
     "adminSlottingEditorUnitLabel": "Unit"
   },
   "welcome": {
+    "hero": {
+      "eyebrow": "New here?",
+      "title": "How to start playing",
+      "subtitle": "Watch a short video guide on how to join your first Triad Tactics game — from application to your first slot.",
+      "watchVideo": "Watch the video",
+      "readGuide": "Read the guide",
+      "videoAlt": "How to start playing on Triad Tactics — video guide"
+    },
     "applyButton": "Join Games",
     "applyButtonShort": "Join Games",
     "backToWelcome": "Back to home",
     "aboutTitle": "Welcome to Triad Tactics",
     "aboutP1": "Triad Tactics is an Arma Reforger project focused on immersive, teamwork-driven military operations inside the game. Our goal is to deliver sessions that feel structured and believable: carefully prepared scenarios, authentic loadouts, vehicles, and a environment.",
     "aboutP2": "The server is created and maintained by Triad Team. We welcome players from all over the world - we’ll help you get settled and feel at home in our community.",
-    "highlightsTitle": "What to expect:",
     "highlights": {
       "1": "Mission scenarios with an emphasis on tactics and coordination",
       "2": "Period-appropriate gear and vehicles for each scenario",
       "3": "Friendly community and support for new players"
     },
-    "galleryTitle": "Screenshots",
-    "gallerySubtitle": "A few moments from our sessions",
-    "gallery": {
-      "items": {
-        "1": { "alt": "Triad Tactics gameplay screenshot 1" },
-        "2": {
-          "alt": "Triad Tactics gameplay screenshot 2",
-          "videoAlt": "Triad Tactics Arma Reforger server gameplay video"
-        },
-        "3": { "alt": "Triad Tactics gameplay screenshot 3" }
-      }
-    },
     "community": {
-      "title": "Join the community",
-      "subtitle": "Stay connected between sessions and get updates in real time.",
       "joinAction": "Join",
       "telegramLabel": "Telegram Channel",
       "discordLabel": "Discord Server"
@@ -1198,7 +1191,6 @@
       "openAction": "Open mission",
       "applyAction": "Apply to access Games"
     },
-    "disclaimerTitle": "Important note",
     "disclaimerText": "Triad Tactics is a gaming project within Arma Reforger. We do not support, promote, or justify real-world war, violence, or hatred, and we do not create missions that depict ongoing real-world conflicts."
   },
   "authError": {

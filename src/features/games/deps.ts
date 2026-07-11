@@ -3,6 +3,8 @@ import {
 	cancelGame,
 	claimPrioritySlot,
 	claimUnitSlot,
+	countCompletedGameParticipations,
+	userIsInSquadOrHasBadge,
 	createMissionUpdate,
 	releaseUnitGameplay,
 	hideUnitGameplay,
@@ -44,6 +46,7 @@ import type {
 	GetAdminGamesOverviewDeps,
 	GetCurrentGameDeps,
 	GetMissionAuditDeps,
+	GetIsEstablishedPlayerDeps,
 	HidePriorityGameplayDeps,
 	HideRegularGameplayDeps,
 	JoinRegularGameDeps,
@@ -168,6 +171,13 @@ export const updateGameSlottingDeps: UpdateGameSlottingDeps = {
 export const getCurrentGameDeps: GetCurrentGameDeps = {
 	repo: {
 		getCurrentPublishedSummary
+	}
+};
+
+export const getIsEstablishedPlayerDeps: GetIsEstablishedPlayerDeps = {
+	repo: {
+		countCompletedGameParticipations,
+		userIsInSquadOrHasBadge
 	}
 };
 

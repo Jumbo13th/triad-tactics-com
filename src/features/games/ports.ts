@@ -259,6 +259,15 @@ export type GamesCurrentRepo = {
 	getGameByShortCode: (input: { shortCode: string; steamId64: string }) => GetGameByShortCodeRepoResult;
 };
 
+export type GamesStatsRepo = {
+	countCompletedGameParticipations: (input: { steamId64: string }) => number;
+	userIsInSquadOrHasBadge: (input: { steamId64: string }) => boolean;
+};
+
+export type GetIsEstablishedPlayerDeps = {
+	repo: GamesStatsRepo;
+};
+
 export type GamesParticipationRepo = {
 	claimPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => ClaimPrioritySlotRepoResult;
 	switchPrioritySlot: (input: { shortCode: string; slotId: string; steamId64: string; episodeNumber: number }) => SwitchPrioritySlotRepoResult;

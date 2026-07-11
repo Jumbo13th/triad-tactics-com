@@ -1,60 +1,38 @@
-import { useTranslations } from 'next-intl';
-import { CommunityLinks, MediaStrip } from '@/features/welcome/ui/root';
+import { CommunityLinks, GettingStartedHero } from '@/features/welcome/ui/root';
 import type { CurrentGameSummary } from '@/features/games/domain/types';
 import CurrentGameMissionCard from '@/features/games/ui/CurrentGameMissionCard';
-import type { MediaStripItem } from '@/features/welcome/ui/MediaStrip';
 
-export default function WelcomePage({ currentGame }: { currentGame: CurrentGameSummary | null }) {
-  const tw = useTranslations('welcome');
+const GETTING_STARTED_VIDEO_ID = '6r89UBqFqwY';
 
-  const screenshots: MediaStripItem[] = [
-    { type: 'image', src: '/screenshots/01.jpg', alt: tw('gallery.items.1.alt') },
-    { type: 'youtube', videoId: 'pPpXREbvmFw', alt: tw('gallery.items.2.videoAlt') },
-    { type: 'image', src: '/screenshots/03.jpg', alt: tw('gallery.items.3.alt') }
-  ];
+export default function WelcomePage({
+  currentGame,
+  isConfirmedMember,
+  showGuideBelowMission
+}: {
+  currentGame: CurrentGameSummary | null;
+  isConfirmedMember: boolean;
+  showGuideBelowMission: boolean;
+}) {
+  const gameCard = currentGame ? <CurrentGameMissionCard current={currentGame} /> : null;
+  const hero = <GettingStartedHero videoId={GETTING_STARTED_VIDEO_ID} compact={isConfirmedMember} />;
 
   return (
     <section className="grid gap-8">
-      {currentGame ? <CurrentGameMissionCard current={currentGame} /> : null}
-
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 shadow-sm shadow-black/20 sm:p-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">{tw('community.title')}</h2>
-          <p className="text-sm text-neutral-300 sm:text-base">{tw('community.subtitle')}</p>
-        </div>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">
-          <CommunityLinks />
-        </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <CommunityLinks />
       </div>
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-neutral-50 sm:text-2xl">{tw('aboutTitle')}</h2>
-        <p className="mt-4 text-neutral-300">{tw('aboutP1')}</p>
 
-        <p className="mt-3 text-neutral-300">{tw('aboutP2')}</p>
-
-        <h3 className="mt-6 text-sm font-semibold tracking-wide text-neutral-200">{tw('highlightsTitle')}</h3>
-        <ul className="mt-3 grid gap-2 text-sm text-neutral-300">
-          <li className="flex items-center gap-3">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--accent)]" />
-            <span>{tw('highlights.1')}</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--accent)]" />
-            <span>{tw('highlights.2')}</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--accent)]" />
-            <span>{tw('highlights.3')}</span>
-          </li>
-        </ul>
-
-        <div className="mt-6 border-t border-neutral-900 pt-5">
-          <h3 className="text-sm font-semibold text-neutral-200">{tw('disclaimerTitle')}</h3>
-          <p className="mt-2 text-sm text-neutral-300">{tw('disclaimerText')}</p>
-        </div>
-
-        <MediaStrip items={screenshots} />
-      </div>
+      {showGuideBelowMission ? (
+        <>
+          {gameCard}
+          {hero}
+        </>
+      ) : (
+        <>
+          {hero}
+          {gameCard}
+        </>
+      )}
     </section>
   );
 }
