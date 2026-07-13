@@ -62,10 +62,11 @@ services:
       - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Put your certs here:
-      #   certs/server.crt
-      #   certs/server.key
-      - ./certs:/etc/nginx/certs:ro
+      # Let's Encrypt certs (managed by certbot on the host).
+      # Mount the whole /etc/letsencrypt dir: live/ contains symlinks into archive/.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # ACME http-01 challenge webroot (certbot writes, nginx serves)
+      - /var/www/certbot:/var/www/certbot:ro
     restart: unless-stopped
 
 volumes:

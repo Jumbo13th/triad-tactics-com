@@ -196,7 +196,7 @@ See `.env.example` for complete list. Key variables:
 - **Container**: Docker + nginx (TLS termination)
 - **Files**: `Dockerfile`, `docker-compose.yml`, `nginx/default.conf`
 - **Start**: `docker compose up -d --build`
-- **TLS**: Place certs in `certs/server.crt` and `certs/server.key`
+- **TLS**: Let's Encrypt via certbot on the host (webroot mode), see DEPLOYMENT.md
 - **Ports**: nginx on 80/443, Next.js internal on 3000
 
 See `DEPLOYMENT.md` for complete deployment instructions.

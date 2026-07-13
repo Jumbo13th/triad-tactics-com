@@ -16,7 +16,7 @@
 - Production behavior:
   - `DISABLE_RATE_LIMITS=false`
 - TLS:
-  - Provide valid certificate files: `certs/server.crt` and `certs/server.key` (prefer full chain)
+  - Let's Encrypt via certbot on the host (webroot mode). See "TLS (Let's Encrypt)" below.
 - Data:
   - SQLite DB is stored in a Docker volume (`db`). Back it up if you care about submissions.
 
@@ -33,11 +33,58 @@
   - `ADMIN_STEAM_IDS=...`
   - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=...`
   - `OUTBOX_CRON_SECRET=...`
-3. Place TLS files:
-  - `certs/server.crt`
-  - `certs/server.key`
+3. Set up TLS (see "TLS (Let's Encrypt)" below).
 4. Start:
    - `docker compose up -d --build`
+
+## TLS (Let's Encrypt)
+
+Certificates are issued and renewed by **certbot on the host** (not in Docker).
+Nginx (in Docker) serves the ACME challenges from `/var/www/certbot` and reads
+certs from `/etc/letsencrypt` (both host-mounted read-only).
+
+### First-time setup
+
+```bash
+# 1. Install certbot
+sudo apt update && sudo apt install -y certbot
+
+# 2. Create the ACME challenge webroot
+sudo mkdir -p /var/www/certbot
+
+# 3. Issue the certificate.
+#    If nginx is NOT running yet (fresh server), use standalone mode:
+sudo certbot certonly --standalone -d triad-tactics.com \
+  --agree-tos -m <your-email> --no-eff-email
+
+#    If nginx IS already running with this repo's config, use webroot mode:
+# sudo certbot certonly --webroot -w /var/www/certbot -d triad-tactics.com \
+#   --agree-tos -m <your-email> --no-eff-email
+
+# 4. Start/restart nginx
+docker compose up -d --force-recreate nginx
+
+# 5. If step 3 used standalone mode, switch renewals to webroot
+#    (standalone renewal would fail because nginx occupies port 80):
+sudo certbot certonly --webroot -w /var/www/certbot -d triad-tactics.com --force-renewal
+
+# 6. Verify renewal works end-to-end
+sudo certbot renew --dry-run
+```
+
+### Auto-renewal
+
+Certbot installs a systemd timer (`systemctl list-timers | grep certbot`) that
+renews automatically. Nginx must reload to pick up a renewed cert — add a deploy
+hook (replace `/opt/triad-tactics-com` with the repo path on the server):
+
+```bash
+sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh >/dev/null <<'EOF'
+#!/bin/sh
+cd /opt/triad-tactics-com && docker compose exec -T nginx nginx -s reload
+EOF
+sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+```
 
 ## Notes
 - Nginx listens on `80` and `443`; the Next.js app runs internally on `3000`.
