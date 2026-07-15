@@ -27,6 +27,7 @@ import {
 	ConnectionSegment,
 	CountdownSegment,
 	SlotCell,
+	SquadAssetsBadge,
 	SyncedHorizontalScroll
 } from './missionPageComponents';
 import { useMissionGuide, MissionGuideModal } from './MissionGuideModal';
@@ -1207,8 +1208,9 @@ function SlottingBoards({
 											#
 										</th>
 										{side.squads.map((squad) => (
-											<th key={squad.id} className="border-b border-neutral-800 bg-neutral-950/80 px-3 py-3 text-left align-bottom">
+											<th key={squad.id} className="border-b border-neutral-800 bg-neutral-950/80 px-3 py-3 text-left align-top">
 												<div className="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-300">{squad.name}</div>
+												<SquadAssetsBadge assets={squad.assets ?? []} t={t} />
 											</th>
 										))}
 									</tr>

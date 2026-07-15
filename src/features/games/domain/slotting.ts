@@ -24,10 +24,19 @@ export const slotSchema = z.object({
 	occupant: slotOccupantSchema
 });
 
+// Hardware attached to a squad in the game lobby — trucks, helicopters, tanks,
+// static weapons (informational, not claimable). Optional so slotting JSON
+// persisted before assets existed keeps parsing.
+export const squadAssetSchema = z.object({
+	id: z.string().trim().min(1),
+	name: z.string().trim().min(1)
+});
+
 export const squadSchema = z.object({
 	id: z.string().trim().min(1),
 	name: z.string().trim().min(1),
-	slots: z.array(slotSchema)
+	slots: z.array(slotSchema),
+	assets: z.array(squadAssetSchema).optional()
 });
 
 export const sideSchema = z.object({
@@ -45,6 +54,7 @@ export const canonicalSlottingSchema = z.object({
 export type CanonicalSlotting = z.infer<typeof canonicalSlottingSchema>;
 export type CanonicalSlot = z.infer<typeof slotSchema>;
 export type CanonicalSlotOccupant = z.infer<typeof slotOccupantSchema>;
+export type CanonicalSquadAsset = z.infer<typeof squadAssetSchema>;
 
 type CanonicalSide = CanonicalSlotting['sides'][number];
 type CanonicalSquad = CanonicalSide['squads'][number];

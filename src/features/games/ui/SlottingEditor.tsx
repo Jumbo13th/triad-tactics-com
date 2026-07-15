@@ -15,7 +15,7 @@ import {
 	slotBadgeClass,
 	slottingTableWidthRem
 } from './missionPageUtils';
-import { SyncedHorizontalScroll } from './missionPageComponents';
+import { SquadAssetsBadge, SyncedHorizontalScroll } from './missionPageComponents';
 
 const ACCESS_VALUES: Array<CanonicalSlot['access']> = ['unit', 'priority', 'regular'];
 
@@ -111,8 +111,9 @@ export function SlottingEditor({ slotting, slottingRevision, unitAssignments, mi
 											#
 										</th>
 										{side.squads.map((squad) => (
-											<th key={squad.id} className="border-b border-neutral-800 bg-neutral-950/80 px-3 py-3 text-left align-bottom">
+											<th key={squad.id} className="border-b border-neutral-800 bg-neutral-950/80 px-3 py-3 text-left align-top">
 												<div className="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-300">{squad.name}</div>
+												<SquadAssetsBadge assets={squad.assets ?? []} t={tg} />
 											</th>
 										))}
 									</tr>

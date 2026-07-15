@@ -938,6 +938,7 @@
     "slotAccessPriority": "Приоритет",
     "slotAccessRegular": "Обычный",
     "slotUnclaimed": "Свободно",
+    "squadAssets": "Техника: {count}",
     "yourSlot": "Ваш слот",
     "claimSlot": "Занять слот",
     "switchHere": "Перейти сюда",
