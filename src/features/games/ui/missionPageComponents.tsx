@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { useTranslations } from 'next-intl';
-import type { CanonicalSlot } from '@/features/games/domain/slotting';
+import type { CanonicalSlot, CanonicalSquadAsset } from '@/features/games/domain/slotting';
 import {
 	slotAccessLabel,
 	slotBadgeClass,
@@ -146,6 +146,73 @@ export function CountdownSegment({ value, label }: { value: string; label: strin
 				<span className="text-2xl font-semibold text-neutral-50 sm:text-3xl">{value}</span>
 				<span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400 sm:text-xs">{label}</span>
 			</div>
+		</div>
+	);
+}
+
+export function SquadAssetsBadge({
+	assets,
+	t
+}: {
+	assets: CanonicalSquadAsset[];
+	t: ReturnType<typeof useTranslations<'games'>>;
+}) {
+	const [open, setOpen] = useState(false);
+	const rootRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const onPointerDown = (event: PointerEvent) => {
+			if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+				setOpen(false);
+			}
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		return () => document.removeEventListener('pointerdown', onPointerDown);
+	}, [open]);
+
+	if (assets.length === 0) return null;
+
+	return (
+		<div ref={rootRef} className="relative mt-1">
+			<button
+				type="button"
+				onClick={() => setOpen((value) => !value)}
+				className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] transition ${
+					open
+						? 'border-[color:var(--accent)]/40 bg-[color:var(--accent)]/10 text-[color:var(--accent)]'
+						: 'border-neutral-700 bg-white/5 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200'
+				}`}
+			>
+				{t('squadAssets', { count: assets.length })}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth={2}
+					className={`h-2.5 w-2.5 transition-transform ${open ? 'rotate-180' : ''}`}
+					aria-hidden="true"
+				>
+					<path strokeLinecap="round" strokeLinejoin="round" d="m6 8 4 4 4-4" />
+				</svg>
+			</button>
+
+			{open ? (
+				<div className="absolute left-0 top-full z-40 mt-1 min-w-full max-w-64 rounded-xl border border-neutral-700 bg-neutral-950 p-2 shadow-xl shadow-black/40">
+					<ul className="grid gap-1.5">
+						{assets.map((asset) => (
+							<li
+								key={asset.id}
+								className="flex items-start gap-2 whitespace-normal break-words text-xs font-medium normal-case tracking-normal text-neutral-200 [overflow-wrap:anywhere]"
+							>
+								<span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[color:var(--accent)]/70" aria-hidden="true" />
+								<span>{asset.name}</span>
+							</li>
+						))}
+					</ul>
+				</div>
+			) : null}
 		</div>
 	);
 }

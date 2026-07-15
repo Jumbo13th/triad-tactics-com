@@ -938,6 +938,7 @@
     "slotAccessPriority": "أولوية",
     "slotAccessRegular": "عادي",
     "slotUnclaimed": "شاغر",
+    "squadAssets": "معدات: {count}",
     "yourSlot": "خانتك",
     "claimSlot": "حجز الخانة",
     "switchHere": "الانتقال إلى هنا",

@@ -938,6 +938,7 @@
     "slotAccessPriority": "Priority",
     "slotAccessRegular": "Regular",
     "slotUnclaimed": "Unclaimed",
+    "squadAssets": "Assets: {count}",
     "yourSlot": "Your slot",
     "claimSlot": "Claim slot",
     "switchHere": "Switch here",
