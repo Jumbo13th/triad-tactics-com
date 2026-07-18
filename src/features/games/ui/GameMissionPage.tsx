@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState, useTransition } from 'react';
+import { Fragment, useEffect, useState, useTransition, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import type { GameArchiveResult, GameArchiveStatus, GameMissionDetail } from '@/features/games/domain/types';
@@ -34,7 +34,7 @@ import { useMissionGuide, MissionGuideModal } from './MissionGuideModal';
 import { useSlottingSSE } from './useSlottingSSE';
 import { useEpisodeSlotting, countPriorityAvailable, collectAllEpisodeSides, findUserHeldSlotId, findSlotAccess } from './useEpisodeSlotting';
 
-export default function GameMissionPage({ mission }: { mission: GameMissionDetail }) {
+export default function GameMissionPage({ mission, statsSlot = null }: { mission: GameMissionDetail; statsSlot?: ReactNode }) {
 	const t = useTranslations('games');
 	const locale = useLocale();
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
@@ -87,10 +87,8 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 				t={t}
 			/>
 
-			{mission.status === 'published' && mission.gameMode !== 'simple' ? <MissionAccessNoticeSection t={t} /> : null}
-
-			<MissionUpdatesSection mission={mission} t={t} />
-
+			{/* For an archived mission the outcome IS the page: final score and
+			    published statistics go first, right under the header. */}
 			{mission.status === 'archived' && mission.archiveResult ? (
 				<ResultsSection
 					archiveResult={mission.archiveResult}
@@ -100,6 +98,12 @@ export default function GameMissionPage({ mission }: { mission: GameMissionDetai
 					t={t}
 				/>
 			) : null}
+
+			{statsSlot}
+
+			{mission.status === 'published' && mission.gameMode !== 'simple' ? <MissionAccessNoticeSection t={t} /> : null}
+
+			<MissionUpdatesSection mission={mission} t={t} />
 
 			{actionError && typeof document !== 'undefined'
 				? createPortal(

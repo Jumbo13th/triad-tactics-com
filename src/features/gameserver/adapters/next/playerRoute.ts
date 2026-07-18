@@ -2,23 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getGameserverPlayer } from '../../useCases/getGameserverPlayer';
 import { getGameserverPlayerDeps } from '../../deps';
 import { logger, errorToLogObject } from '@/platform/logger';
-import { secretEquals } from '@/platform/crypto/secretCompare';
-
-function isAuthorized(request: NextRequest): boolean {
-	const secret = process.env.GAMESERVER_API_SECRET?.trim();
-	if (!secret) return false;
-
-	// Prefer the Authorization header (kept out of access logs); fall back to the
-	// query-string secret for the existing game-server integration contract.
-	const header = request.headers.get('authorization') || request.headers.get('x-gameserver-secret');
-	const bearer = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : header;
-	const token = (bearer || request.nextUrl.searchParams.get('secret') || '').trim();
-	return secretEquals(token, secret);
-}
+import { isGameserverAuthorized } from './gameserverAuth';
 
 export async function getGameserverPlayerRoute(request: NextRequest): Promise<NextResponse> {
 	try {
-		if (!isAuthorized(request)) {
+		if (!isGameserverAuthorized(request)) {
 			return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 		}
 

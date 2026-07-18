@@ -60,15 +60,37 @@ function resolveEventKind(kind: string): string {
 
 type RotationSideInfo = { sideName: string; sideColor: string } | null;
 
-export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId: number; rotationSide?: RotationSideInfo }) {
+// Server-rendered snapshot of GET /api/units/[id] — the page route passes it
+// so the full unit (members included) is in the initial HTML: no client
+// fetch on load, and #stats anchor navigation lands correctly because the
+// content above it never shifts. The fetch path remains for post-action
+// refreshes.
+export type UnitDetailInitialData = {
+	unit: Unit;
+	members: UnitMembership[];
+	events: UnitEvent[];
+	viewer: ViewerContext;
+};
+
+export default function UnitDetailPage({
+	unitId,
+	rotationSide = null,
+	initialData = null,
+}: {
+	unitId: number;
+	rotationSide?: RotationSideInfo;
+	initialData?: UnitDetailInitialData | null;
+}) {
 	const t = useTranslations('units');
 	const locale = useLocale();
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
-	const [unit, setUnit] = useState<Unit | null>(null);
-	const [members, setMembers] = useState<UnitMembership[]>([]);
-	const [events, setEvents] = useState<UnitEvent[]>([]);
-	const [viewer, setViewer] = useState<ViewerContext>({ isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false, hasUnitElsewhere: false, membership: null });
-	const [loading, setLoading] = useState(true);
+	const [unit, setUnit] = useState<Unit | null>(initialData?.unit ?? null);
+	const [members, setMembers] = useState<UnitMembership[]>(initialData?.members ?? []);
+	const [events, setEvents] = useState<UnitEvent[]>(initialData?.events ?? []);
+	const [viewer, setViewer] = useState<ViewerContext>(
+		initialData?.viewer ?? { isMember: false, isApplicant: false, isLeader: false, isDeputy: false, isAdmin: false, hasUnitElsewhere: false, membership: null }
+	);
+	const [loading, setLoading] = useState(!initialData);
 	const [actionError, setActionError] = useState<string | null>(null);
 	const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 	const [showApplyModal, setShowApplyModal] = useState(false);
@@ -90,7 +112,9 @@ export default function UnitDetailPage({ unitId, rotationSide = null }: { unitId
 			.catch(() => setLoading(false));
 	}, [unitId]);
 
-	useEffect(() => { loadUnit(); }, [loadUnit]);
+	useEffect(() => {
+		if (!initialData) loadUnit();
+	}, [loadUnit, initialData]);
 
 	async function handleAction(url: string, body?: object) {
 		setActionError(null);

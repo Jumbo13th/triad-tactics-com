@@ -19,3 +19,9 @@ export type GameserverPlayer = {
 	unit: GameserverPlayerUnit | null;
 	active_bans: GameserverActiveBan[];
 };
+
+// Compact unit roster for the in-game GM statistics panel (commander pickers).
+export type GameserverUnitListItem = {
+	name: string;
+	tag: string;
+};
