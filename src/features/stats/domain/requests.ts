@@ -40,6 +40,10 @@ export const adminStatsRequestSchema = z.discriminatedUnion('action', [
 		action: z.literal('closeSeason'),
 		seasonId: z.number().int().positive(),
 	}),
+	z.object({
+		action: z.literal('setStatsHidden'),
+		hidden: z.boolean(),
+	}),
 ]);
 
 export type AdminStatsRequest = z.infer<typeof adminStatsRequestSchema>;

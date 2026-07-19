@@ -36,6 +36,7 @@ export async function getAdminStatsRoute(request: NextRequest): Promise<NextResp
 
 		return NextResponse.json({
 			...listSeasons(statsDeps),
+			statsHidden: statsDeps.repo.getStatsHidden(),
 			recentGames: statsDeps.repo.listGames({ publishedOnly: false, limit: GAMES_PAGE_SIZE }),
 			missions: statsDeps.repo.listMissionOptions(),
 		});
@@ -115,6 +116,10 @@ export async function postAdminStatsRoute(request: NextRequest): Promise<NextRes
 				const result = closeSeason(statsDeps, { seasonId: parsed.data.seasonId });
 				if (!result.success) return NextResponse.json({ error: result.error }, { status: 400 });
 				return NextResponse.json({ ok: true });
+			}
+			case 'setStatsHidden': {
+				statsDeps.repo.setStatsHidden(parsed.data.hidden);
+				return NextResponse.json({ ok: true, statsHidden: parsed.data.hidden });
 			}
 			default: {
 				const _exhaustive: never = parsed.data;

@@ -1078,5 +1078,19 @@ export const migrations: Migration[] = [
 			ALTER TABLE game_stats_unit_scores DROP COLUMN key_target_points;
 			ALTER TABLE game_stats_unit_scores DROP COLUMN task_points;
 		`
+	},
+	{
+		id: 28,
+		name: 'stats_settings',
+		up: `
+			-- Admin toggle hiding the statistics teaser on the MAIN PAGE (used
+			-- while testing on the live site). /stats and the gameserver API
+			-- endpoints ignore it.
+			CREATE TABLE IF NOT EXISTS stats_settings (
+				id INTEGER PRIMARY KEY CHECK(id = 1),
+				hidden INTEGER NOT NULL DEFAULT 0
+			);
+			INSERT OR IGNORE INTO stats_settings (id, hidden) VALUES (1, 0);
+		`
 	}
 ];

@@ -97,7 +97,11 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 				row.survivors++;
 				row.basePoints += config.SurvivorPoints;
 				break;
-			case 'keytarget': {
+			// groupkill = defeat-trigger member kills: same pool semantics as key
+			// targets (per-share events, cap × distinct actors), only excluded
+			// from the public timeline (the group wipe is the timeline entry).
+			case 'keytarget':
+			case 'groupkill': {
 				const key = `${ev.source}|${row.unitId}|${row.side}`;
 				const entry = ktRaw.get(key) ?? { raw: 0, cap: ev.cap, actors: new Set<string>(), row };
 				entry.raw += ev.points;
@@ -162,12 +166,18 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 	for (const row of ordered) {
 		row.isCommander = commanderByFaction.get(row.side) === row.unitId;
 
+		const raw = row.basePoints + row.objectivePoints;
+
+		// Win multipliers only reward positive work — never deepen a
+		// teamkill-negative total; the winner flag itself stays.
 		if (winnerDeclared && row.side === mapping.winner) {
 			row.isWinnerSide = true;
-			row.multiplier = row.isCommander ? config.CommanderWinMultiplier : config.SideWinMultiplier;
+			if (raw > 0) row.multiplier = row.isCommander ? config.CommanderWinMultiplier : config.SideWinMultiplier;
 		}
 
-		row.finalPoints = round1((row.basePoints + row.objectivePoints) * row.multiplier);
+		// Floor: teamkills can wipe a unit's game to zero, but a game never
+		// digs into the season total (the game addon mirrors both rules).
+		row.finalPoints = Math.max(0, round1(raw * row.multiplier));
 		row.basePoints = round1(row.basePoints);
 		row.objectivePoints = round1(row.objectivePoints);
 

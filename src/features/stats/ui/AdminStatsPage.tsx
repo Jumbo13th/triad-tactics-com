@@ -77,6 +77,7 @@ export default function AdminStatsPage() {
 
 	const [seasons, setSeasons] = useState<Season[]>([]);
 	const [activeSeason, setActiveSeason] = useState<Season | null>(null);
+	const [statsHidden, setStatsHidden] = useState(false);
 	const [recentGames, setRecentGames] = useState<GameStatsMeta[]>([]);
 	const [hasMoreGames, setHasMoreGames] = useState(false);
 	const [missions, setMissions] = useState<MissionOption[]>([]);
@@ -116,11 +117,13 @@ export default function AdminStatsPage() {
 		const json = (await res.json()) as {
 			seasons: Season[];
 			activeSeason: Season | null;
+			statsHidden: boolean;
 			recentGames: GameStatsMeta[];
 			missions: MissionOption[];
 		};
 		setSeasons(json.seasons);
 		setActiveSeason(json.activeSeason);
+		setStatsHidden(json.statsHidden);
 		setRecentGames(json.recentGames);
 		setHasMoreGames(json.recentGames.length === 30);
 		setMissions(json.missions);
@@ -201,6 +204,13 @@ export default function AdminStatsPage() {
 	async function onCloseSeason(seasonId: number) {
 		const json = await run({ action: 'closeSeason', seasonId }, t('adminSeasonClosed'));
 		if (json) await reloadOverview();
+	}
+
+	async function onToggleStatsHidden(hidden: boolean) {
+		setStatsHidden(hidden);
+		await run({ action: 'setStatsHidden', hidden }, t(hidden ? 'adminStatsHiddenOn' : 'adminStatsHiddenOff'));
+		// GET is the source of truth — a failed POST rolls the checkbox back.
+		await reloadOverview();
 	}
 
 	async function onUpload() {
@@ -319,6 +329,16 @@ export default function AdminStatsPage() {
 							))}
 						</ul>
 					)}
+					<label className="flex w-fit items-center gap-2 text-sm text-neutral-300">
+						<input
+							type="checkbox"
+							checked={statsHidden}
+							onChange={(e) => void onToggleStatsHidden(e.target.checked)}
+							disabled={busy}
+							className="h-4 w-4 accent-[var(--accent)]"
+						/>
+						{t('adminHideStats')}
+					</label>
 				</div>
 			</AdminSurface>
 

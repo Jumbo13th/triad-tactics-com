@@ -7,6 +7,7 @@ import { getCurrentGame } from '@/features/games/useCases/getCurrentGame';
 import { getIsEstablishedPlayer } from '@/features/games/useCases/getIsEstablishedPlayer';
 import { statsDeps } from '@/features/stats/deps';
 import { getSeasonStandings } from '@/features/stats/useCases/getSeasonStandings';
+import { getStatsVisibility } from '@/features/stats/useCases/statsVisibility';
 import { WelcomePage } from '@/features/welcome/ui/root';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
@@ -60,10 +61,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
 	// Season leaderboard teaser — public by design (visible to anonymous
 	// visitors); the widget hides itself when nothing is published yet.
+	// The admin "hide statistics" toggle removes it for everyone, admins too.
 	let topUnits: { seasonName: string; rows: ReturnType<typeof getSeasonStandings>['rows'] } | null = null;
 	try {
-		const standings = getSeasonStandings(statsDeps);
-		topUnits = { seasonName: standings.season?.name ?? '', rows: standings.rows.slice(0, 5) };
+		if (!getStatsVisibility(statsDeps).hidden) {
+			const standings = getSeasonStandings(statsDeps);
+			topUnits = { seasonName: standings.season?.name ?? '', rows: standings.rows.slice(0, 5) };
+		}
 	} catch {
 		topUnits = null;
 	}

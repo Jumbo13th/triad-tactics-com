@@ -91,6 +91,20 @@ function seasonColumns(): string {
 	return `id, name, status, starts_at, ends_at`;
 }
 
+export function getStatsHidden(): boolean {
+	const db = getDb();
+	const row = db.prepare(`SELECT hidden FROM stats_settings WHERE id = 1`).get() as { hidden: number } | undefined;
+	return row ? row.hidden === 1 : false;
+}
+
+export function setStatsHidden(hidden: boolean): void {
+	const db = getDb();
+	db.prepare(
+		`INSERT INTO stats_settings (id, hidden) VALUES (1, ?)
+		 ON CONFLICT(id) DO UPDATE SET hidden = excluded.hidden`
+	).run(hidden ? 1 : 0);
+}
+
 export function missionTitle(missionId: number): string | null {
 	const db = getDb();
 	const row = db.prepare(`SELECT title FROM missions WHERE id = ?`).get(missionId) as { title: string } | undefined;

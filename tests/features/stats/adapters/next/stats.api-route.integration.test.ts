@@ -238,4 +238,45 @@ describe('Stats API (handler e2e)', () => {
 		expect(season.standings[0].commandWins).toBe(1);
 		expect(season.standings[0].score).toBeGreaterThan(0);
 	});
+
+	it('rejects stats mutations from non-admins', async () => {
+		const { POST_STATS, NextRequest } = await loadHarness();
+		const res = await POST_STATS(
+			new NextRequest('http://localhost/api/admin/stats', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', origin: 'http://localhost' },
+				body: JSON.stringify({ action: 'setStatsHidden', hidden: true }),
+			})
+		);
+		expect(res.status).toBe(401);
+	});
+
+	it('round-trips the hide-statistics toggle', async () => {
+		const { GET_STATS, POST_STATS, NextRequest } = await loadHarness();
+
+		const onRes = await POST_STATS(
+			new NextRequest('http://localhost/api/admin/stats', {
+				method: 'POST',
+				headers: adminHeaders(sid),
+				body: JSON.stringify({ action: 'setStatsHidden', hidden: true }),
+			})
+		);
+		expect(onRes.status).toBe(200);
+
+		const hiddenRes = await GET_STATS(new NextRequest('http://localhost/api/admin/stats', { method: 'GET', headers: adminHeaders(sid) }));
+		expect((await hiddenRes.json()).statsHidden).toBe(true);
+
+		const offRes = await POST_STATS(
+			new NextRequest('http://localhost/api/admin/stats', {
+				method: 'POST',
+				headers: adminHeaders(sid),
+				body: JSON.stringify({ action: 'setStatsHidden', hidden: false }),
+			})
+		);
+		expect(offRes.status).toBe(200);
+
+		const visibleRes = await GET_STATS(new NextRequest('http://localhost/api/admin/stats', { method: 'GET', headers: adminHeaders(sid) }));
+		expect((await visibleRes.json()).statsHidden).toBe(false);
+	});
+
 });

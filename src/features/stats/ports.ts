@@ -51,6 +51,11 @@ export type StatsRepo = {
 	getSeason: (seasonId: number) => Season | null;
 	listSeasons: () => Season[];
 
+	// Hides the statistics teaser on the MAIN PAGE only (live-testing toggle);
+	// /stats and the gameserver endpoints ignore it.
+	getStatsHidden: () => boolean;
+	setStatsHidden: (hidden: boolean) => void;
+
 	// Game stats records.
 	missionTitle: (missionId: number) => string | null;
 	findByHash: (hash: string) => GameStatsMeta | null;
