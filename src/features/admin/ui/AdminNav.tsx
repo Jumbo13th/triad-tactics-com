@@ -6,7 +6,7 @@ import { usePathname, Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
 type AdminNavItem = {
-	key: 'applications' | 'users' | 'badges' | 'renameRequests' | 'mailing' | 'games' | 'rotation';
+	key: 'applications' | 'users' | 'badges' | 'renameRequests' | 'mailing' | 'games' | 'rotation' | 'stats';
 	href: string;
 	label: string;
 };
@@ -25,7 +25,8 @@ export default function AdminNav() {
 			{ key: 'renameRequests', href: '/admin/rename-requests', label: ta('navRenameRequests') },
 			{ key: 'mailing', href: '/admin/mailing', label: ta('navMailing') },
 			{ key: 'games', href: '/admin/games', label: ta('navGames') },
-			{ key: 'rotation', href: '/admin/rotation', label: ta('navRotation') }
+			{ key: 'rotation', href: '/admin/rotation', label: ta('navRotation') },
+			{ key: 'stats', href: '/admin/stats', label: ta('navStats') }
 		],
 		[ta]
 	);
@@ -38,6 +39,7 @@ export default function AdminNav() {
 		if (pathname.startsWith('/admin/mailing')) return '/admin/mailing';
 		if (pathname.startsWith('/admin/games')) return '/admin/games';
 		if (pathname.startsWith('/admin/rotation')) return '/admin/rotation';
+		if (pathname.startsWith('/admin/stats')) return '/admin/stats';
 		return '/admin';
 	}, [pathname]);
 

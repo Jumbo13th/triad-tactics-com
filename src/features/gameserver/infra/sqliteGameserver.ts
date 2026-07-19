@@ -1,5 +1,5 @@
 import { getDb } from '@/platform/db/connection';
-import type { GameserverActiveBan, GameserverPlayer, GameserverPlayerUnit } from '../domain/types';
+import type { GameserverActiveBan, GameserverPlayer, GameserverPlayerUnit, GameserverUnitListItem } from '../domain/types';
 
 type PlayerRow = {
 	user_id: number;
@@ -90,4 +90,17 @@ export function getPlayerByArmaId(input: { armaId: string }): GameserverPlayer |
 		unit: unitResult,
 		active_bans: bansResult,
 	};
+}
+
+// Full verified-unit roster for the in-game GM statistics panel. Verified only:
+// commander credit is a competitive artifact, and unverified units are not yet
+// vetted community entities.
+export function getAllUnits(): GameserverUnitListItem[] {
+	const db = getDb();
+
+	const rows = db
+		.prepare(`SELECT name, tag FROM units WHERE status = 'verified' ORDER BY LOWER(tag) ASC`)
+		.all() as GameserverUnitListItem[];
+
+	return rows.map((r) => ({ name: r.name, tag: r.tag }));
 }

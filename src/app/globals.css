@@ -6,6 +6,9 @@
 
 :root {
   --accent: #d2b853;
+  /* Dark native UI (scrollbars, select popups, checkboxes) — without this the
+     browser paints them in light chrome on the black theme. */
+  color-scheme: dark;
 }
 
 html {

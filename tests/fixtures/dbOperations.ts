@@ -23,6 +23,10 @@ export const dbOperations = {
 		const db = getDb();
 		try {
 			db.exec(
+				'DELETE FROM stats_settings; ' +
+				'DELETE FROM game_stats_unit_scores; ' +
+				'DELETE FROM game_stats; ' +
+				'DELETE FROM seasons; ' +
 				'DELETE FROM rotation_commander_schedule; ' +
 				'DELETE FROM rotation_unit_assignments; ' +
 				'DELETE FROM rotation_config; ' +

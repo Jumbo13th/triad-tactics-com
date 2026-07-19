@@ -29,6 +29,7 @@ function getActiveAdminHref(pathname: string) {
 	if (pathname.startsWith('/admin/units')) return '/admin/units';
 	if (pathname.startsWith('/admin/sanctions')) return '/admin/sanctions';
 	if (pathname.startsWith('/admin/rotation')) return '/admin/rotation';
+	if (pathname.startsWith('/admin/stats')) return '/admin/stats';
 	return '/admin';
 }
 
@@ -201,6 +202,7 @@ export default function SiteNavBar() {
 									{ href: '/admin/units', label: ta('navUnits') },
 										{ href: '/admin/sanctions', label: ta('navSanctions') },
 										{ href: '/admin/rotation', label: ta('navRotation') },
+										{ href: '/admin/stats', label: ta('navStats') },
 										{ href: '/admin/maintenance', label: ta('navMaintenance') }
 									] as const;
 									const activeHref = getActiveAdminHref(pathname);

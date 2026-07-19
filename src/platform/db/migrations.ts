@@ -988,5 +988,113 @@ export const migrations: Migration[] = [
 			DROP TABLE _memberships_backup;
 			DROP TABLE _missing_leaders;
 		`
+	},
+	{
+		id: 26,
+		name: 'game_statistics',
+		up: `
+			-- Unit-focused game statistics. Seasons group published game results;
+			-- at most one season is active at a time (partial unique index).
+			CREATE TABLE IF NOT EXISTS seasons (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL,
+				status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'closed')),
+				starts_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				ends_at DATETIME,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				created_by_steamid64 TEXT
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active
+				ON seasons(status) WHERE status = 'active';
+
+			-- One uploaded snapshot per mission episode. snapshot_json is the raw
+			-- "ll-stats/1" file from the game server (kept verbatim so scores can
+			-- be recomputed retroactively); mapping_json freezes the GUID->unit
+			-- decisions made at upload so later membership changes never rewrite
+			-- history. snapshot_hash rejects accidental duplicate uploads.
+			-- "Frozen" means MEMBERSHIP churn doesn't rewrite scores; DELETING a
+			-- mission/unit still cascades its stats away, matching how every other
+			-- table treats a deleted mission/unit as gone everywhere (deletion is
+			-- rare and admin-only; there is no soft-delete anywhere on the site).
+			CREATE TABLE IF NOT EXISTS game_stats (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				mission_id INTEGER NOT NULL,
+				episode_number INTEGER NOT NULL DEFAULT 1 CHECK(episode_number >= 1),
+				season_id INTEGER,
+				status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'published')),
+				snapshot_json TEXT NOT NULL,
+				snapshot_hash TEXT NOT NULL,
+				config_json TEXT NOT NULL DEFAULT '{}',
+				mapping_json TEXT NOT NULL DEFAULT '{}',
+				winner_side TEXT NOT NULL DEFAULT '',
+				mission_name TEXT NOT NULL DEFAULT '',
+				played_at TEXT NOT NULL DEFAULT '',
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				uploaded_by_steamid64 TEXT,
+				published_at DATETIME,
+				published_by_steamid64 TEXT,
+				UNIQUE(mission_id, episode_number),
+				FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE,
+				FOREIGN KEY (season_id) REFERENCES seasons(id)
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_game_stats_hash ON game_stats(snapshot_hash);
+			CREATE INDEX IF NOT EXISTS idx_game_stats_season ON game_stats(season_id);
+			CREATE INDEX IF NOT EXISTS idx_game_stats_status ON game_stats(status);
+
+			-- Computed per-unit results, frozen at publish. Keyed per side too:
+			-- a unit somehow fielding players on both sides in one game gets one
+			-- clean row per side instead of corrupt totals.
+			CREATE TABLE IF NOT EXISTS game_stats_unit_scores (
+				game_stats_id INTEGER NOT NULL,
+				unit_id INTEGER NOT NULL,
+				side TEXT NOT NULL,
+				kills INTEGER NOT NULL DEFAULT 0,
+				zone_kills INTEGER NOT NULL DEFAULT 0,
+				ai_kills INTEGER NOT NULL DEFAULT 0,
+				teamkills INTEGER NOT NULL DEFAULT 0,
+				deaths INTEGER NOT NULL DEFAULT 0,
+				survivors INTEGER NOT NULL DEFAULT 0,
+				participants INTEGER NOT NULL DEFAULT 0,
+				occupancy_pct REAL,
+				key_target_points REAL NOT NULL DEFAULT 0,
+				task_points REAL NOT NULL DEFAULT 0,
+				base_points REAL NOT NULL DEFAULT 0,
+				multiplier REAL NOT NULL DEFAULT 1,
+				final_points REAL NOT NULL DEFAULT 0,
+				is_commander INTEGER NOT NULL DEFAULT 0 CHECK(is_commander IN (0, 1)),
+				is_winner_side INTEGER NOT NULL DEFAULT 0 CHECK(is_winner_side IN (0, 1)),
+				PRIMARY KEY (game_stats_id, unit_id, side),
+				FOREIGN KEY (game_stats_id) REFERENCES game_stats(id) ON DELETE CASCADE,
+				FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
+			);
+			CREATE INDEX IF NOT EXISTS idx_game_stats_unit_scores_unit ON game_stats_unit_scores(unit_id);
+		`
+	},
+	{
+		id: 27,
+		name: 'unify_objective_points',
+		// Operator decision: zone objectives and key targets are ONE task economy.
+		// Single objective_points bucket; the old split columns are dropped.
+		up: `
+			ALTER TABLE game_stats_unit_scores ADD COLUMN objective_points REAL NOT NULL DEFAULT 0;
+			UPDATE game_stats_unit_scores SET objective_points = key_target_points + task_points;
+			ALTER TABLE game_stats_unit_scores DROP COLUMN key_target_points;
+			ALTER TABLE game_stats_unit_scores DROP COLUMN task_points;
+		`
+	},
+	{
+		id: 28,
+		name: 'stats_settings',
+		up: `
+			-- Admin toggle hiding the statistics teaser on the MAIN PAGE (used
+			-- while testing on the live site). /stats and the gameserver API
+			-- endpoints ignore it.
+			CREATE TABLE IF NOT EXISTS stats_settings (
+				id INTEGER PRIMARY KEY CHECK(id = 1),
+				hidden INTEGER NOT NULL DEFAULT 0
+			);
+			INSERT OR IGNORE INTO stats_settings (id, hidden) VALUES (1, 0);
+		`
 	}
 ];
