@@ -1012,6 +1012,10 @@ export const migrations: Migration[] = [
 			-- be recomputed retroactively); mapping_json freezes the GUID->unit
 			-- decisions made at upload so later membership changes never rewrite
 			-- history. snapshot_hash rejects accidental duplicate uploads.
+			-- "Frozen" means MEMBERSHIP churn doesn't rewrite scores; DELETING a
+			-- mission/unit still cascades its stats away, matching how every other
+			-- table treats a deleted mission/unit as gone everywhere (deletion is
+			-- rare and admin-only; there is no soft-delete anywhere on the site).
 			CREATE TABLE IF NOT EXISTS game_stats (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				mission_id INTEGER NOT NULL,

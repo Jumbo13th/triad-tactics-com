@@ -51,7 +51,13 @@ export async function postAdminStatsRoute(request: NextRequest): Promise<NextRes
 		const admin = requireAdmin(request);
 		if (!admin.ok) return admin.response;
 
-		const body: unknown = await request.json();
+		let body: unknown;
+		try {
+			body = await request.json();
+		} catch {
+			// Malformed JSON is a client fault (400), not a server error.
+			return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+		}
 		const parsed = adminStatsRequestSchema.safeParse(body);
 		if (!parsed.success) {
 			return NextResponse.json({ error: 'validation_error', details: parsed.error.flatten() }, { status: 400 });

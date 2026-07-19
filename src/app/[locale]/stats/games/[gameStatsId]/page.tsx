@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { statsDeps } from '@/features/stats/deps';
 import { getGameStatsView } from '@/features/stats/useCases/getGameStatsView';
+import { deriveSideColors } from '@/features/stats/useCases/deriveSideColors';
 import { GameStatsView } from '@/features/stats/ui/root';
 import { rotationDeps } from '@/features/rotation/deps';
 import { getRotationMap } from '@/features/rotation/useCases/getRotationMap';
@@ -16,22 +17,9 @@ export default async function GameStatsRoutePage({
 	if (!view) redirect(`/${locale}/stats`);
 
 	const rotationSides = getRotationMap(rotationDeps);
-	const sideColors: Record<string, string> = {};
-	for (const faction of view.factions) {
-		const tally = new Map<string, number>();
-		for (const score of view.scores) {
-			if (score.side !== faction) continue;
-			const rotation = rotationSides[score.unitId];
-			if (rotation) tally.set(rotation.sideColor, (tally.get(rotation.sideColor) ?? 0) + 1);
-		}
-		let best = 0;
-		for (const [color, count] of tally) {
-			if (count > best) {
-				best = count;
-				sideColors[faction] = color;
-			}
-		}
-	}
+	const colorByUnit: Record<number, string> = {};
+	for (const [unitId, side] of Object.entries(rotationSides)) colorByUnit[Number(unitId)] = side.sideColor;
+	const sideColors = deriveSideColors(view.scores, view.factions, colorByUnit);
 
 	return (
 		<GameStatsView

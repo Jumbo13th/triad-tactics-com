@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import GameMissionPage from '@/features/games/ui/GameMissionPage';
 import { statsDeps } from '@/features/stats/deps';
+import { getPublishedEpisodesForMission } from '@/features/stats/useCases/getPublishedEpisodesForMission';
 import { getGameByShortCodeDeps } from '@/features/games/deps';
 import { getGameByShortCode } from '@/features/games/useCases/getGameByShortCode';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
@@ -44,10 +45,7 @@ export default async function GameMissionRoutePage({
 		throw new Error('game_mission_page_load_failed');
 	}
 
-	const missionId = statsDeps.repo.findMissionIdByShortCode(trimmedShortCode);
-	const statsEpisodes = missionId
-		? statsDeps.repo.listGamesForMission(missionId).filter((game) => game.status === 'published')
-		: [];
+	const statsEpisodes = getPublishedEpisodesForMission(statsDeps, { shortCode: trimmedShortCode });
 	const tStats = await getTranslations('stats');
 
 	const statsSlot =

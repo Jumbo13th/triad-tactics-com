@@ -13,8 +13,7 @@ import { rotationDeps } from '@/features/rotation/deps';
 import { getRotationSideForUnit } from '@/features/rotation/useCases/getRotationSideForUnit';
 import { statsDeps } from '@/features/stats/deps';
 import { getUnitHistory } from '@/features/stats/useCases/getUnitHistory';
-import { getSeasonStandings } from '@/features/stats/useCases/getSeasonStandings';
-import { getSeasonRace } from '@/features/stats/useCases/getSeasonRace';
+import { getUnitSeasonSummary } from '@/features/stats/useCases/getUnitSeasonSummary';
 import { UnitStatsHistory } from '@/features/stats/ui/root';
 
 export default async function UnitDetailRoutePage({ params }: { params: Promise<{ locale: string; unitTag: string }> }) {
@@ -47,16 +46,7 @@ export default async function UnitDetailRoutePage({ params }: { params: Promise<
 	// links unit tags to /units/<tag>#stats. The unit is the stats entity:
 	// rows were frozen at publish, membership changes don't rewrite them.
 	const statsEntries = getUnitHistory(statsDeps, { unitId: id });
-
-	// Current-season place, shown as "rank/total" among units with published games.
-	const standings = getSeasonStandings(statsDeps);
-	const standingsRow = standings.rows.find((row) => row.unitId === id);
-	const seasonRank = standingsRow ? { rank: standingsRow.rank, total: standings.rows.length } : null;
-
-	// Rank after each game, for the season-position chart.
-	const race = getSeasonRace(statsDeps, { seasonId: standings.season ? standings.season.id : null });
-	const raceSeries = race.series.find((s) => s.unitId === id);
-	const rankSeries = raceSeries ? { games: race.games, ranks: raceSeries.ranks, totalUnits: race.series.length } : null;
+	const { seasonRank, rankSeries } = getUnitSeasonSummary(statsDeps, { unitId: id });
 
 	return (
 		<>

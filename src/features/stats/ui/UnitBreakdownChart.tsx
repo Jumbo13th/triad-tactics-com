@@ -85,7 +85,7 @@ export default function UnitBreakdownChart({
 			</div>
 
 			<div ref={containerRef} className="w-full overflow-x-auto">
-				<svg width={width} height={height} className="block" role="img">
+				<svg width={width} height={height} className="block" role="img" aria-label={t('breakdownTitle')}>
 					{ticks.map((tick) => (
 						<g key={tick}>
 							<line
