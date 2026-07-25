@@ -50,10 +50,18 @@ function toWindows1252Byte(char: string): number | null {
 /**
  * Undo one round of "UTF-8 bytes read as Windows-1252".
  *
- * Returns null whenever the input is not that kind of damage: text holding any
- * character Windows-1252 cannot express (real Cyrillic, CJK, emoji) or a byte
- * stream that is not valid UTF-8 cannot be mojibake, so it is left untouched.
- * That conservative bail is what keeps correctly encoded pastes safe.
+ * Returns null whenever the input is not unambiguously that damage, leaving the
+ * text untouched — which is what keeps correctly encoded pastes safe. Three
+ * things disqualify a repair: any character Windows-1252 cannot express (real
+ * Cyrillic, CJK, emoji), a byte stream that is not valid UTF-8, and a decode
+ * that stays inside Latin-1.
+ *
+ * That last rule is the ambiguous case: "Â©" is byte-identical to the mojibake
+ * of "©", so a decode producing only Latin-1 characters cannot be told apart
+ * from text that was already correct, and the paste is left alone. Real damage
+ * here decodes to Cyrillic — or to any of the other scripts the site runs —
+ * which nothing else can be mistaken for. The cost is that accent-only damage
+ * ("cafÃ©") is not repaired either.
  */
 export function repairWindows1252Mojibake(input: string): string | null {
 	if (input === '') return null;
@@ -83,11 +91,16 @@ export function repairWindows1252Mojibake(input: string): string | null {
 	if (decoded === input) return null;
 
 	// A decode that still leaves C1 controls means the input was not mojibake,
-	// just something that happens to be valid UTF-8.
+	// just something that happens to be valid UTF-8. A decode that reveals no
+	// character beyond Latin-1 is the ambiguous case described above.
+	let revealsNonLatin1 = false;
 	for (const char of decoded) {
 		const code = char.codePointAt(0) ?? 0;
 		if (code >= 0x80 && code <= 0x9f) return null;
+		if (code > 0xff) revealsNonLatin1 = true;
 	}
+
+	if (!revealsNonLatin1) return null;
 
 	return decoded;
 }

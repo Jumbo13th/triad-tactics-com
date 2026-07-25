@@ -8,9 +8,14 @@ import { normalizeSlottingJsonText, repairWindows1252Mojibake } from '@/features
 const REAL_MOJIBAKE = 'ÐšÐ¾Ð¼Ð°Ð½Ð´Ð¸Ñ€ Ð²Ð·Ð²Ð¾Ð´Ð°';
 const REAL_TEXT = 'Командир взвода';
 
-/** The other flavour of the same damage: bytes read as latin-1. */
+/**
+ * The other flavour of the same damage: bytes read as ISO-8859-1, where
+ * 0x80-0x9F stay C1 controls. Mapped byte by byte rather than through
+ * TextDecoder('latin1'), whose handling of that block has moved between Node
+ * releases — the fixture has to pin the encoding the test claims to cover.
+ */
 function toLatin1Mojibake(text: string): string {
-	return new TextDecoder('latin1').decode(new TextEncoder().encode(text));
+	return Array.from(new TextEncoder().encode(text), (byte) => String.fromCharCode(byte)).join('');
 }
 
 describe('repairWindows1252Mojibake', () => {
@@ -36,6 +41,13 @@ describe('repairWindows1252Mojibake', () => {
 
 	it('leaves text alone when the bytes are not valid UTF-8', () => {
 		expect(repairWindows1252Mojibake('café')).toBeNull();
+	});
+
+	it('leaves ambiguous Latin-1 text alone', () => {
+		// "Â©" decodes to "©" but is equally plausible as intentional text, and
+		// nothing beyond Latin-1 comes out of the decode to settle it.
+		expect(repairWindows1252Mojibake('Â©')).toBeNull();
+		expect(repairWindows1252Mojibake('cafÃ©')).toBeNull();
 	});
 });
 
@@ -66,6 +78,13 @@ describe('normalizeSlottingJsonText', () => {
 
 		expect(result.repairedEncoding).toBe(false);
 		expect(JSON.parse(result.text)).toEqual(JSON.parse(source));
+	});
+
+	it('does not rewrite slot data that only looks like mojibake', () => {
+		const result = normalizeSlottingJsonText('{"role":"Â©"}');
+
+		expect(result.repairedEncoding).toBe(false);
+		expect((JSON.parse(result.text) as { role: string }).role).toBe('Â©');
 	});
 
 	it('keeps a non-JSON fragment verbatim', () => {
