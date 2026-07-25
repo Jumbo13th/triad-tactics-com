@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ClipboardEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
@@ -18,6 +18,7 @@ import {
 } from '@/features/games/domain/api';
 import type { GameAuditEvent, GamePublishValidationError, GameSlottingDestructiveChange } from '@/features/games/domain/types';
 import { sideDisplayName } from '@/features/games/domain/slotting';
+import { normalizeSlottingJsonText } from '@/features/games/domain/slottingText';
 import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { SlottingEditor } from './SlottingEditor';
@@ -710,6 +711,24 @@ export default function AdminGameMissionPage() {
 		}
 	};
 
+	// Slotting JSON gets here through the clipboard, which is where the Arma
+	// lobby export loses its encoding — normalize on the way in so the operator
+	// reviews the same text the mission page will render.
+	const handleSlottingJsonPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+		const pasted = event.clipboardData.getData('text');
+		if (!pasted) return;
+
+		const normalized = normalizeSlottingJsonText(pasted);
+		if (normalized.text === pasted) return;
+
+		const target = event.currentTarget;
+		const start = target.selectionStart ?? slottingText.length;
+		const end = target.selectionEnd ?? start;
+
+		event.preventDefault();
+		setSlottingText(slottingText.slice(0, start) + normalized.text + slottingText.slice(end));
+	};
+
 	const handleSaveSlotting = async (confirmDestructive = false) => {
 		if (!mission) return;
 		let parsedSlotting: unknown;
@@ -1261,7 +1280,14 @@ export default function AdminGameMissionPage() {
 												}
 											>
 												<div className="grid gap-3">
-													<textarea value={slottingText} onChange={(event) => setSlottingText(event.target.value)} rows={20} spellCheck={false} className={editorMonoTextAreaClass} />
+													<textarea
+														value={slottingText}
+														onChange={(event) => setSlottingText(event.target.value)}
+														onPaste={handleSlottingJsonPaste}
+														rows={20}
+														spellCheck={false}
+														className={editorMonoTextAreaClass}
+													/>
 													{(() => {
 														try {
 															const parsed = JSON.parse(slottingText) as { sides?: Array<{ squads?: Array<{ slots?: Array<{ access?: string }> }> }> };
