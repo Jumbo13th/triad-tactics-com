@@ -150,8 +150,10 @@
 1.2.2.2. Ignoring administrative instructions.
 1.2.2.3. Changing slots after the beginning of the briefing or preparation phase.
 1.2.2.4. Kicking another player from a slot. This functionality is not used on our server.
+1.2.2.5. Splitting the unit between sides. All members of a unit with allocated slots play on the side assigned to that unit, regardless of the type of slot they take (unit, priority, or regular).
 1.2.3. When the priority phase opens, unclaimed unit slots are automatically converted to priority and regular access. The system distributes these slots approximately 2:1 (priority:regular).
 1.2.4. Information about which slots are assigned to whom is available in the slotting section on the mission page.
+1.2.5. Any deviation from 1.2.2.5 requires the administration's permission.
 
 ---
 
@@ -229,12 +231,15 @@
 3.2.2. Squad leaders are responsible for managing their units.
 3.2.3. Side commanders are responsible for managing their squads.
 
-### 3.3 Preparation Phase
+### 3.3 Preparation Phase and Opening Minutes
 
 3.3.1. During the preparation phase, it is prohibited to:
 3.3.1.1. Use weapons, including firing, using bayonets, or striking.
 3.3.1.2. Take another player's equipment without permission.
 3.3.1.3. Cause damage to other players.
+3.3.2. During the first two minutes after the preparation phase ends, it is prohibited to fire weapons of a calibre greater than 14.5 mm at targets outside the shooter's direct line of sight. Weapons of 14.5 mm and below are not covered by this restriction.
+3.3.3. A target counts as being within direct line of sight when the shooter observes it personally, including through the weapon's own sights and optics. Map markers, radio reports, and assumptions about enemy positions do not constitute direct line of sight.
+3.3.4. Reason for 3.3.2: to prevent blind bombardment of starting positions and landing areas in the opening minutes of the game.
 
 ### 3.4 Vehicles, Resources, and Equipment
 
