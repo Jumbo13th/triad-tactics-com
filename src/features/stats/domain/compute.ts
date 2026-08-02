@@ -1,13 +1,13 @@
 import type { StatsConfig, StatsSnapshot } from './snapshot';
-import type { GameTimelineEvent, StatsMapping, UnitScore } from './types';
+import type { AllocatedSlotsByUnit, GameTimelineEvent, StatsMapping, UnitScore } from './types';
 
 export type ComputeInput = {
 	snapshot: StatsSnapshot;
 	config: StatsConfig;
 	mapping: StatsMapping;
-	// Slots each unit's members claimed in the episode slotting (occupancy
+	// Slots allocated to each unit in the episode slotting (occupancy
 	// denominator); missing key → occupancy stays null for that unit.
-	claimedSlotsByUnit?: Record<number, number>;
+	allocatedSlotsByUnit?: AllocatedSlotsByUnit;
 };
 
 type RowKey = string; // `${unitId}|${side}`
@@ -162,6 +162,7 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 
 	const winnerDeclared = mapping.winner !== '' && mapping.winner !== 'draw';
 	const commanderByFaction = new Map(mapping.commanders.map((c) => [c.faction, c.unitId]));
+	const primarySide = resolvePrimarySides(ordered);
 
 	for (const row of ordered) {
 		row.isCommander = commanderByFaction.get(row.side) === row.unitId;
@@ -170,7 +171,7 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 
 		// Win multipliers only reward positive work — never deepen a
 		// teamkill-negative total; the winner flag itself stays.
-		if (winnerDeclared && row.side === mapping.winner) {
+		if (winnerDeclared && row.side === mapping.winner && primarySide.get(row.unitId) === row.side) {
 			row.isWinnerSide = true;
 			if (raw > 0) row.multiplier = row.isCommander ? config.CommanderWinMultiplier : config.SideWinMultiplier;
 		}
@@ -181,13 +182,60 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 		row.basePoints = round1(row.basePoints);
 		row.objectivePoints = round1(row.objectivePoints);
 
-		const claimed = input.claimedSlotsByUnit?.[row.unitId];
-		if (claimed !== undefined && claimed > 0) {
-			row.occupancyPct = Math.round((row.participants / claimed) * 100);
+		// Strictly this row's own side: a detachment on the far side was allocated
+		// nothing there, and measuring it against the main body's allocation on
+		// the OTHER side invents a percentage. No allocation → no attendance.
+		const allocated = input.allocatedSlotsByUnit?.[row.unitId]?.[row.side] ?? 0;
+		if (allocated > 0) {
+			row.occupancyPct = Math.round((row.participants / allocated) * 100);
 		}
 	}
 
 	return ordered;
+}
+
+/**
+ * The one side that IS each unit this game: the one carrying most of its
+ * players. A unit spread across both factions would otherwise bank a win every
+ * single game — whichever detachment happened to land on the winning side
+ * collects the flag and the multiplier while the main body loses (a two-man
+ * splinter has done exactly that). Only the majority side can win; the rest is
+ * a detachment that keeps its points but earns the unit nothing.
+ *
+ * An even split commits to neither side — otherwise a perfect 5/5 hedge still
+ * banks a win from whichever half got lucky.
+ */
+function resolvePrimarySides(rows: UnitScore[]): Map<number, string | null> {
+	const sidesByUnit = new Map<number, UnitScore[]>();
+	for (const row of rows) {
+		const list = sidesByUnit.get(row.unitId);
+		if (list) list.push(row);
+		else sidesByUnit.set(row.unitId, [row]);
+	}
+
+	const primary = new Map<number, string | null>();
+	for (const [unitId, sideRows] of sidesByUnit) {
+		// Undivided unit: its only side is its side, whatever the head count —
+		// a unit whose players all went unflagged must not forfeit its win.
+		if (sideRows.length === 1) {
+			primary.set(unitId, sideRows[0].side);
+			continue;
+		}
+
+		let best: UnitScore | null = null;
+		let tied = false;
+		for (const row of sideRows) {
+			if (!best || row.participants > best.participants) {
+				best = row;
+				tied = false;
+			} else if (row.participants === best.participants) {
+				tied = true;
+			}
+		}
+		primary.set(unitId, tied ? null : (best?.side ?? null));
+	}
+
+	return primary;
 }
 
 /** Public timeline events (captures, holds, targets, triggers) — kill noise stays out. */

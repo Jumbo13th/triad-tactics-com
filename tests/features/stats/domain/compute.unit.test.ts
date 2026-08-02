@@ -178,14 +178,14 @@ describe('computeUnitScores', () => {
 		expect(unitB?.objectivePoints).toBeCloseTo(30);
 	});
 
-	it('computes occupancy from claimed slots and counts participants', () => {
+	it('computes occupancy against the allocation on the row own side', () => {
 		const snapshot = buildSnapshot({ events: [] });
 
 		const rows = computeUnitScores({
 			snapshot,
 			config: snapshot.config,
 			mapping: mapping(),
-			claimedSlotsByUnit: { [UNIT_A]: 4 },
+			allocatedSlotsByUnit: { [UNIT_A]: { US: 4, USSR: 6 } },
 		});
 
 		const unitA = rows.find((r) => r.unitId === UNIT_A);
@@ -194,6 +194,96 @@ describe('computeUnitScores', () => {
 
 		const unitB = rows.find((r) => r.unitId === UNIT_B);
 		expect(unitB?.occupancyPct).toBeNull();
+	});
+
+	// A detachment on a side its unit booked nothing on has no attendance to
+	// report — borrowing the main body's allocation would invent a percentage.
+	it('leaves occupancy null on a side with no allocation', () => {
+		const snapshot = buildSnapshot({ events: [] });
+
+		const rows = computeUnitScores({
+			snapshot,
+			config: snapshot.config,
+			mapping: mapping(),
+			allocatedSlotsByUnit: { [UNIT_A]: { USSR: 8 } },
+		});
+
+		expect(rows.find((r) => r.unitId === UNIT_A)?.occupancyPct).toBeNull();
+	});
+
+	// A unit spread across both factions must not bank a win from whichever
+	// detachment happened to land on the winning side.
+	describe('a unit split across both sides', () => {
+		// UNIT_A: three players on USSR, one (a1, the commander) on the winning US.
+		const splitSnapshot = () =>
+			buildSnapshot({
+				players: [
+					{ guid: 'g-a1', name: 'A1', unitTag: 'ALFA', faction: 'US', participated: true },
+					{ guid: 'g-a2', name: 'A2', unitTag: 'ALFA', faction: 'USSR', participated: true },
+					{ guid: 'g-a3', name: 'A3', unitTag: 'ALFA', faction: 'USSR', participated: true },
+					{ guid: 'g-a4', name: 'A4', unitTag: 'ALFA', faction: 'USSR', participated: true },
+				],
+				events: [{ type: 'kill', actor: 'g-a1', victim: 'g-a2', points: 1 }],
+			});
+
+		const splitMapping = () =>
+			mapping({ guidUnit: { 'g-a1': UNIT_A, 'g-a2': UNIT_A, 'g-a3': UNIT_A, 'g-a4': UNIT_A } });
+
+		it('wins nothing when its main body is on the losing side', () => {
+			const snapshot = splitSnapshot();
+			const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: splitMapping() });
+
+			const detachment = rows.find((r) => r.unitId === UNIT_A && r.side === 'US');
+			expect(detachment?.participants).toBe(1);
+			expect(detachment?.isWinnerSide).toBe(false);
+			expect(detachment?.multiplier).toBeCloseTo(1);
+			// The points it earned still stand — only the win bonus is withheld.
+			expect(detachment?.basePoints).toBeCloseTo(1);
+
+			expect(rows.find((r) => r.unitId === UNIT_A && r.side === 'USSR')?.isWinnerSide).toBe(false);
+		});
+
+		it('wins normally when its main body is on the winning side', () => {
+			const snapshot = buildSnapshot({
+				players: [
+					{ guid: 'g-a1', name: 'A1', unitTag: 'ALFA', faction: 'US', participated: true },
+					{ guid: 'g-a2', name: 'A2', unitTag: 'ALFA', faction: 'US', participated: true },
+					{ guid: 'g-a3', name: 'A3', unitTag: 'ALFA', faction: 'USSR', participated: true },
+				],
+				events: [{ type: 'kill', actor: 'g-a1', victim: 'g-a3', points: 1 }],
+			});
+			const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: splitMapping() });
+
+			const main = rows.find((r) => r.unitId === UNIT_A && r.side === 'US');
+			expect(main?.isWinnerSide).toBe(true);
+			expect(main?.multiplier).toBeCloseTo(1.5); // commander of the winning side
+		});
+
+		it('wins nothing on an even split', () => {
+			const snapshot = buildSnapshot({
+				players: [
+					{ guid: 'g-a1', name: 'A1', unitTag: 'ALFA', faction: 'US', participated: true },
+					{ guid: 'g-a2', name: 'A2', unitTag: 'ALFA', faction: 'USSR', participated: true },
+				],
+				events: [{ type: 'kill', actor: 'g-a1', victim: 'g-a2', points: 1 }],
+			});
+			const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: splitMapping() });
+
+			expect(rows.filter((r) => r.unitId === UNIT_A).every((r) => !r.isWinnerSide)).toBe(true);
+			expect(rows.find((r) => r.unitId === UNIT_A && r.side === 'US')?.multiplier).toBeCloseTo(1);
+		});
+
+		it('an undivided unit still wins with no participants flagged', () => {
+			const snapshot = buildSnapshot({
+				players: [{ guid: 'g-a1', name: 'A1', unitTag: 'ALFA', faction: 'US', participated: false }],
+				events: [{ type: 'kill', actor: 'g-a1', victim: 'g-b1', points: 1 }],
+			});
+			const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: splitMapping() });
+
+			const unitA = rows.find((r) => r.unitId === UNIT_A);
+			expect(unitA?.participants).toBe(0);
+			expect(unitA?.isWinnerSide).toBe(true);
+		});
 	});
 
 	it('a draw applies no multipliers', () => {

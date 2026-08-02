@@ -47,7 +47,7 @@ export type UnitScore = {
 	deaths: number;
 	survivors: number;
 	participants: number;
-	occupancyPct: number | null; // participants vs slots the unit claimed in the episode slotting
+	occupancyPct: number | null; // participants vs slots allocated to the unit in the episode slotting
 	// One bucket for ALL mission tasks (zone-pool shares + key-target shares) —
 	// operator decision: they are the same economy, never reported separately.
 	objectivePoints: number;
@@ -55,8 +55,15 @@ export type UnitScore = {
 	multiplier: number;
 	finalPoints: number;
 	isCommander: boolean;
+	// The unit WON this game — not merely "this faction won". A unit split
+	// across both sides wins only on the side holding most of its players, so a
+	// detachment on the winning faction never banks the win (see
+	// resolvePrimarySides). The faction's own result is meta.winnerSide.
 	isWinnerSide: boolean;
 };
+
+/** unit id → slotting side name → slots allocated to that unit on that side. */
+export type AllocatedSlotsByUnit = Record<number, Record<string, number>>;
 
 export type UnitScoreWithUnit = UnitScore & {
 	unitTag: string;
