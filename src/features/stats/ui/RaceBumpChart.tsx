@@ -100,7 +100,9 @@ export default function RaceBumpChart({
 	const steps = games.length - 1;
 	const col = steps > 0 ? (avail ? Math.max(MIN_COL, (avail - PAD_LEFT - padRight) / steps) : MIN_COL) : 0;
 	const chartW = steps > 0 ? PAD_LEFT + steps * col + padRight : Math.max(avail ?? 480, 320);
-	const gameX = (index: number) => (steps > 0 ? PAD_LEFT + index * col : chartW / 2);
+	// A lone game still sits where a final point would — flush against the finish
+	// column — or its dots would float half a chart away from their own labels.
+	const gameX = (index: number) => (steps > 0 ? PAD_LEFT + index * col : chartW - padRight);
 	const rankY = (rank: number) => TOP + (rank - 1) * row;
 
 	const pathFor = (ranks: number[]) => {
@@ -168,7 +170,7 @@ export default function RaceBumpChart({
 								y={index % 2 === 0 ? height - 28 : height - 10}
 								fill="#737373"
 								fontSize={12}
-								textAnchor={games.length === 1 ? 'middle' : index === 0 ? 'start' : index === games.length - 1 ? 'end' : 'middle'}
+								textAnchor={index === 0 && games.length > 1 ? 'start' : index === games.length - 1 ? 'end' : 'middle'}
 							>
 								{truncate(game, 20)}
 								<title>{game}</title>
