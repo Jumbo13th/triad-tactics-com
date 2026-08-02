@@ -1,6 +1,6 @@
 import { getDb } from '@/platform/db/connection';
 import { parseSnapshot, type StatsSnapshot } from '../domain/snapshot';
-import type { GameStatsMeta, Season, StatsMapping, UnitScore, UnitScoreWithUnit } from '../domain/types';
+import type { AllocatedSlotsByUnit, GameStatsMeta, Season, StatsMapping, UnitScore, UnitScoreWithUnit } from '../domain/types';
 import type { MatchedPlayer, MissionOption, StandingsAggregate, UnitHistoryEntry, UnitRef } from '../ports';
 
 type SeasonRow = {
@@ -419,6 +419,15 @@ export function getUnitHistory(unitId: number): UnitHistoryEntry[] {
 	}));
 }
 
+/**
+ * Score rows are per unit AND side, so a unit split across both sides of one
+ * game has two rows — games must count distinct games or its avgParticipants
+ * halves and the balanced score (and therefore the rank) drifts away from the
+ * race chart, which aggregates per game.
+ *
+ * `wins` needs no such guard: is_winner_side marks the unit's own result, and
+ * only its majority side can carry it, so a split unit still sums at most one.
+ */
 export function getStandingsAggregates(seasonId: number | null): StandingsAggregate[] {
 	const db = getDb();
 
@@ -429,7 +438,7 @@ export function getStandingsAggregates(seasonId: number | null): StandingsAggreg
 		.prepare(
 			`SELECT s.unit_id, u.tag AS unit_tag, u.name AS unit_name,
 			        SUM(s.final_points) AS raw_points,
-			        COUNT(*) AS games,
+			        COUNT(DISTINCT s.game_stats_id) AS games,
 			        SUM(s.is_winner_side) AS wins,
 			        SUM(CASE WHEN s.is_commander = 1 AND s.is_winner_side = 1 THEN 1 ELSE 0 END) AS command_wins,
 			        SUM(s.kills) AS kills,
@@ -548,8 +557,23 @@ export function dataFingerprint(): string {
 	return `${row.published}|${row.updated}|${row.seasonMax}|${row.activeSeason}`;
 }
 
-/** Occupancy denominator: slots each unit's members claimed in the episode slotting. */
-export function getClaimedSlotsByUnit(missionId: number, episodeNumber: number): Record<number, number> {
+/**
+ * Occupancy denominator: the slots ALLOCATED to each unit in the episode
+ * slotting — `access: 'unit'` seats only.
+ *
+ * That allocation is the unit's commitment, and it is what attendance measures
+ * against. Priority/regular slots a member grabs for themselves are personal,
+ * belong to no unit, and are deliberately excluded — counting them stretched
+ * the denominator past the booked block.
+ *
+ * An allocated seat normally carries a tag-labelled placeholder, but a member
+ * assigned into their own block replaces it with a `user` occupant; both shapes
+ * count or the block would shrink as it fills.
+ *
+ * Split per side as well: score rows are per unit AND side, so a unit fielding
+ * players on both sides must not measure each row against its whole allocation.
+ */
+export function getAllocatedSlotsByUnit(missionId: number, episodeNumber: number): AllocatedSlotsByUnit {
 	const db = getDb();
 
 	const episodeRow = db
@@ -570,33 +594,55 @@ export function getClaimedSlotsByUnit(missionId: number, episodeNumber: number):
 		return {};
 	}
 
-	const byUser = new Map<number, number>();
-	const sides = (slotting as { sides?: unknown[] }).sides ?? [];
+	const membershipStmt = db.prepare(
+		`SELECT um.unit_id AS unit_id FROM unit_memberships um WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader') LIMIT 1`
+	);
+	const tagStmt = db.prepare(`SELECT id FROM units WHERE LOWER(tag) = ? LIMIT 1`);
+	const unitOfUser = cachedLookup((userId: number) => {
+		const row = membershipStmt.get(userId) as { unit_id: number } | undefined;
+		return row ? row.unit_id : null;
+	});
+	// Placeholder labels are unit tags — anything else (a guest squad name) has
+	// no unit to charge the slots to and is skipped.
+	const unitOfTag = cachedLookup((tag: string) => {
+		const row = tagStmt.get(tag.trim().toLowerCase()) as { id: number } | undefined;
+		return row ? row.id : null;
+	});
+
+	type SlotOccupant = { type?: string; userId?: number; label?: string };
+	const result: AllocatedSlotsByUnit = {};
+
+	const sides = (slotting as { sides?: { name?: string; squads?: unknown[] }[] }).sides ?? [];
 	for (const side of sides) {
-		const squads = (side as { squads?: unknown[] }).squads ?? [];
-		for (const squad of squads) {
-			const slots = (squad as { slots?: unknown[] }).slots ?? [];
-			for (const slot of slots) {
-				const occupant = (slot as { occupant?: { type?: string; userId?: number } }).occupant;
-				if (occupant?.type === 'user' && typeof occupant.userId === 'number') {
-					byUser.set(occupant.userId, (byUser.get(occupant.userId) ?? 0) + 1);
-				}
+		const sideName = typeof side.name === 'string' ? side.name : '';
+		for (const squad of side.squads ?? []) {
+			for (const slot of (squad as { slots?: unknown[] }).slots ?? []) {
+				if ((slot as { access?: string }).access !== 'unit') continue;
+
+				const occupant = (slot as { occupant?: SlotOccupant }).occupant;
+				let unitId: number | null = null;
+				if (occupant?.type === 'user' && typeof occupant.userId === 'number') unitId = unitOfUser(occupant.userId);
+				else if (occupant?.type === 'placeholder' && typeof occupant.label === 'string') unitId = unitOfTag(occupant.label);
+				if (unitId === null) continue;
+
+				const entry = (result[unitId] ??= {});
+				entry[sideName] = (entry[sideName] ?? 0) + 1;
 			}
 		}
 	}
 
-	const result: Record<number, number> = {};
-	if (byUser.size === 0) return result;
-
-	const stmt = db.prepare(
-		`SELECT um.unit_id AS unit_id FROM unit_memberships um WHERE um.user_id = ? AND um.role IN ('member', 'deputy', 'leader') LIMIT 1`
-	);
-
-	for (const [userId, count] of byUser) {
-		const row = stmt.get(userId) as { unit_id: number } | undefined;
-		if (!row) continue;
-		result[row.unit_id] = (result[row.unit_id] ?? 0) + count;
-	}
-
 	return result;
+}
+
+/** Memoizes a per-slot DB lookup — a full slotting repeats the same few keys ~100×. */
+function cachedLookup<K extends string | number>(resolve: (key: K) => number | null): (key: K) => number | null {
+	const cache = new Map<K, number | null>();
+	return (key: K) => {
+		let value = cache.get(key);
+		if (value === undefined) {
+			value = resolve(key);
+			cache.set(key, value);
+		}
+		return value;
+	};
 }

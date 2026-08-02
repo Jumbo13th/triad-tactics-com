@@ -1,5 +1,5 @@
 import type { StatsSnapshot } from './domain/snapshot';
-import type { GameStatsMeta, Season, StatsMapping, UnitScore, UnitScoreWithUnit } from './domain/types';
+import type { AllocatedSlotsByUnit, GameStatsMeta, Season, StatsMapping, UnitScore, UnitScoreWithUnit } from './domain/types';
 
 export type MatchedPlayer = {
 	userId: number;
@@ -112,9 +112,10 @@ export type StatsRepo = {
 	getUnitsByIds: (unitIds: number[]) => Record<number, UnitRef>;
 	listAllUnits: () => UnitRef[];
 
-	// Occupancy denominator: slots whose occupant belongs to each unit in the
-	// episode's slotting (fallback: the mission's default slotting).
-	getClaimedSlotsByUnit: (missionId: number, episodeNumber: number) => Record<number, number>;
+	// Occupancy denominator: the `access: 'unit'` slots allocated to each unit in
+	// the episode's slotting — personal priority/regular claims excluded
+	// (fallback: the mission's default slotting).
+	getAllocatedSlotsByUnit: (missionId: number, episodeNumber: number) => AllocatedSlotsByUnit;
 
 	// Cheap probe that changes whenever published stats or seasons change —
 	// the statsCached invalidation key.

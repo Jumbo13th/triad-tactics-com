@@ -21,8 +21,8 @@ export function publishGameStats(
 
 	const mapping: StatsMapping = deps.repo.getMapping(input.gameStatsId);
 
-	const claimedSlotsByUnit = deps.repo.getClaimedSlotsByUnit(meta.missionId, meta.episodeNumber);
-	const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping, claimedSlotsByUnit });
+	const allocatedSlotsByUnit = deps.repo.getAllocatedSlotsByUnit(meta.missionId, meta.episodeNumber);
+	const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping, allocatedSlotsByUnit });
 
 	if (rows.length === 0) return { success: false, error: 'no_units_mapped' };
 

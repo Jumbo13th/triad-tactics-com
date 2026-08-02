@@ -28,8 +28,8 @@ export function buildGameStatsAdminView(deps: StatsDeps, gameStatsId: number): G
 	const mapping = deps.repo.getMapping(gameStatsId);
 	const players = buildPlayerPreviews(deps, snapshot, mapping);
 
-	const claimedSlotsByUnit = deps.repo.getClaimedSlotsByUnit(meta.missionId, meta.episodeNumber);
-	const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping, claimedSlotsByUnit });
+	const allocatedSlotsByUnit = deps.repo.getAllocatedSlotsByUnit(meta.missionId, meta.episodeNumber);
+	const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping, allocatedSlotsByUnit });
 
 	const units = deps.repo.getUnitsByIds(rows.map((row) => row.unitId));
 	const preview: UnitScoreWithUnit[] = rows.map((row) => ({
