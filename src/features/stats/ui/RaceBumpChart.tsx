@@ -132,41 +132,6 @@ export default function RaceBumpChart({
 					.race-draw, .race-release, .race-pop, .race-label-pop { animation: none; }
 				}
 			`}</style>
-			{!compact && (
-			<div className="relative shrink-0 border-r border-neutral-800/60" style={{ width: LABELS_W, height }}>
-				{series.map((s, index) => {
-					const color = colorOf(s.unitTag);
-					const isFocused = focus === s.unitTag;
-					const dimmed = focus !== null && !isFocused;
-					const colored = isFocused || (focus === null && index < HIGHLIGHT_COUNT);
-					const finalRank = s.ranks[s.ranks.length - 1];
-					const medal = MEDALS[finalRank];
-					const tagColor = colored ? color : dimmed ? '#4a4a4a' : '#a3a3a3';
-
-					return (
-						<button
-							key={s.unitTag}
-							type="button"
-							className={`absolute left-0 flex origin-left items-baseline gap-1.5 whitespace-nowrap text-xs ${
-								pinned === s.unitTag ? 'race-label-pop' : ''
-							}`}
-							style={{ top: rankY(finalRank) - 8, transition: 'opacity 150ms ease', opacity: dimmed ? 0.45 : 1 }}
-							onMouseEnter={() => setHovered(s.unitTag)}
-							onClick={() => togglePin(s.unitTag)}
-						>
-							<span className="font-bold" style={{ color: dimmed ? '#3a3a3a' : (medal ?? '#525252') }}>
-								#{finalRank}
-							</span>
-							<span className="font-bold" style={{ color: tagColor }}>
-								{s.unitTag}
-							</span>
-							<span className="tabular-nums text-neutral-500">{fmt1(s.totals[s.totals.length - 1])}</span>
-						</button>
-					);
-				})}
-			</div>
-			)}
-
 			<div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto">
 				<svg
 					width={chartW}
@@ -295,6 +260,43 @@ export default function RaceBumpChart({
 					})}
 				</svg>
 			</div>
+
+			{/* Finish column: the lines END on the right, so the standings read
+			    where the eye already is. */}
+			{!compact && (
+			<div className="relative shrink-0 border-l border-neutral-800/60 pl-3" style={{ width: LABELS_W, height }}>
+				{series.map((s, index) => {
+					const color = colorOf(s.unitTag);
+					const isFocused = focus === s.unitTag;
+					const dimmed = focus !== null && !isFocused;
+					const colored = isFocused || (focus === null && index < HIGHLIGHT_COUNT);
+					const finalRank = s.ranks[s.ranks.length - 1];
+					const medal = MEDALS[finalRank];
+					const tagColor = colored ? color : dimmed ? '#4a4a4a' : '#a3a3a3';
+
+					return (
+						<button
+							key={s.unitTag}
+							type="button"
+							className={`absolute left-3 flex origin-left items-baseline gap-1.5 whitespace-nowrap text-xs ${
+								pinned === s.unitTag ? 'race-label-pop' : ''
+							}`}
+							style={{ top: rankY(finalRank) - 8, transition: 'opacity 150ms ease', opacity: dimmed ? 0.45 : 1 }}
+							onMouseEnter={() => setHovered(s.unitTag)}
+							onClick={() => togglePin(s.unitTag)}
+						>
+							<span className="font-bold" style={{ color: dimmed ? '#3a3a3a' : (medal ?? '#525252') }}>
+								#{finalRank}
+							</span>
+							<span className="font-bold" style={{ color: tagColor }}>
+								{s.unitTag}
+							</span>
+							<span className="tabular-nums text-neutral-500">{fmt1(s.totals[s.totals.length - 1])}</span>
+						</button>
+					);
+				})}
+			</div>
+			)}
 		</div>
 	);
 }
