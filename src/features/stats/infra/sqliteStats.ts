@@ -419,6 +419,12 @@ export function getUnitHistory(unitId: number): UnitHistoryEntry[] {
 	}));
 }
 
+/**
+ * Score rows are per unit AND side, so a unit split across both sides of one
+ * game has two rows — games must count distinct games or its avgParticipants
+ * halves and the balanced score (and therefore the rank) drifts away from the
+ * race chart, which aggregates per game.
+ */
 export function getStandingsAggregates(seasonId: number | null): StandingsAggregate[] {
 	const db = getDb();
 
@@ -429,7 +435,7 @@ export function getStandingsAggregates(seasonId: number | null): StandingsAggreg
 		.prepare(
 			`SELECT s.unit_id, u.tag AS unit_tag, u.name AS unit_name,
 			        SUM(s.final_points) AS raw_points,
-			        COUNT(*) AS games,
+			        COUNT(DISTINCT s.game_stats_id) AS games,
 			        SUM(s.is_winner_side) AS wins,
 			        SUM(CASE WHEN s.is_commander = 1 AND s.is_winner_side = 1 THEN 1 ELSE 0 END) AS command_wins,
 			        SUM(s.kills) AS kills,
