@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname, Link } from '@/i18n/routing';
 import { LanguageSwitcher } from '@/features/language/ui/root';
 import { useCurrentGameSummary } from '@/features/games/ui/useCurrentGameSummary';
+import { useStatsLinkVisible } from '@/features/stats/ui/root';
 import { useAdminStatus } from '@/features/steamAuth/ui/root';
 import { useUserStatus } from '@/features/users/ui/useUserStatus';
 import { DropdownMenuPanel } from '@/features/appShell/ui/root';
@@ -16,7 +17,12 @@ function isActivePath(currentPathname: string, href: string) {
 }
 
 function isActiveGamesDropdown(pathname: string) {
-	return pathname.startsWith('/games') || pathname.startsWith('/units') || pathname.startsWith('/sanctions');
+	return (
+		pathname.startsWith('/games') ||
+		pathname.startsWith('/units') ||
+		pathname.startsWith('/sanctions') ||
+		pathname.startsWith('/stats')
+	);
 }
 
 function getActiveAdminHref(pathname: string) {
@@ -50,6 +56,7 @@ export default function SiteNavBar() {
 	const isAuthorized =
 		steamStatus?.connected === true && isConfirmedByAccessLevel(steamStatus.accessLevel);
 	const currentGame = useCurrentGameSummary(isAuthorized);
+	const statsLinkVisible = useStatsLinkVisible();
 
 	useEffect(() => {
 		// Close the dropdowns when navigating to a new route.
@@ -61,8 +68,13 @@ export default function SiteNavBar() {
 		const base: SiteNavItem[] = [{ href: '/', label: t('home') }];
 		base.push({ href: '/important', label: t('important'), badge: null });
 		base.push({ href: '/rules', label: t('rules'), badge: null });
+		// Statistics is public (the community's shop window). Members get it
+		// inside the Games dropdown; anonymous visitors have no Games tab, so
+		// they get a top-level entry instead. The admin "hide statistics"
+		// toggle removes both along with the main-page teaser.
+		if (statsLinkVisible && !isAuthorized) base.push({ href: '/stats', label: t('stats'), badge: null });
 		return base;
-	}, [t]);
+	}, [t, statsLinkVisible, isAuthorized]);
 
 	const gamesDropdownActive = isActiveGamesDropdown(pathname);
 
@@ -136,11 +148,12 @@ export default function SiteNavBar() {
 
 							<DropdownMenuPanel>
 								{(() => {
-									const gamesItems = [
+									const gamesItems: SiteNavItem[] = [
 										{ href: '/games', label: t('missions') },
 										{ href: '/units', label: t('units') },
 										{ href: '/sanctions', label: t('sanctions') }
-									] as const;
+									];
+									if (statsLinkVisible) gamesItems.push({ href: '/stats', label: t('stats') });
 									return gamesItems.map((item) => (
 										<Link
 											key={item.href}

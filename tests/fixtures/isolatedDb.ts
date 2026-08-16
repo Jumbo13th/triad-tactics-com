@@ -18,6 +18,14 @@ export async function setupIsolatedDb(
 	const dbPath = path.join(os.tmpdir(), `${opts.prefix}-${ts}-${crypto.randomUUID()}.db`);
 	process.env.DB_PATH = dbPath;
 
+	// .env.local (loaded after .env.test.local, which doesn't define the Discord
+	// keys) carries the REAL bot token — with it live, any test that publishes a
+	// mission or posts a mission update sends a real message to the community
+	// Discord. Blank it here so no test can ever reach Discord; runs before the
+	// dynamic route imports, so @/platform/env picks up the blank value.
+	process.env.DISCORD_BOT_TOKEN = '';
+	process.env.DISCORD_CONFIRMED_ROLE_ID = '';
+
 	if (opts.disableRateLimits ?? true) {
 		process.env.DISABLE_RATE_LIMITS = 'true';
 	}
