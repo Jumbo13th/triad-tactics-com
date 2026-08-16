@@ -1,8 +1,15 @@
 type MarkerLocale = 'ar' | 'en' | 'ru' | 'uk';
 
+// The in-game marker dialog offers exactly these glyphs (LiteIcons imageset,
+// per the LL_GameMode_Lobby prefab) in five fixed colors. The PNGs under
+// /markers/icons are the game textures, pre-tinted with the exact in-game
+// colors — the glyphs carry internal grey detail (e.g. the vehicle oval) in
+// color rather than alpha, so tinting happens at bake time, not in CSS.
+type MarkerIcon = 'dot' | 'squad' | 'fire-team' | 'vehicle' | 'landing' | 'flag' | 'exclamation' | 'question';
+type MarkerColor = 'red' | 'blue' | 'green' | 'yellow' | 'black';
+
 type MarkerItem = {
-	spriteX: number;
-	spriteY: number;
+	icon: MarkerIcon;
 	texts: Record<MarkerLocale, string[]>;
 };
 
@@ -10,11 +17,9 @@ type MarkerColumn = {
 	id: string;
 	titles: Record<MarkerLocale, string[]>;
 	headerClass: string;
+	color: MarkerColor;
 	items: MarkerItem[];
 };
-
-const spriteWidth = 46;
-const spriteHeight = 44;
 
 const columns: MarkerColumn[] = [
 	{
@@ -26,40 +31,10 @@ const columns: MarkerColumn[] = [
 			uk: ['Союзник']
 		},
 		headerClass: 'border-red-500/40 bg-red-600/35',
+		color: 'red',
 		items: [
 			{
-				spriteX: 8,
-				spriteY: 55,
-				texts: {
-					ar: ['موقع', 'وحدة حليفة'],
-					en: ['Position of an', 'allied unit'],
-					ru: ['Указание на', 'союзную позицию'],
-					uk: ['Позначення', 'союзної позиції']
-				}
-			},
-			{
-				spriteX: 8,
-				spriteY: 105,
-				texts: {
-					ar: ['فصيلة مشاة', 'حليفة'],
-					en: ['Allied infantry', 'squad'],
-					ru: ['Союзное пехотное', 'отделение'],
-					uk: ['Союзне піхотне', 'відділення']
-				}
-			},
-			{
-				spriteX: 8,
-				spriteY: 156,
-				texts: {
-					ar: ['آلية', 'حليفة'],
-					en: ['Allied vehicle'],
-					ru: ['Союзная техника'],
-					uk: ['Союзна техніка']
-				}
-			},
-			{
-				spriteX: 8,
-				spriteY: 207,
+				icon: 'dot',
 				texts: {
 					ar: ['جندي مشاة', 'حليف'],
 					en: ['Allied infantryman'],
@@ -68,8 +43,34 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 8,
-				spriteY: 258,
+				icon: 'squad',
+				texts: {
+					ar: ['فصيلة مشاة', 'حليفة'],
+					en: ['Allied infantry', 'squad'],
+					ru: ['Союзное пехотное', 'отделение'],
+					uk: ['Союзне піхотне', 'відділення']
+				}
+			},
+			{
+				icon: 'fire-team',
+				texts: {
+					ar: ['فريق رماية', 'حليف'],
+					en: ['Allied fire team'],
+					ru: ['Союзная огневая', 'группа'],
+					uk: ['Союзна вогнева', 'група']
+				}
+			},
+			{
+				icon: 'vehicle',
+				texts: {
+					ar: ['آلية', 'حليفة'],
+					en: ['Allied vehicle'],
+					ru: ['Союзная техника'],
+					uk: ['Союзна техніка']
+				}
+			},
+			{
+				icon: 'landing',
 				texts: {
 					ar: ['إنزال', 'حليف'],
 					en: ['Allied landing'],
@@ -78,8 +79,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 8,
-				spriteY: 309,
+				icon: 'flag',
 				texts: {
 					ar: ['مقر', 'حليف'],
 					en: ['Allied HQ'],
@@ -88,18 +88,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 8,
-				spriteY: 360,
-				texts: {
-					ar: ['ألغام', 'حليفة'],
-					en: ['Allied mines'],
-					ru: ['Союзные мины'],
-					uk: ['Союзні міни']
-				}
-			},
-			{
-				spriteX: 8,
-				spriteY: 411,
+				icon: 'exclamation',
 				texts: {
 					ar: ['انتباه،', 'حليف'],
 					en: ['Warning, ally'],
@@ -108,8 +97,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 8,
-				spriteY: 462,
+				icon: 'question',
 				texts: {
 					ar: ['طلب معلومات عن', 'وجود الحلفاء'],
 					en: ['Request info about', 'allies present'],
@@ -128,40 +116,10 @@ const columns: MarkerColumn[] = [
 			uk: ['Противник']
 		},
 		headerClass: 'border-sky-500/40 bg-sky-600/35',
+		color: 'blue',
 		items: [
 			{
-				spriteX: 343,
-				spriteY: 55,
-				texts: {
-					ar: ['موقع', 'وحدة معادية'],
-					en: ['Position of an', 'enemy unit'],
-					ru: ['Указание на', 'вражескую позицию'],
-					uk: ['Позначення', 'ворожої позиції']
-				}
-			},
-			{
-				spriteX: 343,
-				spriteY: 105,
-				texts: {
-					ar: ['فصيلة مشاة', 'معادية'],
-					en: ['Enemy infantry', 'squad'],
-					ru: ['Вражеское пехотное', 'отделение'],
-					uk: ['Вороже піхотне', 'відділення']
-				}
-			},
-			{
-				spriteX: 343,
-				spriteY: 156,
-				texts: {
-					ar: ['آلية', 'معادية'],
-					en: ['Enemy vehicle'],
-					ru: ['Вражеская техника'],
-					uk: ['Ворожа техніка']
-				}
-			},
-			{
-				spriteX: 343,
-				spriteY: 207,
+				icon: 'dot',
 				texts: {
 					ar: ['جندي مشاة', 'معادٍ'],
 					en: ['Enemy infantryman'],
@@ -170,8 +128,34 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 343,
-				spriteY: 258,
+				icon: 'squad',
+				texts: {
+					ar: ['فصيلة مشاة', 'معادية'],
+					en: ['Enemy infantry', 'squad'],
+					ru: ['Вражеское пехотное', 'отделение'],
+					uk: ['Вороже піхотне', 'відділення']
+				}
+			},
+			{
+				icon: 'fire-team',
+				texts: {
+					ar: ['فريق رماية', 'معادٍ'],
+					en: ['Enemy fire team'],
+					ru: ['Вражеская огневая', 'группа'],
+					uk: ['Ворожа вогнева', 'група']
+				}
+			},
+			{
+				icon: 'vehicle',
+				texts: {
+					ar: ['آلية', 'معادية'],
+					en: ['Enemy vehicle'],
+					ru: ['Вражеская техника'],
+					uk: ['Ворожа техніка']
+				}
+			},
+			{
+				icon: 'landing',
 				texts: {
 					ar: ['إنزال', 'معادٍ'],
 					en: ['Enemy landing'],
@@ -180,8 +164,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 343,
-				spriteY: 309,
+				icon: 'flag',
 				texts: {
 					ar: ['مقر', 'معادٍ'],
 					en: ['Enemy HQ'],
@@ -190,18 +173,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 343,
-				spriteY: 360,
-				texts: {
-					ar: ['ألغام', 'معادية'],
-					en: ['Enemy mines'],
-					ru: ['Вражеские мины'],
-					uk: ['Ворожі міни']
-				}
-			},
-			{
-				spriteX: 343,
-				spriteY: 411,
+				icon: 'exclamation',
 				texts: {
 					ar: ['انتباه،', 'عدو'],
 					en: ['Warning, enemy'],
@@ -210,8 +182,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 343,
-				spriteY: 462,
+				icon: 'question',
 				texts: {
 					ar: ['طلب معلومات عن', 'وجود العدو'],
 					en: ['Request info about', 'enemies present'],
@@ -230,40 +201,10 @@ const columns: MarkerColumn[] = [
 			uk: ['Елемент маршруту /', 'завдання']
 		},
 		headerClass: 'border-emerald-500/40 bg-emerald-600/35',
+		color: 'green',
 		items: [
 			{
-				spriteX: 676,
-				spriteY: 55,
-				texts: {
-					ar: ['موقع /', 'نقطة اهتمام'],
-					en: ['Position /', 'point of interest'],
-					ru: ['Указание на позицию /', 'точку интереса'],
-					uk: ['Позначення позиції /', 'точки інтересу']
-				}
-			},
-			{
-				spriteX: 676,
-				spriteY: 105,
-				texts: {
-					ar: ['نقطة مسار لفصيلة', 'مشاة حليفة'],
-					en: ['Waypoint for allied', 'infantry squad'],
-					ru: ['Маршрутная точка союзного', 'пехотного отделения'],
-					uk: ['Маршрутна точка союзного', 'піхотного відділення']
-				}
-			},
-			{
-				spriteX: 676,
-				spriteY: 156,
-				texts: {
-					ar: ['نقطة مسار', 'لآلية حليفة'],
-					en: ['Waypoint for allied', 'vehicle'],
-					ru: ['Маршрутная точка союзной', 'техники'],
-					uk: ['Маршрутна точка союзної', 'техніки']
-				}
-			},
-			{
-				spriteX: 676,
-				spriteY: 207,
+				icon: 'dot',
 				texts: {
 					ar: ['نقطة مسار', 'لمشاة حليف'],
 					en: ['Waypoint for allied', 'infantryman'],
@@ -272,8 +213,34 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 676,
-				spriteY: 258,
+				icon: 'squad',
+				texts: {
+					ar: ['نقطة مسار لفصيلة', 'مشاة حليفة'],
+					en: ['Waypoint for allied', 'infantry squad'],
+					ru: ['Маршрутная точка союзного', 'пехотного отделения'],
+					uk: ['Маршрутна точка союзного', 'піхотного відділення']
+				}
+			},
+			{
+				icon: 'fire-team',
+				texts: {
+					ar: ['نقطة مسار لفريق', 'رماية حليف'],
+					en: ['Waypoint for allied', 'fire team'],
+					ru: ['Маршрутная точка союзной', 'огневой группы'],
+					uk: ['Маршрутна точка союзної', 'вогневої групи']
+				}
+			},
+			{
+				icon: 'vehicle',
+				texts: {
+					ar: ['نقطة مسار', 'لآلية حليفة'],
+					en: ['Waypoint for allied', 'vehicle'],
+					ru: ['Маршрутная точка союзной', 'техники'],
+					uk: ['Маршрутна точка союзної', 'техніки']
+				}
+			},
+			{
+				icon: 'landing',
 				texts: {
 					ar: ['إنزال', 'مخطط'],
 					en: ['Planned landing'],
@@ -282,8 +249,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 676,
-				spriteY: 309,
+				icon: 'flag',
 				texts: {
 					ar: ['موقع مقر مخطط /', 'هدف وسيط'],
 					en: ['Planned HQ position /', 'intermediate objective'],
@@ -292,18 +258,7 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 676,
-				spriteY: 360,
-				texts: {
-					ar: ['مهمة', 'تلغيم'],
-					en: ['Mining task'],
-					ru: ['Задача на минирование'],
-					uk: ['Завдання на мінування']
-				}
-			},
-			{
-				spriteX: 676,
-				spriteY: 411,
+				icon: 'exclamation',
 				texts: {
 					ar: ['تحذير عند', 'الموقع'],
 					en: ['Warning at position'],
@@ -312,23 +267,12 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 676,
-				spriteY: 462,
+				icon: 'question',
 				texts: {
 					ar: ['طلب معلومات عن', 'نقطة اهتمام'],
 					en: ['Request info about', 'point of interest'],
 					ru: ['Запрос информации', 'о точке интереса'],
 					uk: ['Запит інформації', 'про точку інтересу']
-				}
-			},
-			{
-				spriteX: 676,
-				spriteY: 513,
-				texts: {
-					ar: ['هدف', 'مدفعية'],
-					en: ['Artillery target'],
-					ru: ['Цель для артиллерии'],
-					uk: ['Ціль для артилерії']
 				}
 			}
 		]
@@ -336,66 +280,70 @@ const columns: MarkerColumn[] = [
 	{
 		id: 'warning',
 		titles: {
-			ar: ['تحذير /', 'مدمّر'],
-			en: ['Warning / Destroyed'],
-			ru: ['Внимание / Уничтожено'],
-			uk: ['Увага /', 'Знищено']
+			ar: ['تحذير'],
+			en: ['Warning'],
+			ru: ['Внимание'],
+			uk: ['Увага']
 		},
 		headerClass: 'border-amber-400/40 bg-amber-500/35',
+		color: 'yellow',
 		items: [
 			{
-				spriteX: 1010,
-				spriteY: 55,
+				icon: 'dot',
 				texts: {
-					ar: ['عنصر', 'مدمّر'],
-					en: ['Destroyed object'],
-					ru: ['Уничтоженный объект'],
-					uk: ['Знищений обʼєкт']
+					ar: ['جندي مشاة', 'محتمل'],
+					en: ['Suspected infantryman'],
+					ru: ['Возможный пехотинец'],
+					uk: ['Ймовірний піхотинець']
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 105,
+				icon: 'squad',
 				texts: {
-					ar: ['فصيلة', 'مدمّرة'],
-					en: ['Destroyed squad'],
-					ru: ['Уничтоженное отделение'],
-					uk: ['Знищене відділення']
+					ar: ['فصيلة مشاة', 'محتملة'],
+					en: ['Suspected infantry', 'squad'],
+					ru: ['Возможное пехотное', 'отделение'],
+					uk: ['Ймовірне піхотне', 'відділення']
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 156,
+				icon: 'fire-team',
 				texts: {
-					ar: ['آلية', 'مدمّرة'],
-					en: ['Destroyed vehicle'],
-					ru: ['Уничтоженная техника'],
-					uk: ['Знищена техніка']
+					ar: ['فريق رماية', 'محتمل'],
+					en: ['Suspected fire team'],
+					ru: ['Возможная огневая', 'группа'],
+					uk: ['Ймовірна вогнева', 'група']
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 207,
+				icon: 'vehicle',
 				texts: {
-					ar: ['جندي مشاة', 'قتيل'],
-					en: ['Dead infantryman'],
-					ru: ['Мертвый пехотинец'],
-					uk: ['Мертвий піхотинець']
+					ar: ['آلية', 'محتملة'],
+					en: ['Suspected vehicle'],
+					ru: ['Возможная техника'],
+					uk: ['Ймовірна техніка']
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 360,
+				icon: 'landing',
 				texts: {
-					ar: ['عنصر', 'منزوع الألغام'],
-					en: ['Cleared object'],
-					ru: ['Разминированный объект'],
-					uk: ['Розмінований обʼєкт']
+					ar: ['إنزال', 'محتمل'],
+					en: ['Possible landing'],
+					ru: ['Возможная высадка'],
+					uk: ['Можлива висадка']
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 411,
+				icon: 'flag',
+				texts: {
+					ar: ['مقر', 'محتمل'],
+					en: ['Possible HQ'],
+					ru: ['Возможный штаб'],
+					uk: ['Ймовірний штаб']
+				}
+			},
+			{
+				icon: 'exclamation',
 				texts: {
 					ar: ['تحذير'],
 					en: ['Warning'],
@@ -404,13 +352,97 @@ const columns: MarkerColumn[] = [
 				}
 			},
 			{
-				spriteX: 1010,
-				spriteY: 462,
+				icon: 'question',
 				texts: {
 					ar: ['طلب معلومات', 'عام'],
 					en: ['General info request'],
 					ru: ['Общий запрос информации'],
 					uk: ['Загальний запит', 'інформації']
+				}
+			}
+		]
+	},
+	{
+		id: 'destroyed',
+		titles: {
+			ar: ['مدمّر'],
+			en: ['Destroyed'],
+			ru: ['Уничтожено'],
+			uk: ['Знищено']
+		},
+		headerClass: 'border-neutral-500/40 bg-neutral-800/80',
+		color: 'black',
+		items: [
+			{
+				icon: 'dot',
+				texts: {
+					ar: ['جندي مشاة قتيل /', 'لغم'],
+					en: ['Dead infantryman /', 'landmine'],
+					ru: ['Мёртвый пехотинец /', 'мина'],
+					uk: ['Мертвий піхотинець /', 'міна']
+				}
+			},
+			{
+				icon: 'squad',
+				texts: {
+					ar: ['فصيلة', 'مدمّرة'],
+					en: ['Destroyed squad'],
+					ru: ['Уничтоженное отделение'],
+					uk: ['Знищене відділення']
+				}
+			},
+			{
+				icon: 'fire-team',
+				texts: {
+					ar: ['فريق رماية', 'مدمّر'],
+					en: ['Destroyed fire team'],
+					ru: ['Уничтоженная огневая', 'группа'],
+					uk: ['Знищена вогнева', 'група']
+				}
+			},
+			{
+				icon: 'vehicle',
+				texts: {
+					ar: ['آلية', 'مدمّرة'],
+					en: ['Destroyed vehicle'],
+					ru: ['Уничтоженная техника'],
+					uk: ['Знищена техніка']
+				}
+			},
+			{
+				icon: 'landing',
+				texts: {
+					ar: ['إنزال', 'ملغى'],
+					en: ['Cancelled landing'],
+					ru: ['Отменённая высадка'],
+					uk: ['Скасована висадка']
+				}
+			},
+			{
+				icon: 'flag',
+				texts: {
+					ar: ['مقر', 'مدمّر'],
+					en: ['Destroyed HQ'],
+					ru: ['Уничтоженный штаб'],
+					uk: ['Знищений штаб']
+				}
+			},
+			{
+				icon: 'exclamation',
+				texts: {
+					ar: ['تهديد', 'مُزال'],
+					en: ['Threat eliminated'],
+					ru: ['Угроза устранена'],
+					uk: ['Загрозу усунено']
+				}
+			},
+			{
+				icon: 'question',
+				texts: {
+					ar: ['طلب', 'مغلق'],
+					en: ['Request closed'],
+					ru: ['Запрос закрыт'],
+					uk: ['Запит закрито']
 				}
 			}
 		]
@@ -469,14 +501,13 @@ export default function MarkersStandardPage({
 										return (
 											<div key={`${column.id}-${index}`} className="flex items-center gap-4 px-4 py-3">
 												<div
-													className="shrink-0 overflow-hidden rounded-md ring-1 ring-black/20"
+													aria-hidden="true"
+													className="h-[44px] w-[46px] shrink-0 rounded-md bg-[#e9e6dc] ring-1 ring-black/20"
 													style={{
-														width: `${spriteWidth}px`,
-														height: `${spriteHeight}px`,
-														backgroundImage: "url('/markers/markers.png')",
+														backgroundImage: `url('/markers/icons/${item.icon}-${column.color}.png')`,
 														backgroundRepeat: 'no-repeat',
-														backgroundSize: '1335px 562px',
-														backgroundPosition: `-${item.spriteX}px -${item.spriteY}px`
+														backgroundPosition: 'center',
+														backgroundSize: '34px 34px'
 													}}
 												/>
 												<div className="min-w-0 text-base leading-6 text-neutral-100">{renderLines(lines)}</div>
