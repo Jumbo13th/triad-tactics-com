@@ -13,7 +13,7 @@
     "slotting:excel:import": "node scripts/slottingImportExcel.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "^12.10.0",
+    "better-sqlite3": "^13.0.1",
     "next": "16.2.6",
     "next-intl": "^4.11.2",
     "pino": "^10.3.1",
