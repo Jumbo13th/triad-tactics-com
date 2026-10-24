@@ -11,7 +11,7 @@
   - `BREVO_SENDER_NAME` (sender name)
   - `BREVO_REPLY_TO_EMAIL` (optional reply-to address)
 - Outbox cron trigger:
-  - `OUTBOX_CRON_SECRET` (shared secret used by cron container to call `/api/cron/outbox`)
+  - `OUTBOX_CRON_SECRET` (shared secret used by cron container to call `/api/cron`)
   - `CRON_INTERVAL_SECONDS` (optional, defaults to 60)
 - Production behavior:
   - `DISABLE_RATE_LIMITS=false`
@@ -54,23 +54,105 @@ included by Next.js. TypeScript remains on version 6 because the current
 lint/build tooling uses its JavaScript compiler API; revisit TypeScript 7 when
 that tooling supports its new API.
 
-CI audits npm dependencies on pull requests, pushes to `main`, and weekly.
-Dependabot checks npm packages, GitHub Actions, and container images weekly.
-Enable **Dependabot alerts** and **Dependabot security updates** under the
-repository's **Settings → Advanced Security**; these settings are separate from
-`.github/dependabot.yml` and were disabled when this update was prepared.
-See GitHub's [security update settings](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configure-security-updates).
-The npm audit includes development dependencies, which the current Docker image
-also contains. It checks known npm advisories; container/host OS packages and
-application security require separate review.
+CI audits npm dependencies and validates the production container. Renovate manages
+routine dependency pull requests; GitHub Dependabot alerts, security updates, and
+CodeQL remain enabled. Repository review and required checks gate updates. These
+checks identify known issues; application security and host OS maintenance still
+need their own review.
 
-To deploy an accepted update, pull the updated repository on the server, then
-refresh the images and rebuild the application:
+Production images are built and scanned in GitHub Actions, then pulled onto the
+VPS by immutable GHCR digest. The VPS does not need to build images or retain a
+build cache. A deployment accepts only the current `origin/main` commit and an
+image carrying the matching OCI revision label. It refuses changes under
+`src/platform/db`: schema changes require a reviewed manual migration and rollback
+plan before deployment.
+
+## Production backups, cleanup, and rollback
+
+The host entrypoint is `scripts/deploy/triad_host.py`, installed as a reviewed,
+root-owned copy at `/usr/local/lib/triad-deploy/triad_host.py`. Deployments cannot
+replace this entrypoint themselves. Install a reviewed revision using:
 
 ```bash
-docker compose pull cron nginx
-docker compose build --pull app
-docker compose up -d
+sudo sh scripts/deploy/install.sh
+sudo python3 /usr/local/lib/triad-deploy/triad_host.py maintain
+sudo systemctl enable --now triad-maintenance.timer
+```
+
+The installer prints status and a dry run before cleanup. The timer creates a
+verified backup daily at 04:15 UTC, with up to 15 minutes of randomized delay.
+Each deployment also takes a backup before changing production containers. A
+single host lock prevents deployments and backup jobs from overlapping.
+
+The backup uses SQLite's online backup API in the running app, converts the
+snapshot to a standalone database, runs `PRAGMA integrity_check`, and records its
+SHA-256 checksum. The canonical file is:
+
+```text
+/opt/triad-tactics/backups/backups/applications-<UTC timestamp>.db
+```
+
+Its protected `backups/deployment-<UTC timestamp>/` bundle contains configuration,
+the existing `.env`, image IDs, and a manifest. The database inside the bundle is
+a hardlink to the canonical file, so it does not duplicate database storage.
+Deployment backups additionally contain the previous source archive and host TLS
+certificates; daily backups contain database and application configuration.
+
+Cleanup retains the **10 newest verified snapshot sets**, grouping legacy copies
+with the same timestamp across `backups/*.db`, `backups/backups/*.db`, deployment
+bundles, and the Docker database volume's `backups/` directory. All copies of an
+expired set are removed. Existing duplicates within retained legacy sets remain;
+new backups use only one physical database copy. Unrecognized files and local
+Windows copies are untouched. A missing fresh backup, corrupt retained database,
+unexpected symlink, or insufficient disk space stops cleanup rather than risking
+the remaining backups. A temporary eleventh backup exists while the new snapshot
+is verified.
+
+Stopped containers named `triad-tactics-rollback-app`, `-nginx`, and `-cron` protect
+one previous known-good set of images. They are never started and have no database
+mounts. After a successful rollout, the old running images become this rollback
+set. Cleanup removes unused images belonging to this application, Nginx, or Alpine
+and unused Docker build cache; it never removes volumes or images referenced by
+any running or stopped container. The active and previous release configuration
+directories are retained under `/opt/triad-tactics/.deploy/releases/`.
+
+The deployer checks environment variables, the SQLite native module, Nginx
+configuration, app readiness, HTTPS pages and JSON APIs, a JavaScript asset, the
+HTTP redirect, and cron's curl installation. It verifies the resulting container
+image IDs. A failed rollout restores prior images and configuration. **It does not
+automatically restore the database**, because that would discard writes made
+since the backup. A deliberate database restore requires stopping app and cron,
+preserving the current database for recovery, and using a verified snapshot with
+its matching application version.
+
+Useful host commands:
+
+```bash
+sudo python3 /usr/local/lib/triad-deploy/triad_host.py status
+sudo python3 /usr/local/lib/triad-deploy/triad_host.py --dry-run maintain
+sudo python3 /usr/local/lib/triad-deploy/triad_host.py backup
+sudo journalctl -u triad-maintenance.service --since yesterday
+sudo systemctl list-timers triad-maintenance.timer
+```
+
+The CI SSH key must be dedicated to deployment, with this authorized-key prefix:
+
+```text
+restrict,command="/usr/bin/python3 /usr/local/lib/triad-deploy/triad_host.py ssh"
+```
+
+The only accepted SSH command is `deploy <40-character commit SHA>
+sha256:<64-character digest>`. Standard input supplies one bounded JSON object
+containing `username` and the workflow's short-lived registry `token`, followed by
+EOF. Docker receives the token through standard input and uses a temporary private
+configuration directory that is removed after pulling. No permanent registry PAT
+is stored on the VPS. The workflow verifies the SSH host using a pinned
+`known_hosts` entry. Do not grant this key an unrestricted shell.
+
+Run the host safety tests on Linux without Docker or production credentials:
+
+```bash
+python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
 ```
 
 ## Deploy on a fresh server (high level)
@@ -137,7 +219,7 @@ sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
 - Nginx listens on `80` and `443`; the Next.js app runs internally on `3000`.
 - Steam sign-in uses `x-forwarded-host`/`x-forwarded-proto` from Nginx; keep the proxy config as-is.
 - Admin is now protected by Steam login + allowlisted SteamID64s. Configure `ADMIN_STEAM_IDS` and visit `/<locale>/admin`.
-- Outbox processing runs via the `/api/cron/outbox` endpoint, triggered by the `cron` container in `docker-compose.yml`.
+- Outbox processing runs via the `/api/cron` endpoint, triggered by the `cron` container in `docker-compose.yml`.
 
 ## Canary email check
 

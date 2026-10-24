@@ -62,3 +62,5 @@ scripts/seed-units.js
 # Local deployment backups and certificates
 /backups/
 /certs/
+/.deploy/
+__pycache__/

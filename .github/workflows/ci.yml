@@ -5,8 +5,9 @@ on:
   push:
     branches:
     - main
+  workflow_dispatch:
   schedule:
-  - cron: '23 6 * * 1'
+  - cron: '23 6 * * *'
 
 permissions:
   contents: read
@@ -29,7 +30,13 @@ jobs:
         node-version-file: .nvmrc
 
     - name: Audit dependencies
-      run: npm audit --audit-level=low
+      run: |
+        node --test scripts/checkRuntimeAlignment.test.mjs
+        node scripts/checkRuntimeAlignment.mjs
+        npm audit --audit-level=low
+
+    - name: Test deployment safety and retention rules
+      run: python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
 
   lint-and-test:
     if: github.event_name != 'schedule'
@@ -75,3 +82,122 @@ jobs:
         BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
         CANARY_EMAIL_TO: ${{ secrets.CANARY_EMAIL_TO }}
       run: npm run canary:email
+
+  container-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE: triad-tactics-app:${{ github.sha }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Build production image
+      run: |
+        docker build --pull --progress=plain \
+          --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+          --label "org.opencontainers.image.source=https://github.com/Jumbo13th/triad-tactics-com" \
+          --tag "$IMAGE" .
+        docker image inspect "$IMAGE" --format 'Production image size: {{.Size}} bytes'
+
+    - name: Check production HTTP and SQLite without external network access
+      run: |
+        # These are dummy values. --network none also prevents outbound API/email calls.
+        cat > "$RUNNER_TEMP/smoke.env" <<'ENV'
+        STEAM_WEB_API_KEY=ci-placeholder
+        ADMIN_STEAM_IDS=76561198000000000
+        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        BREVO_API_KEY=ci-placeholder
+        BREVO_SENDER_EMAIL=ci@example.invalid
+        BREVO_SENDER_NAME=CI
+        DISCORD_TOKEN_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        OUTBOX_CRON_SECRET=ci-placeholder
+        GAMESERVER_API_SECRET=ci-placeholder
+        DISCORD_CLIENT_ID=ci-placeholder
+        DISCORD_CLIENT_SECRET=ci-placeholder
+        DISCORD_BOT_TOKEN=ci-placeholder
+        DISCORD_REDIRECT_URI=https://example.invalid/discord
+        DISCORD_GUILD_ID=ci-placeholder
+        DISCORD_CONFIRMED_ROLE_ID=ci-placeholder
+        ENV
+        docker run --detach --name triad-smoke --network none \
+          --env-file "$RUNNER_TEMP/smoke.env" \
+          --tmpfs /app/database:rw,uid=1001,gid=1001,mode=0700 "$IMAGE"
+        docker exec triad-smoke node scripts/smokeContainer.mjs
+
+    - name: Container logs and cleanup
+      if: always()
+      run: |
+        if docker container inspect triad-smoke >/dev/null 2>&1; then
+          docker logs --tail 150 triad-smoke
+          docker rm --force triad-smoke
+        fi
+
+    - name: Install vulnerability scanner
+      uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+      with:
+        # renovate: datasource=github-releases depName=aquasecurity/trivy
+        version: v0.76.1
+        cache: true
+
+    - name: Scan app, nginx and cron images
+      run: |
+        export TRIVY_CACHE_DIR="$RUNNER_TEMP/trivy-cache"
+        mkdir -p "$RUNNER_TEMP/container-reports"
+        docker compose config --no-interpolate --format json > "$RUNNER_TEMP/compose.json"
+        nginx_image=$(jq -r '.services.nginx.image' "$RUNNER_TEMP/compose.json")
+        cron_image=$(jq -r '.services.cron.image' "$RUNNER_TEMP/compose.json")
+        docker pull "$nginx_image"
+        # Cron installs curl at startup. Include those packages in its scan too.
+        docker build --pull --tag triad-cron-scan - <<DOCKERFILE
+        FROM $cron_image
+        RUN apk add --no-cache curl
+        DOCKERFILE
+        status=0
+        images=("$IMAGE" "$nginx_image" triad-cron-scan)
+        names=(app nginx cron)
+        for index in "${!images[@]}"; do
+          scan_image="${images[$index]}"
+          report="$RUNNER_TEMP/container-reports/${names[$index]}.json"
+          # Retain all findings, including vulnerabilities without an upstream fix.
+          trivy image --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL \
+            --format json --output "$report" --timeout 10m "$scan_image"
+          # Block releases on actionable findings; do not hide unfixed issues above.
+          trivy image --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL \
+            --ignore-unfixed --exit-code 1 --format table --timeout 10m "$scan_image" || status=1
+          jq -r --arg image "$scan_image" \
+            '"### " + $image, "All HIGH/CRITICAL findings (including unfixed): " + ([.Results[]?.Vulnerabilities[]?] | length | tostring)' \
+            "$report" >> "$GITHUB_STEP_SUMMARY"
+        done
+        exit "$status"
+
+    - name: Retain vulnerability reports
+      if: always()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: container-vulnerability-reports
+        path: ${{ runner.temp }}/container-reports/*.json
+        retention-days: 7
+        if-no-files-found: ignore
+
+    - name: Export the tested production image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        docker save "$IMAGE" | gzip -1 > "$RUNNER_TEMP/production-image.tar.gz"
+        cd "$RUNNER_TEMP"
+        sha256sum production-image.tar.gz > production-image.tar.gz.sha256
+
+    - name: Pass the tested image to deployment
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: production-image
+        path: |
+          ${{ runner.temp }}/production-image.tar.gz
+          ${{ runner.temp }}/production-image.tar.gz.sha256
+        retention-days: 1
+        compression-level: 0
+        if-no-files-found: error

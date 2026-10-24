@@ -1,0 +1,93 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":enableVulnerabilityAlerts", "docker:pinDigests"],
+  "timezone": "Europe/Volgograd",
+  "schedule": ["* 4-9 * * 1"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 4-9 * * 1"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [],
+    "minimumReleaseAge": null,
+    "dependencyDashboardApproval": false,
+    "prCreation": "immediate",
+    "automerge": false
+  },
+  "packageRules": [
+    {
+      "description": "Batch routine npm patches; related runtimes and frameworks have their own groups below.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "npm patch updates"
+    },
+    {
+      "description": "Keep Next.js and its ESLint configuration together.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["next", "eslint-config-next"],
+      "groupName": "Next.js"
+    },
+    {
+      "description": "Keep React, React DOM, and their type packages together.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "React"
+    },
+    {
+      "description": "Keep all Node runtime declarations in one reviewed update.",
+      "matchDatasources": ["node-version", "docker"],
+      "matchPackageNames": ["node"],
+      "groupName": "Node.js 24"
+    },
+    {
+      "description": "Stay on the tested Node 24 release line until a coordinated migration is reviewed.",
+      "matchDatasources": ["node-version"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": ">=24 <25"
+    },
+    {
+      "description": "Docker uses tag versioning; preserve the Node 24 major and the existing image variant.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": "/^24\\./"
+    },
+    {
+      "description": "Node types follow the runtime major; their minor and patch versions are independent.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": ">=24 <25",
+      "groupName": "Node.js 24"
+    },
+    {
+      "description": "Use the npm major bundled with the supported Node runtime.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["npm"],
+      "allowedVersions": ">=11 <12"
+    },
+    {
+      "description": "Current typescript-eslint supports TypeScript below 6.1; review tooling before widening this limit.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": ">=6 <6.1"
+    },
+    {
+      "description": "Batch non-major workflow action updates.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pinDigest"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "A maintainer chooses when to start each major migration; merging still needs review and passing checks.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

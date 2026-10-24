@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
 
   cron:
-    image: alpine:3.24.3
+    image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
     depends_on:
       - app
     environment:
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:1.30.6-alpine
+    image: nginx:1.30.6-alpine@sha256:47928bf67eb62a1863cb08d9ecb52d3e704304ba614eaee17884204677702951
     depends_on:
       - app
     ports:

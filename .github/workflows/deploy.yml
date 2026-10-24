@@ -1,0 +1,150 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Never interrupt a deployment while it is backing up or changing containers.
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    outputs:
+      revision: ${{ steps.current.outputs.revision }}
+      digest: ${{ steps.publish.outputs.digest }}
+
+    steps:
+    - name: Only deploy the current main revision
+      id: current
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REVISION: ${{ github.event.workflow_run.head_sha }}
+      run: |
+        [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
+        latest=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+        if [[ "$REVISION" == "$latest" ]]; then
+          echo "revision=$REVISION" >> "$GITHUB_OUTPUT"
+        else
+          echo 'A newer main revision exists; skipping this superseded deployment.' >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Download the exact image tested by this CI run
+      if: steps.current.outputs.revision != ''
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: production-image
+        path: ${{ runner.temp }}/production-image
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ github.token }}
+
+    - name: Verify and publish the tested image
+      if: steps.current.outputs.revision != ''
+      id: publish
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REVISION: ${{ steps.current.outputs.revision }}
+      run: |
+        cd "$RUNNER_TEMP/production-image"
+        # Only the fixed archive name may be referenced by the checksum file.
+        grep -Eq '^[a-f0-9]{64}  production-image\.tar\.gz$' production-image.tar.gz.sha256
+        test "$(wc -l < production-image.tar.gz.sha256)" -eq 1
+        sha256sum --check production-image.tar.gz.sha256
+        gzip -dc production-image.tar.gz | docker load
+        image="triad-tactics-app:$REVISION"
+        actual=$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+        test "$actual" = "$REVISION"
+        registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
+        printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        docker tag "$image" "$registry_image:sha-$REVISION"
+        docker push "$registry_image:sha-$REVISION"
+        reference=$(docker image inspect "$registry_image:sha-$REVISION" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -F "$registry_image@sha256:" | head -1)
+        digest=${reference#*@}
+        [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+        echo "digest=$digest" >> "$GITHUB_OUTPUT"
+        printf 'Tested production image: `%s@%s`\n' "$registry_image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Remove runner registry credentials
+      if: always()
+      run: docker logout ghcr.io
+
+  deploy:
+    needs: publish
+    if: needs.publish.outputs.revision != '' && needs.publish.outputs.digest != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+    - name: Back up and deploy through the restricted SSH command
+      shell: python
+      env:
+        DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        REVISION: ${{ needs.publish.outputs.revision }}
+        IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+        REGISTRY_USERNAME: ${{ github.actor }}
+        REGISTRY_TOKEN: ${{ github.token }}
+      run: |
+        import json
+        import os
+        from pathlib import Path
+        import re
+        import subprocess
+        import tempfile
+
+        host = os.environ['DEPLOY_HOST']
+        revision = os.environ['REVISION']
+        digest = os.environ['IMAGE_DIGEST']
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]*', host):
+            raise SystemExit('DEPLOY_HOST must be the configured VPS hostname or IPv4 address')
+        if not re.fullmatch(r'[0-9a-f]{40}', revision) or not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+            raise SystemExit('Invalid deployment revision or image digest')
+        if not os.environ['DEPLOY_SSH_KEY'] or not os.environ['DEPLOY_KNOWN_HOSTS']:
+            raise SystemExit('Production SSH credentials have not been configured')
+        credentials = json.dumps({'username': os.environ['REGISTRY_USERNAME'], 'token': os.environ['REGISTRY_TOKEN']}) + '\n'
+        with tempfile.TemporaryDirectory(prefix='triad-deploy-') as directory:
+            private_key = Path(directory, 'identity')
+            known_hosts = Path(directory, 'known_hosts')
+            private_key.write_text(os.environ['DEPLOY_SSH_KEY'].rstrip() + '\n')
+            known_hosts.write_text(os.environ['DEPLOY_KNOWN_HOSTS'].rstrip() + '\n')
+            private_key.chmod(0o600)
+            known_hosts.chmod(0o600)
+            command = ['ssh', '-T', '-i', str(private_key),
+                       '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes',
+                       '-o', 'StrictHostKeyChecking=yes', '-o', f'UserKnownHostsFile={known_hosts}',
+                       '-o', 'ConnectTimeout=20', '-o', 'ServerAliveInterval=30',
+                       '-o', 'ServerAliveCountMax=4', f'root@{host}',
+                       f'deploy {revision} {digest}']
+            # The short-lived registry token goes through encrypted stdin only.
+            # The host deletes its temporary Docker login after pulling the image.
+            subprocess.run(command, input=credentials, text=True, check=True, timeout=1050)
+
+    - name: Check the public site from outside the VPS
+      run: |
+        for path in /en /ru /api/games/current /api/units; do
+          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 20 \
+            --output /dev/null --write-out "$path HTTP %{http_code}\n" "https://triad-tactics.com$path"
+        done
+        echo 'Deployment and external HTTPS checks passed.' >> "$GITHUB_STEP_SUMMARY"
