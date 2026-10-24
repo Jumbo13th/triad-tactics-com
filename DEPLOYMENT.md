@@ -6,6 +6,18 @@ publishes the tested image to GHCR, and calls Ansible's `community.docker` modul
 for deployment. Restic manages encryption, backup transfer, verification, and
 retention. No operator-PC backup or credential file is required.
 
+## Bunny access boundary
+
+Bunny is backend-only because many users cannot reach its services. The backup
+workflow accesses private Bunny Storage from a GitHub runner; users' browsers do
+not contact Bunny. Keep public pages, login, APIs, and assets on infrastructure
+users can reach. Do not introduce Bunny CDN/Shield proxy routing, browser asset
+URLs, or redirects/download links that depend on direct Bunny access.
+
+Bunny availability must affect only offsite backup operations. Local backups and
+application deployment use the VPS repository, and serving the website does not
+depend on Bunny. Any future Bunny integration must preserve this boundary.
+
 ## CI and updates
 
 CI runs npm audit, lint, application tests, operations validation, and a production
