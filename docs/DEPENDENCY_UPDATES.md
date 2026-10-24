@@ -57,8 +57,10 @@ timestamps prevent an otherwise expected update. See
 Node stays on major 24 until a maintainer reviews a migration. Renovate groups
 Node updates across `.nvmrc`, `package.json` engines, and Docker stages, with
 `@types/node` limited to the same major. Node type package minor/patch versions
-need not equal the runtime version. CI verifies that Docker and `.nvmrc` agree
-and that the runtime satisfies the engine constraints. The minimum supported
+need not equal the runtime version. `npm ci --engine-strict` enforces package
+engine requirements and lockfile consistency in CI and Docker. CI also compares
+the running production container's Node version to `.nvmrc`. Renovate's version
+rules keep Node type packages on the intended major. The minimum supported
 version in `engines.node` may remain lower than the pinned runtime patch.
 
 Next.js and `eslint-config-next` are grouped; React, React DOM, and their types
@@ -97,7 +99,7 @@ The restic installer pins both a release and its upstream SHA-256. Review restic
 releases during maintenance and update both values in `ops/setup-restic.sh`
 together; Renovate does not update that installer automatically. CI exercises the
 actual new binary's backup/copy/restore behavior before it can be merged. Rerun
-the protected maintenance setup workflow to install reviewed restic or host-hook
+the protected production workflow manually to install reviewed restic or host-hook
 updates on the VPS; ordinary app deployments do not replace those host files.
 
 Validate changes to the bot configuration without adding it to application

@@ -3,6 +3,9 @@
 set -euo pipefail
 umask 077
 script_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=ops/backup/triad-backup.sh
+source "$script_directory/triad-backup.sh"
+command -v sqlite3 >/dev/null
 restic_bin=${RESTIC_BIN:-restic}
 temporary=$(mktemp -d)
 trap 'rm -rf -- "$temporary"' EXIT
@@ -16,6 +19,49 @@ source_repo="$temporary/backups/restic"
 remote_repo="$temporary/offsite"
 staging="$temporary/staging"
 mkdir "$staging" "$temporary/backups"
+python3 - "$script_directory/triad-backup.sh" "$temporary" <<'PY'
+import pathlib, sqlite3, stat, subprocess, sys
+script, root = sys.argv[1], pathlib.Path(sys.argv[2])
+def snapshot(source, destination):
+    return subprocess.run(['bash', '-c', 'source "$1"; sqlite_snapshot "$2" "$3"',
+                           'sqlite-fixture', script, str(source), str(destination)],
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=190).returncode
+
+# Keep the writer open: committed rows must still be read from its WAL.
+source, destination = root / 'wal.db', root / 'verified.db'
+with sqlite3.connect(source) as writer:
+    writer.execute('PRAGMA journal_mode=WAL')
+    writer.execute('PRAGMA wal_autocheckpoint=0')
+    writer.execute('CREATE TABLE applications (id INTEGER PRIMARY KEY)')
+    writer.execute('INSERT INTO applications VALUES (42)')
+    writer.commit()
+    assert pathlib.Path(f'{source}-wal').stat().st_size > 0
+    assert snapshot(source, destination) == 0, 'Committed WAL snapshot must succeed'
+    with sqlite3.connect(destination) as restored:
+        assert restored.execute('SELECT id FROM applications').fetchall() == [(42,)]
+        assert restored.execute('PRAGMA journal_mode').fetchone() == ('delete',)
+        assert restored.execute('PRAGMA integrity_check').fetchone() == ('ok',)
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o600
+    assert not pathlib.Path(f'{destination}-wal').exists()
+    before = destination.read_bytes()
+    assert snapshot(source, destination) != 0, 'Existing destination must be refused'
+    assert destination.read_bytes() == before
+    link = root / 'alias.db'
+    link.symlink_to(source)
+    assert snapshot(link, root / 'refused.db') != 0, 'Symlink source must be refused'
+    assert snapshot(source, link) != 0, 'Symlink destination must be refused'
+    assert link.is_symlink()
+    link.unlink()
+    link.symlink_to(root, target_is_directory=True)
+    assert snapshot(source, link / 'refused.db') != 0, 'Symlink parent must be refused'
+    assert not (root / 'refused.db').exists()
+    assert snapshot(source, root / 'quoted\'path.db') != 0, 'Dot-command quoting must be refused'
+corrupt = root / 'corrupt.db'
+corrupt.write_bytes(b'not a SQLite database')
+assert snapshot(corrupt, root / 'failed.db') != 0
+assert not (root / 'failed.db').exists(), 'Failed snapshots must be removed'
+print('PASS: SQLite CLI committed WAL, standalone restore, corruption and path guards.')
+PY
 printf 'existing legacy recovery copy\n' > "$temporary/backups/applications-legacy.db"
 if "$restic_bin" --no-cache -r "$source_repo" cat config >/dev/null 2>&1; then
   echo 'Expected an uninitialized fixture repository' >&2
@@ -36,7 +82,7 @@ with sqlite3.connect(sys.argv[1]) as db:
     db.execute('INSERT INTO applications DEFAULT VALUES')
 PY
   rm -f -- "$staging/applications.db"
-  python3 "$script_directory/sqlite_snapshot.py" "$temporary/live.db" "$staging/applications.db"
+  sqlite_snapshot "$temporary/live.db" "$staging/applications.db"
   printf -v snapshot_time '2000-01-%02d 12:00:00' "$day"
   "$restic_bin" --no-cache -r "$source_repo" backup --quiet --host triad-tactics --tag production \
     --time "$snapshot_time" "$staging"

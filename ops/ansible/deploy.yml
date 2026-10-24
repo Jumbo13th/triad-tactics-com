@@ -1,16 +1,24 @@
 ---
-- name: Deploy the tested Triad image and preserve the existing database
+- name: Deploy the tested Triad release with a verified backup and rollback
   hosts: triad
   become: true
   gather_facts: false
   vars:
     site: /opt/triad-tactics
-    revision: "{{ lookup('ansible.builtin.env', 'REVISION') }}"
-    image_digest: "{{ lookup('ansible.builtin.env', 'IMAGE_DIGEST') }}"
-    image: "ghcr.io/jumbo13th/triad-tactics-com@{{ image_digest }}"
-    release: "{{ site }}/.deploy/releases/{{ revision }}-{{ image_digest[7:19] }}"
     source: "{{ playbook_dir }}/../.."
-    services: [app, nginx, cron]
+    revision: "{{ lookup('ansible.builtin.env', 'REVISION') }}"
+    digest: "{{ lookup('ansible.builtin.env', 'IMAGE_DIGEST') }}"
+    image: "ghcr.io/jumbo13th/triad-tactics-com@{{ digest }}"
+    release: "{{ site }}/.deploy/releases/{{ revision }}-{{ digest[7:19] }}"
+    compose: "{{ lookup('ansible.builtin.file', source + '/docker-compose.yml') | from_yaml }}"
+    metadata:
+      x-triad-revision: "{{ revision }}"
+      services:
+        app: {image: "{{ image }}"}
+        nginx: {image: "{{ compose.services.nginx.image }}"}
+        cron: {image: "{{ image }}"}
+      volumes:
+        db: {external: true, name: triad-tactics_db}
   module_defaults:
     community.docker.docker_compose_v2:
       project_name: triad-tactics
@@ -21,35 +29,55 @@
       dependencies: false
       wait: true
       wait_timeout: 120
-  pre_tasks:
-    - name: Require immutable deployment inputs and a GitHub registry identity
+  tasks:
+    - name: Validate the immutable release identifiers
       ansible.builtin.assert:
         that:
           - revision is match('^[0-9a-f]{40}\\Z')
-          - image_digest is match('^sha256:[0-9a-f]{64}\\Z')
-          - lookup('ansible.builtin.env', 'REGISTRY_USERNAME') | length > 0
-          - lookup('ansible.builtin.env', 'REGISTRY_TOKEN') | length > 0
-        quiet: true
-      no_log: true
+          - digest is match('^sha256:[0-9a-f]{64}\\Z')
 
-    - name: Verify the controller checkout matches the tested revision
+    - name: Read the managed current and previous release pointers
+      ansible.builtin.stat:
+        path: "{{ site }}/.deploy/{{ item }}"
+        follow: false
+      loop: [current, previous]
+      register: pointers
+
+    - name: Require the one-time adoption of the existing installation
+      ansible.builtin.assert:
+        that:
+          - pointers.results[0].stat.islnk | default(false)
+          - pointers.results[0].stat.lnk_source is match('^/opt/triad-tactics/\\.deploy/releases/[a-zA-Z0-9_-]+$')
+          - not pointers.results[1].stat.exists or pointers.results[1].stat.islnk | default(false)
+        fail_msg: Run the reviewed bootstrap workflow before deploying.
+
+    - name: Read the current release's pinned images and revision
+      ansible.builtin.slurp:
+        src: "{{ pointers.results[0].stat.lnk_source }}/image.override.json"
+      register: previous_file
+
+    - name: Remember the known-good release
+      ansible.builtin.set_fact:
+        previous_release: "{{ pointers.results[0].stat.lnk_source }}"
+        previous_metadata: "{{ previous_file.content | b64decode | from_json }}"
+
+    - name: Require separate review for database implementation changes
       ansible.builtin.command:
-        argv: [git, -C, "{{ source }}", rev-parse, HEAD]
+        argv: [git, -C, "{{ source }}", diff, --name-only, "{{ previous_metadata['x-triad-revision'] }}", "{{ revision }}", --, src/platform/db]
       delegate_to: localhost
       become: false
-      register: checkout
+      register: database_changes
       changed_when: false
-      failed_when: checkout.rc != 0 or checkout.stdout != revision
+      failed_when: database_changes.rc != 0 or database_changes.stdout | length > 0
 
-    - name: Suspend scheduled maintenance during deployment
-      ansible.builtin.systemd_service:
-        name: triad-backup.timer
-        state: stopped
-
-  tasks:
-    - name: Prepare and deploy with maintenance always restored
+    - name: Back up and deploy while scheduled backups are paused
       block:
-        - name: Wait up to five minutes for an already running backup to finish
+        - name: Pause the backup timer
+          ansible.builtin.systemd_service:
+            name: triad-backup.timer
+            state: stopped
+
+        - name: Wait up to five minutes for an existing backup to finish
           ansible.builtin.command:
             argv: [systemctl, show, triad-backup.service, --property=ActiveState, --value]
           register: maintenance
@@ -58,140 +86,28 @@
           delay: 10
           changed_when: false
 
-        - name: Discover the current production services
-          community.docker.docker_host_info:
-            containers: true
-            containers_filters:
-              label: com.docker.compose.project=triad-tactics
-              status: running
-          register: current
-          no_log: true
-
-        - name: Require exactly the expected running service set
-          ansible.builtin.assert:
-            that:
-              - current.containers | length == 3
-            quiet: true
-          no_log: true
-
-        - name: Inspect current container images and the database mount
-          community.docker.docker_container_info:
-            name: "{{ item.Id }}"
-          loop: "{{ current.containers }}"
-          register: inspected
-          no_log: true
-
-        - name: Capture previous image IDs and active configuration location
-          ansible.builtin.set_fact:
-            previous_images: >-
-              {{ previous_images | default({}) |
-                 combine({item.container.Config.Labels['com.docker.compose.service']: {'image': item.container.Image}}) }}
-            previous_release: >-
-              {{ item.container.Config.Labels['com.docker.compose.project.working_dir']
-                 if item.container.Config.Labels['com.docker.compose.service'] == 'app'
-                 else previous_release | default('') }}
-            installed_revision: >-
-              {{ item.container.Config.Labels['org.opencontainers.image.revision'] | default('')
-                 if item.container.Config.Labels['com.docker.compose.service'] == 'app'
-                 else installed_revision | default('') }}
-          loop: "{{ inspected.results }}"
-          no_log: true
-
-        - name: Verify the production database and configuration boundaries
-          ansible.builtin.assert:
-            that:
-              - previous_release == site or previous_release is match('^/opt/triad-tactics/\.deploy/releases/[a-zA-Z0-9_-]+$')
-              - previous_images.keys() | sort == services | sort
-              - item.container.Mounts | selectattr('Destination', 'equalto', '/app/database') | map(attribute='Name') | list == ['triad-tactics_db']
-            quiet: true
-          loop: "{{ inspected.results }}"
-          when: item.container.Config.Labels['com.docker.compose.service'] == 'app'
-          no_log: true
-
-        - name: Read an operator-reviewed revision marker for a legacy image
-          ansible.builtin.slurp:
-            src: "{{ previous_release }}/REVISION"
-          register: legacy_revision
-          when: installed_revision is not match('^[0-9a-f]{40}\\Z')
-          failed_when: false
-          no_log: true
-
-        - name: Use the reviewed marker when the running image lacks revision metadata
-          ansible.builtin.set_fact:
-            installed_revision: "{{ legacy_revision.content | default('') | b64decode | trim }}"
-          when: installed_revision is not match('^[0-9a-f]{40}\\Z')
-
-        - name: Require a verified source revision before comparing database changes
-          ansible.builtin.assert:
-            that: installed_revision is match('^[0-9a-f]{40}\\Z')
-            fail_msg: The running image has no verified revision. Review its source and record a REVISION marker before automated deployment.
-            quiet: true
-
-        - name: Require a separate migration review for database implementation changes
-          ansible.builtin.command:
-            argv: [git, -C, "{{ source }}", diff, --name-only, "{{ installed_revision }}", "{{ revision }}", --, src/platform/db]
-          delegate_to: localhost
-          become: false
-          register: database_changes
-          changed_when: false
-          failed_when: database_changes.rc != 0 or database_changes.stdout | length > 0
-
-        - name: Make and verify a local backup before changing production
+        - name: Create and verify the backup under its systemd time limit
           ansible.builtin.command:
             argv: [systemctl, start, --wait, triad-backup.service]
           changed_when: true
 
-        - name: Create an independent rollback configuration directory
-          ansible.builtin.tempfile:
-            state: directory
-            path: "{{ site }}/.deploy/releases"
-            prefix: rollback-
-          register: rollback
-
-        - name: Create private configuration directories
+        - name: Prepare the immutable release directory
           ansible.builtin.file:
-            path: "{{ item }}"
+            path: "{{ release }}/nginx"
             state: directory
             mode: '0700'
-          loop: ["{{ release }}/nginx", "{{ rollback.path }}/nginx"]
 
-        - name: Preserve previous Compose and nginx configuration
-          ansible.builtin.copy:
-            src: "{{ previous_release }}/{{ item }}"
-            dest: "{{ rollback.path }}/{{ item }}"
-            remote_src: true
-            mode: '0600'
-          loop: [docker-compose.yml, nginx/default.conf]
-
-        - name: Pin rollback to the exact images that are currently running
-          ansible.builtin.copy:
-            content: "{{ {'services': previous_images} | to_nice_json }}\n"
-            dest: "{{ rollback.path }}/image.override.json"
-            mode: '0600'
-
-        - name: Copy configuration from the tested checkout
+        - name: Copy the tested Compose and nginx configuration
           ansible.builtin.copy:
             src: "{{ source }}/{{ item }}"
             dest: "{{ release }}/{{ item }}"
             mode: '0600'
           loop: [docker-compose.yml, nginx/default.conf]
 
-        - name: Pin the application to the tested registry digest
+        - name: Record the pinned images and existing production volume
           ansible.builtin.copy:
-            content: "{{ {'services': {'app': {'image': image}}} | to_nice_json }}\n"
+            content: "{{ metadata | to_nice_json }}\n"
             dest: "{{ release }}/image.override.json"
-            mode: '0600'
-
-        - name: Record the exact application source revision for disaster recovery
-          ansible.builtin.copy:
-            content: "{{ revision }}\n"
-            dest: "{{ release }}/REVISION"
-            mode: '0600'
-
-        - name: Record the previous revision alongside rollback configuration
-          ansible.builtin.copy:
-            content: "{{ installed_revision }}\n"
-            dest: "{{ rollback.path }}/REVISION"
             mode: '0600'
 
         - name: Create temporary registry credential storage
@@ -200,117 +116,144 @@
             prefix: triad-registry-
           register: registry
 
-        - name: Pull the approved images using a temporary registry login
-          block:
-            - name: Authenticate the short-lived GitHub token
-              community.docker.docker_login:
-                registry_url: ghcr.io
-                username: "{{ lookup('ansible.builtin.env', 'REGISTRY_USERNAME') }}"
-                password: "{{ lookup('ansible.builtin.env', 'REGISTRY_TOKEN') }}"
-                config_path: "{{ registry.path }}/config.json"
-              no_log: true
-
-            - name: Pull all pinned production images without building
-              community.docker.docker_compose_v2_pull:
-                project_src: "{{ release }}"
-                project_name: triad-tactics
-                env_files: ["{{ site }}/.env"]
-                files: [docker-compose.yml, image.override.json]
-              environment:
-                DOCKER_CONFIG: "{{ registry.path }}"
-              no_log: true
-          always:
-            - name: Remove the temporary registry credentials
-              ansible.builtin.file:
-                path: "{{ registry.path }}"
-                state: absent
-              no_log: true
-
-        - name: Verify the pulled application's build revision
-          community.docker.docker_image_info:
-            name: "{{ image }}"
-          register: candidate
-          failed_when: candidate.images | length != 1 or candidate.images[0].Config.Labels['org.opencontainers.image.revision'] != revision
-
-        - name: Check required configuration and native SQLite before cutover
-          ansible.builtin.command:
-            argv: >-
-              {{ ['docker', 'run', '--rm', '--network', 'none', '--env-file', site + '/.env',
-                  '--env', 'NODE_ENV=production', '--entrypoint', 'node', image] + item }}
-          loop:
-            - [scripts/checkRequiredEnv.mjs]
-            - [-e, "const db=new(require('better-sqlite3'))(':memory:');db.exec('CREATE TABLE probe(x)');db.close()"]
-          changed_when: false
+        - name: Authenticate the short-lived GitHub registry token
+          community.docker.docker_login:
+            registry_url: ghcr.io
+            username: "{{ lookup('ansible.builtin.env', 'REGISTRY_USERNAME') }}"
+            password: "{{ lookup('ansible.builtin.env', 'REGISTRY_TOKEN') }}"
+            config_path: "{{ registry.path }}/config.json"
           no_log: true
 
-        - name: Start the new release and restore previous images on failure
+        - name: Pull the tested images without building on the VPS
+          community.docker.docker_compose_v2_pull:
+            project_src: "{{ release }}"
+            project_name: triad-tactics
+            env_files: ["{{ site }}/.env"]
+            files: [docker-compose.yml, image.override.json]
+          environment:
+            DOCKER_CONFIG: "{{ registry.path }}"
+          no_log: true
+
+        - name: Roll out the release or restore the previous configuration
           block:
-            - name: Pause scheduled application work
+            - name: Pause application cron during cutover
               community.docker.docker_compose_v2:
-                project_src: "{{ rollback.path }}"
+                project_src: "{{ previous_release }}"
                 services: [cron]
                 state: stopped
               no_log: true
 
-            - name: Recreate the application and proxy with the tested images
+            - name: Start the application and proxy and wait for health checks
               community.docker.docker_compose_v2:
                 project_src: "{{ release }}"
                 services: [app, nginx]
                 state: present
               no_log: true
 
-            - name: Verify read-only production HTTP routes
+            - name: Check production from outside the VPS
               ansible.builtin.uri:
                 url: "https://triad-tactics.com{{ item }}"
                 status_code: 200
                 timeout: 20
-              loop: [/en, /api/games/current, /api/units]
+              loop: [/en, /ru, /api/games/current, /api/units]
+              delegate_to: localhost
+              become: false
               register: health
               until: health.status | default(0) == 200
               retries: 6
               delay: 5
 
-            - name: Resume scheduled application work
+            - name: Resume application cron
               community.docker.docker_compose_v2:
                 project_src: "{{ release }}"
                 services: [cron]
                 state: present
               no_log: true
+
+            - name: Protect the previous images from pruning
+              community.docker.docker_container:
+                name: "triad-tactics-rollback-{{ item.key }}"
+                image: "{{ item.value.image }}"
+                state: present
+                recreate: true
+                entrypoint: /bin/true
+                labels: {io.triad.rollback: 'true'}
+              loop: "{{ previous_metadata.services | dict2items }}"
+              when: previous_release != release
+
+            - name: Commit the healthy release pointers
+              ansible.builtin.file:
+                src: "{{ item.src }}"
+                dest: "{{ site }}/.deploy/{{ item.name }}"
+                state: link
+                force: true
+              loop:
+                - {name: previous, src: "{{ previous_release }}"}
+                - {name: current, src: "{{ release }}"}
+              when: previous_release != release
           rescue:
-            - name: Restore previous application, proxy, and cron images without changing the database
+            - name: Restore the previous Compose release without changing database contents
               community.docker.docker_compose_v2:
-                project_src: "{{ rollback.path }}"
+                project_src: "{{ previous_release }}"
                 services: [app, nginx, cron]
                 state: present
               no_log: true
 
-            - name: Verify the restored site responds
+            - name: Restore the previous release pointers after any partial commit
+              ansible.builtin.file:
+                src: "{{ item.stat.lnk_source }}"
+                dest: "{{ site }}/.deploy/{{ item.item }}"
+                state: link
+                force: true
+              loop: "{{ pointers.results }}"
+              when: item.stat.exists
+
+            - name: Remove a previous pointer created by an unsuccessful first deployment
+              ansible.builtin.file:
+                path: "{{ site }}/.deploy/previous"
+                state: absent
+              when: not pointers.results[1].stat.exists
+
+            - name: Read the originally retained previous images
+              ansible.builtin.slurp:
+                src: "{{ pointers.results[1].stat.lnk_source }}/image.override.json"
+              register: retained
+              when: pointers.results[1].stat.exists
+
+            - name: Restore previous image protection after a partial holder update
+              community.docker.docker_container:
+                name: "triad-tactics-rollback-{{ item.key }}"
+                image: "{{ item.value.image }}"
+                state: present
+                recreate: true
+                entrypoint: /bin/true
+                labels: {io.triad.rollback: 'true'}
+              loop: "{{ (retained.content | default('e30=') | b64decode | from_json).get('services', {}) | dict2items }}"
+              when: pointers.results[1].stat.exists
+
+            - name: Verify the restored site from outside the VPS
               ansible.builtin.uri:
                 url: https://triad-tactics.com/en
                 status_code: 200
                 timeout: 20
-              register: restored_health
-              until: restored_health.status | default(0) == 200
+              delegate_to: localhost
+              become: false
+              register: restored
+              until: restored.status | default(0) == 200
               retries: 6
               delay: 5
 
-            - name: Fail the deployment after restoring the previous release
+            - name: Report the unsuccessful deployment
               ansible.builtin.fail:
-                msg: Deployment failed; previous images and configuration restored. The database was preserved.
-
-        - name: Protect the previous images from routine Docker pruning
-          community.docker.docker_container:
-            name: "triad-tactics-rollback-{{ item.key }}"
-            image: "{{ item.value.image }}"
-            state: present
-            recreate: true
-            entrypoint: /bin/true
-            labels:
-              io.triad.rollback: 'true'
-          loop: "{{ previous_images | dict2items }}"
-          when: previous_release != release
-          no_log: true
+                msg: Deployment failed; the previous Compose release was restored and the database was preserved.
       always:
+        - name: Remove the temporary registry credentials
+          ansible.builtin.file:
+            path: "{{ registry.path }}"
+            state: absent
+          when: registry is defined and registry.path is defined
+          no_log: true
+
         - name: Resume scheduled backups
           ansible.builtin.systemd_service:
             name: triad-backup.timer

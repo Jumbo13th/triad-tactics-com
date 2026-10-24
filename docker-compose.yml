@@ -1,5 +1,6 @@
 services:
   app:
+    image: ${APP_IMAGE:-triad-tactics-app:local}
     build:
       context: .
       dockerfile: Dockerfile
@@ -42,7 +43,7 @@ services:
     restart: unless-stopped
 
   cron:
-    image: alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+    image: ${APP_IMAGE:-triad-tactics-app:local}
     depends_on:
       - app
     environment:
@@ -52,13 +53,14 @@ services:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache curl || exit 1;
         while true; do
-          curl -fsS -H "Authorization: Bearer $${OUTBOX_CRON_SECRET}" http://app:3000/api/cron >/dev/null || true;
+          node -e 'fetch("http://app:3000/api/cron", {headers: {Authorization: "Bearer " + process.env.OUTBOX_CRON_SECRET}, signal: AbortSignal.timeout(30000)})
+            .then(async response => { await response.arrayBuffer(); if (!response.ok) throw new Error("HTTP " + response.status); })
+            .catch(error => { console.error("Cron request failed:", error.message); process.exitCode = 1; })' >/dev/null || true;
           sleep "$${CRON_INTERVAL_SECONDS}";
         done
     healthcheck:
-      test: ["CMD", "curl", "--version"]
+      test: ["CMD", "node", "--version"]
       interval: 10s
       timeout: 5s
       retries: 12

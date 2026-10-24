@@ -2,18 +2,18 @@
 
 # Multi-stage build for Next.js + better-sqlite3
 
-FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS deps
+FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS base
 WORKDIR /app
 
+FROM base AS deps
 # better-sqlite3 13 bundles native binaries; keep package.json allowScripts.
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --engine-strict
 
 FROM deps AS production-deps
 RUN npm prune --omit=dev && npm cache clean --force
 
-FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS builder
-WORKDIR /app
+FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -21,8 +21,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build && rm -rf /app/.next/cache
 
-FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS runner
-WORKDIR /app
+FROM base AS runner
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

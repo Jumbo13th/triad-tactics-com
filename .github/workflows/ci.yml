@@ -32,10 +32,7 @@ jobs:
         node-version-file: .nvmrc
 
     - name: Audit dependencies
-      run: |
-        node --test scripts/checkRuntimeAlignment.test.mjs
-        node scripts/checkRuntimeAlignment.mjs
-        npm audit --audit-level=low
+      run: npm audit --audit-level=low
 
     - name: Set up Python
       uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -48,22 +45,20 @@ jobs:
       run: |
         python -m pip install -r ops/requirements.txt
         ansible-galaxy collection install -r ops/ansible/requirements.yml
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y sqlite3
         sudo bash ops/setup-restic.sh
 
     - name: Validate deployment and backup configuration
       run: |
         ansible-lint ops/ansible/bootstrap.yml ops/ansible/deploy.yml
-        ansible-playbook --syntax-check -i ops/ansible/inventory.yml \
-          ops/ansible/bootstrap.yml ops/ansible/deploy.yml
         shellcheck ops/setup-restic.sh ops/backup/*.sh
         # GitHub added concurrency.queue after actionlint 1.7.12 was released.
         go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 \
           -ignore 'unexpected key "queue" for "concurrency" section'
 
     - name: Verify SQLite snapshots and restic recovery with synthetic data
-      run: |
-        python3 -m unittest discover -s ops/backup -p test_sqlite_snapshot.py
-        bash ops/backup/test-restic.sh
+      run: bash ops/backup/test-restic.sh
 
   lint-and-test:
     if: github.event_name != 'schedule'
@@ -87,7 +82,7 @@ jobs:
         cache: npm
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --engine-strict
 
     - name: Lint (format check)
       run: npm run lint
@@ -113,9 +108,8 @@ jobs:
       packages: write
     outputs:
       image_digest: ${{ steps.publish.outputs.image_digest }}
-      revision: ${{ steps.publish.outputs.revision }}
     env:
-      IMAGE: triad-tactics-app:${{ github.sha }}
+      IMAGE: ghcr.io/jumbo13th/triad-tactics-com:sha-${{ github.sha }}
 
     steps:
     - name: Checkout
@@ -143,26 +137,10 @@ jobs:
     - name: Check production HTTP and SQLite without external network access
       run: |
         # These are dummy values. --network none also prevents outbound API/email calls.
-        cat > "$RUNNER_TEMP/smoke.env" <<'ENV'
-        STEAM_WEB_API_KEY=ci-placeholder
-        ADMIN_STEAM_IDS=76561198000000000
-        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-        BREVO_API_KEY=ci-placeholder
-        BREVO_SENDER_EMAIL=ci@example.invalid
-        BREVO_SENDER_NAME=CI
-        DISCORD_TOKEN_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-        OUTBOX_CRON_SECRET=ci-placeholder
-        GAMESERVER_API_SECRET=ci-placeholder
-        DISCORD_CLIENT_ID=ci-placeholder
-        DISCORD_CLIENT_SECRET=ci-placeholder
-        DISCORD_BOT_TOKEN=ci-placeholder
-        DISCORD_REDIRECT_URI=https://example.invalid/discord
-        DISCORD_GUILD_ID=ci-placeholder
-        DISCORD_CONFIRMED_ROLE_ID=ci-placeholder
-        ENV
         docker run --detach --name triad-smoke --network none \
-          --env-file "$RUNNER_TEMP/smoke.env" \
+          --env-file .github/fixtures/smoke.env \
           --tmpfs /app/database:rw,uid=1001,gid=1001,mode=0700 "$IMAGE"
+        test "$(docker exec triad-smoke node --version)" = "v$(cat .nvmrc)"
         docker exec triad-smoke node scripts/smokeContainer.mjs
 
     - name: Container logs and cleanup
@@ -180,13 +158,12 @@ jobs:
         version: v0.76.1
         cache: true
 
-    - name: Scan app, nginx and cron images
+    - name: Scan the application/cron image and nginx
       run: |
         export TRIVY_CACHE_DIR="$RUNNER_TEMP/trivy-cache"
         mkdir -p "$RUNNER_TEMP/container-reports"
         docker compose config --no-interpolate --format json > "$RUNNER_TEMP/compose.json"
         nginx_image=$(jq -r '.services.nginx.image' "$RUNNER_TEMP/compose.json")
-        cron_image=$(jq -r '.services.cron.image' "$RUNNER_TEMP/compose.json")
         docker pull "$nginx_image"
         # Test our exact TLS/proxy config with an ephemeral, self-signed CI certificate.
         certificate_dir="$RUNNER_TEMP/letsencrypt/live/triad-tactics.com"
@@ -198,14 +175,9 @@ jobs:
           --mount "type=bind,source=$GITHUB_WORKSPACE/nginx/default.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
           --mount "type=bind,source=$RUNNER_TEMP/letsencrypt,target=/etc/letsencrypt,readonly" \
           "$nginx_image" nginx -t
-        # Cron installs curl at startup. Include those packages in its scan too.
-        docker build --pull --tag triad-cron-scan - <<DOCKERFILE
-        FROM $cron_image
-        RUN apk add --no-cache curl
-        DOCKERFILE
         status=0
-        images=("$IMAGE" "$nginx_image" triad-cron-scan)
-        names=(app nginx cron)
+        images=("$IMAGE" "$nginx_image")
+        names=(app nginx)
         for index in "${!images[@]}"; do
           scan_image="${images[$index]}"
           report="$RUNNER_TEMP/container-reports/${names[$index]}.json"
@@ -215,9 +187,6 @@ jobs:
           # Block releases on actionable findings; do not hide unfixed issues above.
           trivy image --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL \
             --ignore-unfixed --exit-code 1 --format table --timeout 10m "$scan_image" || status=1
-          jq -r --arg image "$scan_image" \
-            '"### " + $image, "All HIGH/CRITICAL findings (including unfixed): " + ([.Results[]?.Vulnerabilities[]?] | length | tostring)' \
-            "$report" >> "$GITHUB_STEP_SUMMARY"
         done
         exit "$status"
 
@@ -245,17 +214,12 @@ jobs:
         BUILT_IMAGE_ID: ${{ steps.build.outputs.imageid }}
       run: |
         test "$(docker image inspect "$IMAGE" --format '{{.Id}}')" = "$BUILT_IMAGE_ID"
-        registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
-        docker tag "$IMAGE" "$registry_image:sha-$GITHUB_SHA"
-        docker push "$registry_image:sha-$GITHUB_SHA"
-        reference=$(docker image inspect "$registry_image:sha-$GITHUB_SHA" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -F "$registry_image@sha256:" | head -1)
+        docker push "$IMAGE"
+        reference=$(docker image inspect "$IMAGE" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -F "${IMAGE%:*}@sha256:" | head -1)
         digest=${reference#*@}
         [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
         echo "image_digest=$digest" >> "$GITHUB_OUTPUT"
-        echo "revision=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-        # Markdown backticks are literal formatting.
-        # shellcheck disable=SC2016
-        printf 'Tested production image: `%s@%s`\n' "$registry_image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+        printf 'Tested production image: %s\n' "$reference" >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     needs: [dependency-audit, lint-and-test, container-validation]
@@ -267,6 +231,6 @@ jobs:
       packages: read
     uses: ./.github/workflows/deploy.yml
     with:
-      revision: ${{ needs.container-validation.outputs.revision }}
+      revision: ${{ github.sha }}
       image_digest: ${{ needs.container-validation.outputs.image_digest }}
     secrets: inherit

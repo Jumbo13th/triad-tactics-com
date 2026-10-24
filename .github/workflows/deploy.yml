@@ -1,6 +1,13 @@
-name: Deploy production
+name: Production deployment and setup
 
 on:
+  # Manual runs install/update host maintenance. CI calls this workflow to deploy.
+  workflow_dispatch:
+    inputs:
+      adopt_revision:
+        description: Verified deployed commit, only if the legacy image has no revision label
+        type: string
+        required: false
   workflow_call:
     inputs:
       revision:
@@ -22,16 +29,18 @@ concurrency:
   queue: max
 
 jobs:
-  deploy:
-    if: github.repository == 'Jumbo13th/triad-tactics-com' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+  production:
+    if: >-
+      github.repository == 'Jumbo13th/triad-tactics-com' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: production
     steps:
-    - name: Checkout tested revision
+    - name: Checkout reviewed revision
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
-        ref: ${{ inputs.revision }}
+        ref: ${{ inputs.revision || github.sha }}
         persist-credentials: false
         fetch-depth: 0
 
@@ -54,18 +63,18 @@ jobs:
         private-key: ${{ secrets.DEPLOY_SSH_KEY }}
         known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
-    - name: Back up, deploy the tested image, and check production
+    - name: Install and verify host maintenance
+      if: github.event_name == 'workflow_dispatch'
+      env:
+        BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        ADOPT_REVISION: ${{ inputs.adopt_revision }}
+      run: ansible-playbook -i ops/ansible/inventory.yml ops/ansible/bootstrap.yml
+
+    - name: Back up and deploy the tested image
+      if: github.event_name == 'push'
       env:
         REVISION: ${{ inputs.revision }}
         IMAGE_DIGEST: ${{ inputs.image_digest }}
         REGISTRY_USERNAME: ${{ github.actor }}
         REGISTRY_TOKEN: ${{ github.token }}
       run: ansible-playbook -i ops/ansible/inventory.yml ops/ansible/deploy.yml
-
-    - name: Check the public site from outside the VPS
-      run: |
-        for path in /en /ru /api/games/current /api/units; do
-          curl --fail --silent --show-error --retry 3 --retry-delay 2 --max-time 20 \
-            --output /dev/null --write-out "$path HTTP %{http_code}\n" "https://triad-tactics.com$path"
-        done
-        echo 'Deployment and external HTTPS checks passed.' >> "$GITHUB_STEP_SUMMARY"
