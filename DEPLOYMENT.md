@@ -144,19 +144,125 @@ The CI SSH key must be dedicated to deployment, with this authorized-key prefix:
 restrict,command="/usr/bin/python3 /usr/local/lib/triad-deploy/triad_host.py ssh"
 ```
 
-The only accepted SSH command is `deploy <40-character commit SHA>
-sha256:<64-character digest>`. Standard input supplies one bounded JSON object
+The accepted SSH commands are `deploy <40-character commit SHA>
+sha256:<64-character digest>` and exactly `backup-export`. For deployment,
+standard input supplies one bounded JSON object
 containing `username` and the workflow's short-lived registry `token`, followed by
 EOF. Docker receives the token through standard input and uses a temporary private
 configuration directory that is removed after pulling. No permanent registry PAT
 is stored on the VPS. The workflow verifies the SSH host using a pinned
-`known_hosts` entry. Do not grant this key an unrestricted shell.
+`known_hosts` entry. `backup-export` streams a fresh verified full backup to the
+offsite workflow, with operational messages sent only to stderr. It accepts no
+paths or other arguments. This key can therefore read backup data, including
+application secrets, and must remain restricted to the production environment.
+Do not grant it an unrestricted shell.
 
 Run the host safety tests on Linux without Docker or production credentials:
 
 ```bash
 python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
 ```
+
+### Encrypted offsite backups to Bunny Storage
+
+The `Offsite backup` workflow runs daily at **04:47 UTC** and can be run manually
+from Actions on `main`. The VPS creates a fresh full bundle using the same SQLite
+integrity checks and ten-set local retention. Its tar stream travels over pinned
+SSH directly into GPG on a temporary GitHub-hosted runner. GPG uses AES-256 and
+receives its passphrase through an anonymous file descriptor. The runner stores
+only the encrypted archive, uploads it to the private Bunny Storage zone, and
+reads the entire uploaded file back to verify its size and SHA-256 checksum.
+Temporary runner files are removed when the script exits; no backup or credential
+file is created on an operator's computer. The VPS stores neither the Bunny
+password nor the encryption passphrase.
+
+Setup:
+
+1. Keep the Bunny Storage zone private. Frankfurt is the primary region and
+   Stockholm is the selected replica. Use the zone's **Storage Zone Password**
+   from its Access tab, rather than the account API key
+   ([Bunny HTTP documentation](https://bunny.net/docs/storage/http)).
+2. In GitHub **Settings → Environments → production**, add secrets
+   `BUNNY_STORAGE_PASSWORD` and `BACKUP_ENCRYPTION_PASSPHRASE`. Generate a new random
+   passphrase of at least 32 characters, with no newlines. Also retain it in your
+   password manager: GitHub does not reveal saved secrets, and losing this
+   passphrase makes encrypted backups unrecoverable. Keep previous passphrases
+   until all backups encrypted with them have expired.
+3. The existing `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, and `DEPLOY_HOST` are reused.
+   Optional production variables `BUNNY_STORAGE_ZONE` and
+   `BUNNY_STORAGE_ENDPOINT` default to `triad-tactics-com` and
+   `storage.bunnycdn.com` (Frankfurt). Set the zone variable if its actual name
+   differs. Stockholm replication is managed by Bunny, not a second upload.
+4. Install the reviewed host dispatcher with `scripts/deploy/install.sh` so the
+   restricted key recognizes `backup-export`. Merge the workflow through the
+   normal review process, then run **Actions → Offsite backup → Run workflow**
+   from `main`. The production environment remains limited to `main`.
+5. Check the run's summary for a verified archive path, checksum, and size, then
+   perform the recovery check below on a separate Linux recovery machine.
+
+Remote archives live under `triad-backups/v1/deployment-<UTC timestamp>.tar.gz.gpg`.
+Only after a successful upload and full readback does the workflow delete matching
+archives older than 30 days, always keeping at least the ten newest. Unknown
+objects and directories are never deleted. The VPS still retains **ten sets**,
+not ten days: deployments, daily maintenance, and offsite exports each create
+snapshots. Its existing timer prunes unused Docker images and build cache even
+if GitHub or Bunny is unavailable.
+
+The host lock rejects an export if another backup or deployment is active; rerun
+the workflow after that operation finishes. Failed transfer, encryption, upload,
+or verification fails the Actions run and prevents remote retention cleanup.
+Enable GitHub Actions failure notifications and check backup freshness routinely.
+GitHub can delay scheduled jobs and automatically disables scheduled workflows in
+public repositories after 60 days without repository activity
+([GitHub documentation](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)).
+Local VPS backups continue independently, but this workflow needs to remain
+enabled for offsite copies. Bunny replication provides regional redundancy;
+these copies are not immutable against deletion by a compromised storage account.
+
+### Offsite recovery check
+
+Use a separate trusted Linux recovery machine with GPG, Python, SQLite, and enough
+free disk space. Download one encrypted archive from the private Bunny Storage
+dashboard. Do not use a public CDN link. Decrypt interactively, so the passphrase
+does not enter shell history:
+
+```bash
+umask 077
+mkdir triad-restore-check
+cd triad-restore-check
+gpg --output backup.tar.gz --decrypt /path/to/deployment-TIMESTAMP.tar.gz.gpg
+python3 - <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sqlite3
+import tarfile
+
+with tarfile.open('backup.tar.gz', 'r:gz') as archive:
+    archive.extractall('restored', filter='data')  # Python 3.12+
+bundle = Path('restored/backup')
+manifest = json.loads((bundle / 'manifest.json').read_text())
+databases = list(bundle.glob('*.db'))
+assert len(databases) == 1, 'Expected exactly one database snapshot'
+database = databases[0]
+with sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True) as connection:
+    assert connection.execute('PRAGMA integrity_check').fetchone() == ('ok',)
+with database.open('rb') as source:
+    digest = hashlib.file_digest(source, 'sha256').hexdigest()
+assert digest == manifest['sha256'], 'Snapshot checksum does not match manifest'
+assert database.stat().st_size == manifest['bytes'], 'Snapshot size mismatch'
+print('Database integrity: ok; SHA-256:', digest)
+print('Manifest checksum and size: ok')
+PY
+```
+
+Inspect the manifest and source/configuration archives before any production
+restore. A recovery drill must also start the matching application version against
+this database in an isolated environment, with outbound email/cron disabled.
+An upload checksum verifies stored bytes; it does not replace this restore drill.
+Recovered `.env` and TLS archives contain private credentials, so keep the recovery
+directory private and remove it when the drill is complete. Do not overwrite the
+live database until app and cron are stopped and the current database is preserved.
 
 ## Deploy on a fresh server (high level)
 1. Put the repo on the server.

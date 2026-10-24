@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import sqlite3
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -101,11 +102,40 @@ class RetentionTests(unittest.TestCase):
 class CommandTests(unittest.TestCase):
     def test_forced_command_accepts_only_exact_main_deploy_format(self):
         commit, digest = "a" * 40, "sha256:" + "b" * 64
-        self.assertEqual(host.parse_request(f"deploy {commit} {digest}"), (commit, digest))
+        self.assertEqual(host.parse_request(f"deploy {commit} {digest}"), ("deploy", commit, digest))
         for command in ("sh", f"deploy {commit} {digest}; id", f"deploy {commit} {digest}\n",
                         f"deploy --help {digest}", f"deploy {commit} $(id)"):
             with self.subTest(command=command), self.assertRaises(host.Refused):
                 host.parse_request(command)
+
+    def test_backup_export_accepts_no_arguments_or_shell_syntax(self):
+        self.assertEqual(host.parse_request("backup-export"), ("backup-export", None, None))
+        for command in ("backup-export /etc", "backup-export --help", " backup-export", "backup-export ",
+                        "backup-export\n", "backup-export; id", "backup-export $(id)", "backup-export\x00"):
+            with self.subTest(command=command), self.assertRaises(host.Refused):
+                host.parse_request(command)
+
+    def test_ssh_backup_export_uses_host_lock_without_requesting_registry_credentials(self):
+        machine = Mock()
+        output = io.BytesIO()
+        stdout = io.StringIO()
+        stdout.buffer = output
+        events = []
+        machine.export_backup.side_effect = lambda stream: events.append(("export", stream))
+        with patch.object(host, "Host", return_value=machine), \
+                patch.object(host.os, "geteuid", return_value=0), \
+                patch.object(host.os, "umask"), \
+                patch.object(host, "bounded", side_effect=lambda path, _: path), \
+                patch.object(host.Path, "open", return_value=io.StringIO()), \
+                patch.object(host.fcntl, "flock", side_effect=lambda *args: events.append(("lock", None))), \
+                patch.object(host, "read_registry_credentials") as credentials, \
+                patch.object(host.sys, "argv", ["triad_host.py", "ssh"]), \
+                patch.object(host.sys, "stdout", stdout), \
+                patch.dict(host.os.environ, {"SSH_ORIGINAL_COMMAND": "backup-export"}):
+            host.main()
+        credentials.assert_not_called()
+        machine.deploy.assert_not_called()
+        self.assertEqual(events, [("lock", None), ("export", output)])
 
     def test_registry_credentials_use_bounded_json_pipe(self):
         for value, valid in [({"username": "github-actions[bot]", "token": "x" * 40}, True),
@@ -121,6 +151,70 @@ class CommandTests(unittest.TestCase):
                 else:
                     with self.assertRaises(host.Refused):
                         host.read_registry_credentials(stream)
+
+
+class ExportTests(unittest.TestCase):
+    setUp = RetentionTests.setUp
+
+    def test_full_export_has_only_archive_on_stdout_and_retains_ten_local_sets(self):
+        machine = host.Host(self.root)
+        key = self.keys[-1]
+        bundle = self.backups / f"deployment-{key}"
+        (bundle / "manifest.json").write_text(json.dumps({"timestamp": key}))
+        (bundle / "source.tar.gz").write_bytes(b"source snapshot")
+        (bundle / "tls.tar.gz").write_bytes(b"certificate snapshot")
+        machine.containers = Mock(return_value={"app": {"Id": "running"}})
+
+        def backup(containers, full=False):
+            self.assertTrue(full)
+            host.log("Backup diagnostics must stay outside archive")
+            return key, bundle, self.volume
+
+        machine.backup = Mock(side_effect=backup)
+        output, stdout, stderr = io.BytesIO(), io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            machine.export_backup(output)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("Backup diagnostics", stderr.getvalue())
+        self.assertIn("10 snapshot sets retained", stderr.getvalue())
+        self.assertEqual(sorted(host.collect_backups(self.backups, self.volume)), self.keys[2:])
+        with tarfile.open(fileobj=io.BytesIO(output.getvalue()), mode="r:gz") as archive:
+            self.assertEqual(set(archive.getnames()), {
+                "backup", "backup/.env", "backup/applications.db", "backup/manifest.json",
+                "backup/source.tar.gz", "backup/tls.tar.gz"})
+            self.assertEqual(archive.extractfile("backup/.env").read(), b"private configuration")
+            self.assertEqual(archive.extractfile("backup/applications.db").read(),
+                             (bundle / "applications.db").read_bytes())
+        machine.backup.assert_called_once_with(machine.containers.return_value, full=True)
+        self.assertFalse(any(self.backups.glob("*.tar*")))
+
+    def test_failed_snapshot_or_retention_writes_no_archive_bytes(self):
+        machine = host.Host(self.root)
+        machine.containers = Mock(return_value={})
+        machine.backup = Mock(side_effect=host.Refused("snapshot failed"))
+        output = io.BytesIO()
+        with patch.object(host, "prune_backups") as prune, self.assertRaises(host.Refused):
+            machine.export_backup(output)
+        prune.assert_not_called()
+        self.assertEqual(output.getvalue(), b"")
+        machine.backup = Mock(return_value=(self.keys[-1], self.backups / f"deployment-{self.keys[-1]}", self.volume))
+        with patch.object(host, "prune_backups", side_effect=host.Refused("retention failed")), \
+                self.assertRaises(host.Refused):
+            machine.export_backup(output)
+        self.assertEqual(output.getvalue(), b"")
+
+    def test_export_refuses_symlinks_before_streaming_any_member(self):
+        machine = host.Host(self.root)
+        bundle = self.backups / f"deployment-{self.keys[-1]}"
+        outside = self.root / "outside-secret"
+        outside.write_text("must not be exported")
+        (bundle / "escape").symlink_to(outside)
+        machine.containers = Mock(return_value={})
+        machine.backup = Mock(return_value=(self.keys[-1], bundle, self.volume))
+        output = io.BytesIO()
+        with patch.object(host, "prune_backups"), self.assertRaises(host.Refused):
+            machine.export_backup(output)
+        self.assertEqual(output.getvalue(), b"")
 
 
 class ImageTests(unittest.TestCase):

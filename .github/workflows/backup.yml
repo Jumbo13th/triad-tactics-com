@@ -1,0 +1,38 @@
+name: Offsite backup
+
+on:
+  schedule:
+  - cron: '47 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Keep uploads serialized without replacing a pending production deployment.
+# The host's exclusive lock separately protects backup/deployment operations.
+concurrency:
+  group: production-offsite-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.repository == 'Jumbo13th/triad-tactics-com' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+    - name: Checkout reviewed backup tools
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+
+    - name: Encrypt, upload, and verify a fresh VPS backup
+      env:
+        DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        BUNNY_STORAGE_ZONE: ${{ vars.BUNNY_STORAGE_ZONE || 'triad-tactics-com' }}
+        BUNNY_STORAGE_ENDPOINT: ${{ vars.BUNNY_STORAGE_ENDPOINT || 'storage.bunnycdn.com' }}
+        BUNNY_STORAGE_PASSWORD: ${{ secrets.BUNNY_STORAGE_PASSWORD }}
+        BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      run: python3 scripts/deploy/triad_backup_runner.py

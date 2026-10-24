@@ -180,10 +180,12 @@ def prune_backups(backup_root, volume_root, newest_verified, *, dry_run=False):
 
 
 def parse_request(command):
+    if command == "backup-export":
+        return "backup-export", None, None
     match = re.fullmatch(r"deploy ([0-9a-f]{40}) (sha256:[0-9a-f]{64})", command)
     if not match:
-        raise Refused("Only 'deploy <commit SHA> <image digest>' is permitted")
-    return match[1], match[2]
+        raise Refused("Only 'backup-export' or 'deploy <commit SHA> <image digest>' is permitted")
+    return "deploy", match[1], match[2]
 
 
 def removable_references(image, protected):
@@ -445,6 +447,30 @@ db.backup(destination).then(() => db.close()).catch(error => { db.close(); throw
         prune_backups(self.backups, volume, key)
         self.prune_docker()
 
+    def export_backup(self, output):
+        """Stream one fresh full backup to authenticated SSH; stdout contains only the archive."""
+        with contextlib.redirect_stdout(sys.stderr):
+            snapshot = self.backup(self.containers(), full=True)
+            if not snapshot:
+                return
+            key, bundle, volume = snapshot
+            prune_backups(self.backups, volume, key)
+            bounded(bundle, self.backups)
+            # Validate all members before writing the first archive byte. Do not follow links
+            # or export arbitrary paths supplied by the remote caller.
+            members = [bundle, *sorted(bundle.rglob("*"))]
+            for path in members:
+                bounded(path, self.backups if path == bundle else bundle)
+                if not (path.is_file() or path.is_dir()):
+                    raise Refused("Backup export contains a special file")
+            with tarfile.open(fileobj=output, mode="w|gz", dereference=False) as archive:
+                for path in members:
+                    relative = path.relative_to(bundle)
+                    name = "backup" if path == bundle else "backup/" + relative.as_posix()
+                    archive.add(path, arcname=name, recursive=False)
+            output.flush()
+            log(f"Streamed verified full backup {key}")
+
     def trusted_target(self, commit):
         remote = run(["git", "-C", self.site, "remote", "get-url", "origin"], capture=True).strip()
         if remote not in ORIGINS:
@@ -665,7 +691,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
     sub = parser.add_subparsers(dest="action", required=True)
-    for name in ("backup", "maintain", "status", "ssh"):
+    for name in ("backup", "backup-export", "maintain", "status", "ssh"):
         sub.add_parser(name)
     deploy = sub.add_parser("deploy")
     deploy.add_argument("commit")
@@ -678,9 +704,9 @@ def main():
     host = Host(dry_run=args.dry_run)
     credentials = None
     if args.action == "ssh":
-        args.commit, args.digest = parse_request(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
-        credentials = read_registry_credentials(sys.stdin.buffer)
-        args.action = "deploy"
+        args.action, args.commit, args.digest = parse_request(os.environ.get("SSH_ORIGINAL_COMMAND", ""))
+        if args.action == "deploy":
+            credentials = read_registry_credentials(sys.stdin.buffer)
     elif args.action == "deploy" and args.registry_stdin:
         credentials = read_registry_credentials(sys.stdin.buffer)
     # One lock covers deployments, daily maintenance, and manual backups.
@@ -707,6 +733,8 @@ def main():
             if snapshot:
                 key, _, volume = snapshot
                 prune_backups(host.backups, volume, key)
+        elif args.action == "backup-export":
+            host.export_backup(sys.stdout.buffer)
         elif args.action == "maintain":
             host.maintain()
 
@@ -716,5 +744,5 @@ if __name__ == "__main__":
         main()
     except (Refused, OSError, sqlite3.Error, subprocess.SubprocessError) as error:
         # OSError can include paths, but no subprocess output or credentials are emitted.
-        log(f"Operation failed: {error}")
+        print(f"Operation failed: {error}", file=sys.stderr, flush=True)
         sys.exit(1)
