@@ -197,6 +197,15 @@ def removable_references(image, protected):
         return allowed
     digests = image.get("RepoDigests") or []
     labels = (image.get("Config") or {}).get("Labels") or {}
+    official_repositories = {
+        domain + namespace + name
+        for domain in ("", "docker.io/", "index.docker.io/")
+        for namespace in ("", "library/")
+        for name in ("nginx", "alpine")
+    }
+    if not tags and any(ref.partition("@")[0] in official_repositories
+                        and DIGEST.fullmatch(ref.partition("@")[2]) for ref in digests):
+        return [image["Id"]]
     if any(ref.startswith(IMAGE + "@") for ref in digests) or labels.get("com.docker.compose.project") == PROJECT:
         return [image["Id"]]
     return []
@@ -616,8 +625,9 @@ db.backup(destination).then(() => db.close()).catch(error => { db.close(); throw
         self.trusted_target(commit)
         cutover_started = False
         try:
-            self.compose(release, "stop", "cron", capture=True)
+            # A failed or timed-out stop can still have stopped the live cron container.
             cutover_started = True
+            self.compose(release, "stop", "cron", capture=True)
             self.compose(release, "up", "-d", "--no-build", "--pull", "never", "--no-deps", "app", capture=True)
             self.wait_app()
             self.compose(release, "up", "-d", "--no-build", "--pull", "never", "--no-deps", "nginx", capture=True)

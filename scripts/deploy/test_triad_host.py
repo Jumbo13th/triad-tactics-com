@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -136,6 +137,23 @@ class ImageTests(unittest.TestCase):
                  "RepoDigests": [host.IMAGE + "@sha256:" + "c" * 64]}
         self.assertEqual(host.removable_references(image, set()), ["expired"])
 
+    def test_digest_only_official_base_images_are_removed_but_rollback_and_other_repositories_survive(self):
+        digest = "@sha256:" + "d" * 64
+        for repository in ("nginx", "alpine", "library/nginx", "docker.io/nginx",
+                           "docker.io/library/nginx", "docker.io/library/alpine",
+                           "index.docker.io/library/nginx", "index.docker.io/library/alpine"):
+            image = {"Id": "old-base", "RepoTags": [], "RepoDigests": [repository + digest]}
+            with self.subTest(repository=repository):
+                self.assertEqual(host.removable_references(image, set()), ["old-base"])
+                self.assertEqual(host.removable_references(image, {"old-base"}), [])
+                image["RepoTags"] = ["operator-special:keep"]
+                self.assertEqual(host.removable_references(image, set()), [])
+        for repository in ("postgres", "nginx-custom", "docker.io/example/nginx",
+                           "example.com/library/nginx", "evil.example/alpine"):
+            image = {"Id": "unrelated", "RepoDigests": [repository + digest]}
+            with self.subTest(repository=repository):
+                self.assertEqual(host.removable_references(image, set()), [])
+
     def test_unrelated_tags_are_not_removed(self):
         image = {"Id": "shared", "RepoTags": ["alpine:3.20", "operator-special:keep"]}
         self.assertEqual(host.removable_references(image, set()), ["alpine:3.20"])
@@ -159,6 +177,12 @@ class FailureTests(unittest.TestCase):
         self.machine.prune_docker.assert_not_called()
 
     def test_failed_health_restores_images_and_keeps_database_untouched(self):
+        self.check_failed_deploy()
+
+    def test_timed_out_cron_stop_restores_cron_and_keeps_database_untouched(self):
+        self.check_failed_deploy(stop_cron_fails=True)
+
+    def check_failed_deploy(self, stop_cron_fails=False):
         machine = self.machine
         key = "2026-10-24T12-00-00-000Z"
         bundle = machine.backups / f"deployment-{key}"
@@ -184,11 +208,17 @@ class FailureTests(unittest.TestCase):
         machine.stage = Mock(return_value=release)
         machine.inspect = Mock(return_value={"Id": "candidate", "Config": {"Labels": {"org.opencontainers.image.revision": new_commit}}})
         machine.docker = Mock(return_value="")
-        machine.compose = Mock(return_value=json.dumps({"services": {s: {"image": s} for s in host.SERVICES}}))
-        machine.wait_app = Mock(side_effect=[host.Refused("new image failed"), None])
+        def compose(*args, **kwargs):
+            if stop_cron_fails and args[1:] == ("stop", "cron"):
+                raise subprocess.TimeoutExpired(["docker", "compose", "stop", "cron"], 600)
+            return json.dumps({"services": {s: {"image": s} for s in host.SERVICES}})
+
+        machine.compose = Mock(side_effect=compose)
+        machine.wait_app = Mock() if stop_cron_fails else Mock(side_effect=[host.Refused("new image failed"), None])
         machine.wait_cron = Mock()
         machine.health = Mock()
-        with patch.object(host, "prune_backups"), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(host.Refused):
+        expected_error = subprocess.TimeoutExpired if stop_cron_fails else host.Refused
+        with patch.object(host, "prune_backups"), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(expected_error):
             machine.deploy(new_commit, digest)
         restored = machine.state()["current"]
         self.assertEqual(restored["commit"], old_commit)
