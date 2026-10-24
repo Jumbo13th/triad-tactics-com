@@ -11,7 +11,7 @@ does not install the app: an account owner must grant it access to
 1. Merge this configuration and install the app for this repository only.
 2. Check its Dependency Dashboard and first update PR. Confirm that npm packages,
    GitHub Actions, the Trivy scanner version, `.nvmrc`, the Dockerfile,
-   and Compose images are discovered,
+   Compose images, and the pinned Ansible packages/collection are discovered,
    lockfiles regenerate successfully, and CI runs on the bot's PRs.
 3. Confirm that the app has access to GitHub vulnerability alerts and that its
    logs show successful vulnerability-alert retrieval. If there is an open
@@ -92,6 +92,13 @@ Review failed scheduled audits and image scans, stalled bot PRs, and the
 Dependency Dashboard at least weekly. Container base-image updates and rescans
 cover image packages; host OS patching and any required reboot remain separate
 maintenance work.
+
+The restic installer pins both a release and its upstream SHA-256. Review restic
+releases during maintenance and update both values in `ops/setup-restic.sh`
+together; Renovate does not update that installer automatically. CI exercises the
+actual new binary's backup/copy/restore behavior before it can be merged. Rerun
+the protected maintenance setup workflow to install reviewed restic or host-hook
+updates on the VPS; ordinary app deployments do not replace those host files.
 
 Validate changes to the bot configuration without adding it to application
 dependencies:
