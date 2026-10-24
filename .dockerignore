@@ -22,3 +22,7 @@ database
 
 # editor
 .vscode
+
+# Local deployment backups and certificates
+backups
+certs
