@@ -14,18 +14,20 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A main run may already be deploying; let it finish before the next one starts.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   dependency-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Setup Node
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version-file: .nvmrc
 
@@ -35,8 +37,33 @@ jobs:
         node scripts/checkRuntimeAlignment.mjs
         npm audit --audit-level=low
 
-    - name: Test deployment safety and retention rules
-      run: python3 -m unittest discover -s scripts/deploy -p 'test_*.py' -v
+    - name: Set up Python
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: ops/requirements.txt
+
+    - name: Install operations validation tools
+      run: |
+        python -m pip install -r ops/requirements.txt
+        ansible-galaxy collection install -r ops/ansible/requirements.yml
+        sudo bash ops/setup-restic.sh
+
+    - name: Validate deployment and backup configuration
+      run: |
+        ansible-lint ops/ansible/bootstrap.yml ops/ansible/deploy.yml
+        ansible-playbook --syntax-check -i ops/ansible/inventory.yml \
+          ops/ansible/bootstrap.yml ops/ansible/deploy.yml
+        shellcheck ops/setup-restic.sh ops/backup/*.sh
+        # GitHub added concurrency.queue after actionlint 1.7.12 was released.
+        go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 \
+          -ignore 'unexpected key "queue" for "concurrency" section'
+
+    - name: Verify SQLite snapshots and restic recovery with synthetic data
+      run: |
+        python3 -m unittest discover -s ops/backup -p test_sqlite_snapshot.py
+        bash ops/backup/test-restic.sh
 
   lint-and-test:
     if: github.event_name != 'schedule'
@@ -51,10 +78,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
     - name: Setup Node
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version-file: .nvmrc
         cache: npm
@@ -64,11 +91,6 @@ jobs:
 
     - name: Lint (format check)
       run: npm run lint
-
-    - name: Build
-      env:
-        NODE_ENV: production
-      run: npm run build
 
     - name: Tests
       run: npm test
@@ -86,22 +108,37 @@ jobs:
   container-validation:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.publish.outputs.image_digest }}
+      revision: ${{ steps.publish.outputs.revision }}
     env:
       IMAGE: triad-tactics-app:${{ github.sha }}
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         persist-credentials: false
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
     - name: Build production image
-      run: |
-        docker build --pull --progress=plain \
-          --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-          --label "org.opencontainers.image.source=https://github.com/Jumbo13th/triad-tactics-com" \
-          --tag "$IMAGE" .
-        docker image inspect "$IMAGE" --format 'Production image size: {{.Size}} bytes'
+      id: build
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      with:
+        context: .
+        load: true
+        pull: true
+        tags: ${{ env.IMAGE }}
+        labels: |
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.source=https://github.com/Jumbo13th/triad-tactics-com
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Check production HTTP and SQLite without external network access
       run: |
@@ -193,21 +230,43 @@ jobs:
         retention-days: 7
         if-no-files-found: ignore
 
-    - name: Export the tested production image
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        docker save "$IMAGE" | gzip -1 > "$RUNNER_TEMP/production-image.tar.gz"
-        cd "$RUNNER_TEMP"
-        sha256sum production-image.tar.gz > production-image.tar.gz.sha256
-
-    - name: Pass the tested image to deployment
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+    - name: Log in to GitHub Container Registry
+      if: github.repository == 'Jumbo13th/triad-tactics-com' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
       with:
-        name: production-image
-        path: |
-          ${{ runner.temp }}/production-image.tar.gz
-          ${{ runner.temp }}/production-image.tar.gz.sha256
-        retention-days: 1
-        compression-level: 0
-        if-no-files-found: error
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Publish the exact tested image
+      id: publish
+      if: github.repository == 'Jumbo13th/triad-tactics-com' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      env:
+        BUILT_IMAGE_ID: ${{ steps.build.outputs.imageid }}
+      run: |
+        test "$(docker image inspect "$IMAGE" --format '{{.Id}}')" = "$BUILT_IMAGE_ID"
+        registry_image="ghcr.io/${GITHUB_REPOSITORY,,}"
+        docker tag "$IMAGE" "$registry_image:sha-$GITHUB_SHA"
+        docker push "$registry_image:sha-$GITHUB_SHA"
+        reference=$(docker image inspect "$registry_image:sha-$GITHUB_SHA" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep -F "$registry_image@sha256:" | head -1)
+        digest=${reference#*@}
+        [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+        echo "image_digest=$digest" >> "$GITHUB_OUTPUT"
+        echo "revision=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+        # Markdown backticks are literal formatting.
+        # shellcheck disable=SC2016
+        printf 'Tested production image: `%s@%s`\n' "$registry_image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: [dependency-audit, lint-and-test, container-validation]
+    if: >-
+      github.repository == 'Jumbo13th/triad-tactics-com' && github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' && vars.STANDARD_PIPELINE_ENABLED == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      revision: ${{ needs.container-validation.outputs.revision }}
+      image_digest: ${{ needs.container-validation.outputs.image_digest }}
+    secrets: inherit

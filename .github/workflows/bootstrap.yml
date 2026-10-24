@@ -1,0 +1,48 @@
+name: Set up production maintenance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-operations
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  bootstrap:
+    if: github.repository == 'Jumbo13th/triad-tactics-com' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    steps:
+    - name: Checkout reviewed operations
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: ops/requirements.txt
+
+    - name: Install Ansible
+      run: |
+        python -m pip install -r ops/requirements.txt
+        ansible-galaxy collection install -r ops/ansible/requirements.yml
+
+    - name: Set up production SSH
+      uses: ./.github/actions/setup-vps-ssh
+      with:
+        host: ${{ vars.DEPLOY_HOST }}
+        private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+        known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+    - name: Install and verify local backups
+      env:
+        BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      run: ansible-playbook -i ops/ansible/inventory.yml ops/ansible/bootstrap.yml

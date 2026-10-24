@@ -1,0 +1,170 @@
+---
+# Run once through the protected production workflow after explicitly authorizing
+# an Ansible-capable SSH key. No Bunny password is installed on this host.
+- name: Install verified local backups and prepare standard Ansible deployment
+  hosts: triad
+  become: true
+  gather_facts: false
+  vars:
+    source: "{{ playbook_dir }}/../.."
+    backup_password: "{{ lookup('ansible.builtin.env', 'BACKUP_ENCRYPTION_PASSPHRASE') }}"
+    password_file: /etc/triad-backup/restic-password
+  tasks:
+    - name: Require a recovery password supplied by GitHub Secrets
+      ansible.builtin.assert:
+        that:
+          - backup_password | length >= 32
+          - "'\n' not in backup_password and '\r' not in backup_password"
+        quiet: true
+      no_log: true
+
+    - name: Install standard host dependencies
+      ansible.builtin.apt:
+        name: [python3, python3-requests, jq, curl, bzip2, util-linux, ca-certificates]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Create root-owned private operational directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      loop:
+        - /etc/triad-backup
+        - /usr/local/lib/triad-backup
+        - /var/lib/triad-backup
+        - /opt/triad-tactics/backups
+        - /opt/triad-tactics/.deploy/releases
+
+    - name: Check whether a repository password already exists
+      ansible.builtin.stat:
+        path: "{{ password_file }}"
+        follow: false
+      register: password_state
+      no_log: true
+
+    - name: Read the existing password only to prevent accidental key replacement
+      ansible.builtin.slurp:
+        src: "{{ password_file }}"
+      register: previous_password
+      when: password_state.stat.exists and password_state.stat.isreg | default(false)
+      no_log: true
+
+    - name: Refuse overwriting the key for existing backup history
+      ansible.builtin.assert:
+        that:
+          - >-
+            not password_state.stat.exists or
+            (password_state.stat.isreg | default(false) and
+             previous_password.content | default('') | b64decode == backup_password ~ '\n')
+        quiet: true
+      no_log: true
+
+    - name: Install the GitHub-held recovery password for local restic execution
+      ansible.builtin.copy:
+        content: "{{ backup_password }}\n"
+        dest: "{{ password_file }}"
+        owner: root
+        group: root
+        mode: '0600'
+      no_log: true
+
+    - name: Find existing backup schedules before replacing them
+      ansible.builtin.stat:
+        path: "/etc/systemd/system/{{ item }}.timer"
+      loop: [triad-maintenance, triad-backup]
+      register: timers
+
+    - name: Remember which existing timers are running
+      ansible.builtin.command:
+        argv: [systemctl, show, "{{ item.item }}.timer", --property=ActiveState, --value]
+      register: timer_states
+      changed_when: false
+      loop: "{{ timers.results }}"
+      when: item.stat.exists
+
+    - name: Remember which existing timers are enabled at boot
+      ansible.builtin.command:
+        argv: [systemctl, show, "{{ item.item }}.timer", --property=UnitFileState, --value]
+      register: timer_enabled
+      changed_when: false
+      loop: "{{ timers.results }}"
+      when: item.stat.exists
+
+    - name: Replace backup scheduling only after the new backup succeeds
+      block:
+        - name: Stop existing timers without interrupting a running backup
+          ansible.builtin.systemd_service:
+            name: "{{ item.item }}.timer"
+            state: stopped
+            enabled: false
+          loop: "{{ timers.results }}"
+          when: item.stat.exists
+
+        - name: Wait up to five minutes for existing backup services to become idle
+          ansible.builtin.command:
+            argv: [systemctl, show, "{{ item.item }}.service", --property=ActiveState, --value]
+          register: old_service
+          until: old_service.stdout in ['inactive', 'failed']
+          retries: 30
+          delay: 10
+          changed_when: false
+          loop: "{{ timers.results }}"
+          when: item.stat.exists
+
+        - name: Install the pinned upstream restic installer
+          ansible.builtin.copy:
+            src: "{{ source }}/ops/setup-restic.sh"
+            dest: /usr/local/lib/triad-backup/setup-restic.sh
+            owner: root
+            group: root
+            mode: '0700'
+
+        - name: Install the verified upstream restic release
+          ansible.builtin.command:
+            argv: [bash, /usr/local/lib/triad-backup/setup-restic.sh]
+          changed_when: true
+
+        - name: Install backup scripts and systemd units
+          ansible.builtin.copy:
+            src: "{{ source }}/ops/backup/{{ item.src }}"
+            dest: "{{ item.dest }}"
+            owner: root
+            group: root
+            mode: "{{ item.mode }}"
+          loop:
+            - {src: triad-backup.sh, dest: /usr/local/sbin/triad-backup, mode: '0700'}
+            - {src: sqlite_snapshot.py, dest: /usr/local/lib/triad-backup/sqlite_snapshot.py, mode: '0600'}
+            - {src: triad-backup.service, dest: /etc/systemd/system/triad-backup.service, mode: '0644'}
+            - {src: triad-backup.timer, dest: /etc/systemd/system/triad-backup.timer, mode: '0644'}
+
+        - name: Reload the installed systemd units
+          ansible.builtin.systemd_service:
+            daemon_reload: true
+
+        - name: Make and verify the first restic backup before enabling its schedule
+          ansible.builtin.command:
+            argv: [systemctl, start, --wait, triad-backup.service]
+          changed_when: true
+
+        - name: Enable daily backups after successful verification
+          ansible.builtin.systemd_service:
+            name: triad-backup.timer
+            state: started
+            enabled: true
+      rescue:
+        - name: Restore the previous timer states when bootstrap fails
+          ansible.builtin.systemd_service:
+            name: "{{ timer_states.results[item].item.item }}.timer"
+            state: "{{ 'started' if timer_states.results[item].stdout == 'active' else 'stopped' }}"
+            enabled: "{{ timer_enabled.results[item].stdout in ['enabled', 'enabled-runtime'] }}"
+            daemon_reload: true
+          loop: "{{ range(0, timer_states.results | length) | list }}"
+          when: not timer_states.results[item].skipped | default(false)
+
+        - name: Report that the replacement backup was not enabled
+          ansible.builtin.fail:
+            msg: Backup bootstrap failed; the previous timer states were restored. Existing backups were preserved.

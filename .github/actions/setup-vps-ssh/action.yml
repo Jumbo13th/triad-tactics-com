@@ -1,0 +1,40 @@
+name: Set up production SSH
+description: Load the deployment key and use the pinned production host key
+inputs:
+  host:
+    description: Production hostname or IPv4 address
+    required: true
+  private-key:
+    description: Production SSH private key
+    required: true
+  known-hosts:
+    description: Independently verified production known_hosts entry
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+      with:
+        ssh-private-key: ${{ inputs.private-key }}
+    - name: Configure pinned host verification
+      shell: bash
+      env:
+        DEPLOY_HOST: ${{ inputs.host }}
+        DEPLOY_KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]
+        test -n "$DEPLOY_KNOWN_HOSTS"
+        umask 077
+        mkdir -p "$HOME/.ssh"
+        printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+        ssh-keygen -F "$DEPLOY_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
+        cat > "$HOME/.ssh/config" <<EOF
+        Host triad-vps
+          HostName $DEPLOY_HOST
+          User root
+          BatchMode yes
+          StrictHostKeyChecking yes
+          ConnectTimeout 20
+          ServerAliveInterval 30
+          ServerAliveCountMax 4
+        EOF

@@ -1,0 +1,26 @@
+[Unit]
+Description=Verified Triad SQLite and configuration backup with restic
+Requires=docker.service
+After=docker.service
+ConditionPathExists=/etc/triad-backup/restic-password
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/local/sbin/triad-backup
+TimeoutStartSec=20min
+KillMode=control-group
+StateDirectory=triad-backup
+StateDirectoryMode=0700
+Environment=DOCKER_CONFIG=/var/lib/triad-backup/docker
+Environment=GOMEMLIMIT=256MiB
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/triad-tactics/backups /var/lib/triad-backup /run/lock
+
