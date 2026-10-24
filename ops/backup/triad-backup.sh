@@ -39,10 +39,9 @@ for file in image.override.json images.yml; do
   if [[ -f $release/$file ]]; then install -m 0600 "$release/$file" "$staging/$file"; fi
 done
 if [[ -d /etc/letsencrypt ]]; then cp -a /etc/letsencrypt "$staging/letsencrypt"; fi
-if [[ -f $release/REVISION ]]; then
+revision=$(jq -r '.[0].Config.Labels["org.opencontainers.image.revision"] // empty' "$staging/application-container.json")
+if [[ ! $revision =~ ^[0-9a-f]{40}$ && -f $release/REVISION ]]; then
   revision=$(cat "$release/REVISION")
-else
-  revision=$(jq -r '.[0].Config.Labels["org.opencontainers.image.revision"] // empty' "$staging/application-container.json")
 fi
 if [[ $revision =~ ^[0-9a-f]{40}$ ]]; then
   printf '%s\n' "$revision" > "$staging/REVISION"
