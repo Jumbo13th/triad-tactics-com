@@ -1,24 +1,18 @@
 import { defineConfig, globalIgnores } from "eslint/config";
+import { fixupConfigRules } from "@eslint/compat";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  {
-    // eslint-plugin-react's version auto-detection ("detect") calls the
-    // context.getFilename() API that ESLint 10 removed; pin the version
-    // explicitly to skip detection until the plugin supports ESLint 10.
-    settings: {
-      react: { version: "19" },
-    },
-  },
+  // Next.js still includes plugins that use APIs removed in ESLint 10.
+  ...fixupConfigRules([...nextVitals, ...nextTs]),
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".next-dev/**",
     ".next-e2e/**",
+    ".vitest/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

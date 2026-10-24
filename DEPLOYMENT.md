@@ -26,6 +26,53 @@
 - `nginx/default.conf` (TLS termination + proxy headers for Steam)
 - `.env.example` (copy to `.env`)
 
+## Runtime and dependency maintenance
+
+Use the Node.js version pinned in `.nvmrc`; CI and all Docker stages use that
+version, and `package.json` declares the supported Node 24 range. Keep these
+files aligned when updating Node.
+
+Use npm 11.19.1 or newer within npm 11 (bundled with the pinned Node release).
+The package-specific `allowScripts` entry skips an unnecessary SQLite build:
+`better-sqlite3` 13 includes native binaries, but npm can mistakenly run
+`node-gyp` during a clean install ([upstream issue](https://github.com/WiseLibs/better-sqlite3/issues/1516)).
+Other dependencies' install scripts remain enabled.
+
+After changing dependencies, commit `package.json` and `package-lock.json`
+together and run:
+
+```bash
+npm ci
+npm audit --audit-level=low
+npm run lint
+npm run build
+npm test
+```
+
+ESLint 10 uses the official `@eslint/compat` wrapper to adapt the older plugins
+included by Next.js. TypeScript remains on version 6 because the current
+lint/build tooling uses its JavaScript compiler API; revisit TypeScript 7 when
+that tooling supports its new API.
+
+CI audits npm dependencies on pull requests, pushes to `main`, and weekly.
+Dependabot checks npm packages, GitHub Actions, and container images weekly.
+Enable **Dependabot alerts** and **Dependabot security updates** under the
+repository's **Settings → Advanced Security**; these settings are separate from
+`.github/dependabot.yml` and were disabled when this update was prepared.
+See GitHub's [security update settings](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configure-security-updates).
+The npm audit includes development dependencies, which the current Docker image
+also contains. It checks known npm advisories; container/host OS packages and
+application security require separate review.
+
+To deploy an accepted update, pull the updated repository on the server, then
+refresh the images and rebuild the application:
+
+```bash
+docker compose pull cron nginx
+docker compose build --pull app
+docker compose up -d
+```
+
 ## Deploy on a fresh server (high level)
 1. Put the repo on the server.
 2. Create `.env` (same folder as `docker-compose.yml`) based on `.env.example` and set:
