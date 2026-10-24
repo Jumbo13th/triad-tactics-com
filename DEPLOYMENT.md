@@ -83,6 +83,9 @@ The installer prints status and a dry run before cleanup. The timer creates a
 verified backup daily at 04:15 UTC, with up to 15 minutes of randomized delay.
 Each deployment also takes a backup before changing production containers. A
 single host lock prevents deployments and backup jobs from overlapping.
+The maintenance service keeps Docker CLI state in the private
+`/var/lib/triad-maintenance/docker` directory, allowing build-cache cleanup while
+`ProtectHome=true` keeps the root home directory inaccessible to the service.
 
 The backup uses SQLite's online backup API in the running app, converts the
 snapshot to a standalone database, runs `PRAGMA integrity_check`, and records its
