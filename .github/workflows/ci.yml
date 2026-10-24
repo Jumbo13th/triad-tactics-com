@@ -151,6 +151,16 @@ jobs:
         nginx_image=$(jq -r '.services.nginx.image' "$RUNNER_TEMP/compose.json")
         cron_image=$(jq -r '.services.cron.image' "$RUNNER_TEMP/compose.json")
         docker pull "$nginx_image"
+        # Test our exact TLS/proxy config with an ephemeral, self-signed CI certificate.
+        certificate_dir="$RUNNER_TEMP/letsencrypt/live/triad-tactics.com"
+        mkdir -p "$certificate_dir"
+        openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+          -keyout "$certificate_dir/privkey.pem" -out "$certificate_dir/fullchain.pem" \
+          -subj '/CN=triad-tactics.com' >/dev/null 2>&1
+        docker run --rm --network none --add-host app:127.0.0.1 \
+          --mount "type=bind,source=$GITHUB_WORKSPACE/nginx/default.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
+          --mount "type=bind,source=$RUNNER_TEMP/letsencrypt,target=/etc/letsencrypt,readonly" \
+          "$nginx_image" nginx -t
         # Cron installs curl at startup. Include those packages in its scan too.
         docker build --pull --tag triad-cron-scan - <<DOCKERFILE
         FROM $cron_image

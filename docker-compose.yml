@@ -54,7 +54,8 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:1.30.6-alpine@sha256:47928bf67eb62a1863cb08d9ecb52d3e704304ba614eaee17884204677702951
+    # The slim image contains the proxy/TLS modules we use without optional modules.
+    image: nginx:1.30.6-alpine-slim@sha256:dede8895648b461178c3bc604f7eed4423efe5220b2c4d839f5eb3d34ac3f8f7
     depends_on:
       - app
     ports:
