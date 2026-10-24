@@ -58,3 +58,7 @@ scripts/seed-units.js
 # slotting templates
 /slotting-templates/
 
+
+# Local deployment backups and certificates
+/backups/
+/certs/
