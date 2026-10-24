@@ -2,7 +2,7 @@
 
 # Multi-stage build for Next.js + better-sqlite3
 
-FROM node:24.22.1-bookworm-slim AS deps
+FROM node:26.12.1-bookworm-slim AS deps
 WORKDIR /app
 
 # better-sqlite3 needs build tooling
@@ -13,7 +13,7 @@ RUN apt-get update \
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-FROM node:24.22.1-bookworm-slim AS builder
+FROM node:26.12.1-bookworm-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,7 +22,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:24.22.1-bookworm-slim AS runner
+FROM node:26.12.1-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
