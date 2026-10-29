@@ -25,9 +25,13 @@ Manual operations: **Actions → Production → Run workflow** on `main`.
 | Command | Use |
 | --- | --- |
 | `deploy` | Deploy a commit (defaults to the head of `main`) |
-| `rollback` | Switch back to an earlier commit; the VM keeps the last three releases |
+| `rollback` | Switch back to an earlier commit (its SHA is required); the VM keeps the last three releases |
 | `reboot-accessories` | Apply accessory config without redeploying the app |
 | `setup` | First run on a new VM: boots kamal-proxy and every accessory, then deploys |
+
+Before a rollback, set `AUTO_DEPLOY` to `false`: otherwise the next merge to `main` deploys the
+bad commit again, and a queued automatic deploy can replace a pending manual run. Fix or revert
+on `main`, then turn it back on.
 
 Migrations run when the app starts, and old and new containers share the database for a few
 seconds during each switch. Keep migrations additive: add tables and columns, and drop old
@@ -47,6 +51,7 @@ GitHub environment **production** (deployments restricted to `main`):
 | `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`, `BREVO_REPLY_TO_EMAIL` | Secrets | Email |
 | `LITESTREAM_SECRET_ACCESS_KEY` | Secret | Bunny storage zone password (write) |
 | `ALERT_DISCORD_WEBHOOK_URL` | Secret | Discord channel webhook for alerts |
+| `LITESTREAM_HEARTBEAT_URL` | Secret, optional | Heartbeat monitor URL Litestream pings while replication succeeds |
 
 Repository level: variable `AUTO_DEPLOY` (`true` to deploy automatically) and secret
 `LITESTREAM_READONLY_PASSWORD` (the zone's read-only password, for the restore check).
@@ -111,6 +116,9 @@ Then run **Production → deploy**: it starts the app and reboots Litestream on 
 
 - **Uptime:** an external monitor checks `https://triad-tactics.com/api/health`. It is the
   alert that still works when the VM itself is down.
+- **Backup freshness:** with `LITESTREAM_HEARTBEAT_URL` set, a heartbeat monitor alerts when
+  Litestream stops confirming successful replication. The restore check proves a backup
+  restores, not that it is recent.
 - **Alerts:** vmalert rules in `config/observability/alerts.yml` (disk, memory, backup
   errors, 5xx rate, silent scrape targets) post to Discord through Alertmanager.
 - **Dashboards and logs** listen on the VM's loopback only. Open a tunnel:
@@ -125,8 +133,10 @@ Then run **Production → deploy**: it starts the app and reboots Litestream on 
 
 Renovate opens updates on Mondays between 01:00 and 07:00 UTC once a release is three days
 old, and merges minor, patch and digest updates itself in the same window on weekdays once CI
-passes — which deploys them. GitHub Actions and Kamal updates always wait for a review, as do major
-versions, which start from the Dependency Dashboard. Renovate opens security fixes
+passes — which deploys them. A person reviews everything else: GitHub Actions, Kamal, Trivy and
+the accessory images (pinned by digest; they hold the Docker socket, the host filesystem, the
+database or the Bunny key), the weekly lock-file refresh (release age cannot apply to it), and
+major versions, which start from the Dependency Dashboard. Renovate opens security fixes
 immediately; it reads Dependabot alerts, so keep those enabled.
 
 ## Canary email check

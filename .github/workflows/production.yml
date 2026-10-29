@@ -61,11 +61,18 @@ jobs:
       BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
       BREVO_REPLY_TO_EMAIL: ${{ secrets.BREVO_REPLY_TO_EMAIL }}
       LITESTREAM_SECRET_ACCESS_KEY: ${{ secrets.LITESTREAM_SECRET_ACCESS_KEY }}
+      LITESTREAM_HEARTBEAT_URL: ${{ secrets.LITESTREAM_HEARTBEAT_URL }}
       ALERT_DISCORD_WEBHOOK_URL: ${{ secrets.ALERT_DISCORD_WEBHOOK_URL }}
 
     steps:
     - name: Check the requested version
+      env:
+        REQUESTED: ${{ inputs.version }}
       run: |
+        # Defaulting to main would "roll back" to the release already running.
+        if [[ "$COMMAND" == rollback && -z "$REQUESTED" ]]; then
+          echo "rollback needs the commit SHA to return to" >&2; exit 1
+        fi
         [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]] || { echo "version must be a full commit SHA" >&2; exit 1; }
 
     # Config must come from the same commit as the image, including on rollback.

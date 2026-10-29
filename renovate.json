@@ -13,7 +13,8 @@
   "prConcurrentLimit": 5,
   "prHourlyLimit": 2,
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": false
   },
   "vulnerabilityAlerts": {
     "schedule": [],
@@ -25,13 +26,14 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^config/deploy\\.yml$/"],
-      "matchStrings": ["image:\\s+(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)"],
+      "matchStrings": ["image:\\s+(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)@(?<currentDigest>sha256:[a-f0-9]{64})"],
+      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}@{{{newDigest}}}",
       "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest", "lockFileMaintenance"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
       "automerge": true
     },
     {
@@ -40,14 +42,10 @@
       "automerge": false
     },
     {
-      "description": "Runs beside the production SSH key; always reviewed.",
-      "matchDepNames": ["kamal"],
-      "automerge": false
-    },
-    {
-      "description": "The regex manager cannot write digests.",
+      "description": "Accessory images (Docker socket, host root, database, Bunny key) and Trivy; always reviewed.",
       "matchManagers": ["custom.regex"],
-      "pinDigests": false
+      "automerge": false,
+      "groupName": "Deploy tooling images"
     },
     {
       "matchUpdateTypes": ["major"],
