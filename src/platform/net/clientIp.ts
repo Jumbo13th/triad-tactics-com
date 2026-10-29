@@ -4,21 +4,15 @@ import { NextRequest } from 'next/server';
  * Resolve the client IP for rate-limiting / logging in a way that cannot be
  * spoofed by the client.
  *
- * The app runs behind nginx (see nginx/default.conf), which sets:
- *   - X-Real-IP: the real TCP peer ($remote_addr) — overwritten on every hop,
- *     so a client cannot forge it.
- *   - X-Forwarded-For: "$proxy_add_x_forwarded_for", which APPENDS the peer to
- *     any client-supplied value. The right-most entry is therefore the address
- *     nginx observed; the left-most is attacker-controlled.
+ * kamal-proxy drops client-supplied X-Forwarded-* headers and sets
+ * X-Forwarded-For to the TCP peer it observed; if forwarding is ever enabled it
+ * appends that peer instead, so the right-most entry is always the real client.
  *
- * A previous implementation trusted the LEFT-most X-Forwarded-For entry, letting
- * a client rotate that header to mint unlimited rate-limit buckets. We prefer
- * X-Real-IP and fall back to the right-most X-Forwarded-For entry.
+ * X-Real-IP is deliberately ignored: the proxy passes it through untouched, so
+ * trusting it would let a client rotate it to mint unlimited rate-limit buckets.
+ * The left-most X-Forwarded-For entry is attacker-controlled for the same reason.
  */
 export function getClientIp(request: NextRequest): string {
-	const realIp = request.headers.get('x-real-ip')?.trim();
-	if (realIp) return realIp;
-
 	const forwardedFor = request.headers.get('x-forwarded-for');
 	if (forwardedFor) {
 		const parts = forwardedFor

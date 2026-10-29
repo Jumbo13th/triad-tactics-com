@@ -1,0 +1,33 @@
+data_dir: /var/lib/vector
+
+sources:
+  containers:
+    type: docker_logs
+    # Its own output would loop back through itself.
+    exclude_containers:
+      - triad-tactics-vector
+
+transforms:
+  redacted:
+    type: remap
+    inputs:
+      - containers
+    # kamal-proxy logs raw query strings, and the game-server API takes its secret there.
+    source: |
+      .message = redact(string!(.message), filters: [r'secret=[^&"\s]+'])
+
+sinks:
+  victorialogs:
+    type: elasticsearch
+    inputs:
+      - redacted
+    endpoints:
+      - http://triad-tactics-victorialogs:9428/insert/elasticsearch/
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: container_name

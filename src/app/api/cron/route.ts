@@ -14,7 +14,7 @@ function isAuthorized(request: NextRequest): boolean {
 	if (!secret) return false;
 
 	// Only accept the secret via a request header. A query-string secret would be
-	// captured in nginx/access logs, browser history and monitoring traces.
+	// captured in proxy access logs, browser history and monitoring traces.
 	const header = request.headers.get('authorization') || request.headers.get('x-cron-secret');
 	const bearer = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : header;
 	const token = (bearer || '').trim();

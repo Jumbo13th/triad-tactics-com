@@ -1,143 +1,133 @@
-# Deployment (Docker + Nginx TLS)
+# Deployment
 
-## Publication readiness (what to verify)
-- Set strong secrets:
-  - `ADMIN_STEAM_IDS` must be set (comma/space separated SteamID64 allowlist)
-  - `STEAM_WEB_API_KEY` must be set (Steam checks + submit depend on it)
-  - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` must be set (stable Server Actions across deploys/instances)
-- Required email notifications (Brevo):
-  - `BREVO_API_KEY` (Brevo API key)
-  - `BREVO_SENDER_EMAIL` (verified sender in Brevo)
-  - `BREVO_SENDER_NAME` (sender name)
-  - `BREVO_REPLY_TO_EMAIL` (optional reply-to address)
-- Outbox cron trigger:
-  - `OUTBOX_CRON_SECRET` (shared secret used by cron container to call `/api/cron/outbox`)
-  - `CRON_INTERVAL_SECONDS` (optional, defaults to 60)
-- Production behavior:
-  - `DISABLE_RATE_LIMITS=false`
-- TLS:
-  - Let's Encrypt via certbot on the host (webroot mode). See "TLS (Let's Encrypt)" below.
-- Data:
-  - SQLite DB is stored in a Docker volume (`db`). Back it up if you care about submissions.
+The site runs on one VM as Docker containers managed by [Kamal](https://kamal-deploy.org):
 
-## Files already in this repo
-- `Dockerfile` (builds and runs Next.js)
-- `docker-compose.yml` (app + nginx + cron)
-- `nginx/default.conf` (TLS termination + proxy headers for Steam)
-- `.env.example` (copy to `.env`)
+- **web** — the Next.js app behind kamal-proxy. The proxy terminates TLS (Let's Encrypt,
+  renewed automatically) and switches traffic to a new container only after its
+  `/api/health` passes, so a broken release never receives requests.
+- **cron** — the same image running `scripts/cron.mjs`, which calls `/api/cron` every minute.
+- **Accessories** — Litestream (database backup to Bunny Storage), VictoriaMetrics,
+  node-exporter, vmalert and Alertmanager (metrics and Discord alerts), VictoriaLogs and
+  Vector (logs).
 
-## Runtime and dependency maintenance
+Configuration lives in `config/deploy.yml`, `config/litestream.yml` and
+`config/observability/`. `.kamal/secrets` only names the secrets; their values are in GitHub.
 
-Use the Node.js version pinned in `.nvmrc`; CI and all Docker stages use that
-version, and `package.json` declares the supported Node 24 range. Keep these
-files aligned when updating Node.
+## Deploying
 
-Use npm 11.19.1 or newer within npm 11 (bundled with the pinned Node release).
-The package-specific `allowScripts` entry skips an unnecessary SQLite build:
-`better-sqlite3` 13 includes native binaries, but npm can mistakenly run
-`node-gyp` during a clean install ([upstream issue](https://github.com/WiseLibs/better-sqlite3/issues/1516)).
-Other dependencies' install scripts remain enabled.
+Every push to `main` that passes CI is built once, pushed to GHCR as
+`ghcr.io/jumbo13th/triad-tactics-com:<commit>`, and deployed by the **Production** workflow:
+`kamal deploy`, then a reboot of the accessories so their config matches the same commit.
+Set the repository variable `AUTO_DEPLOY` to anything other than `true` to pause this.
 
-After changing dependencies, commit `package.json` and `package-lock.json`
-together and run:
+Manual operations: **Actions → Production → Run workflow** on `main`.
 
-```bash
-npm ci
-npm audit --audit-level=low
-npm run lint
-npm run build
-npm test
-```
+| Command | Use |
+| --- | --- |
+| `deploy` | Deploy a commit (defaults to the head of `main`) |
+| `rollback` | Switch back to an earlier commit; the VM keeps the last three releases |
+| `reboot-accessories` | Apply accessory config without redeploying the app |
+| `setup` | First run on a new VM: boots kamal-proxy and every accessory, then deploys |
 
-ESLint 10 uses the official `@eslint/compat` wrapper to adapt the older plugins
-included by Next.js. TypeScript remains on version 6 because the current
-lint/build tooling uses its JavaScript compiler API; revisit TypeScript 7 when
-that tooling supports its new API.
+Migrations run when the app starts, and old and new containers share the database for a few
+seconds during each switch. Keep migrations additive: add tables and columns, and drop old
+ones only in a later release.
 
-CI audits npm dependencies on pull requests, pushes to `main`, and weekly.
-Dependabot checks npm packages, GitHub Actions, and container images weekly.
-Enable **Dependabot alerts** and **Dependabot security updates** under the
-repository's **Settings → Advanced Security**; these settings are separate from
-`.github/dependabot.yml` and were disabled when this update was prepared.
-See GitHub's [security update settings](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configure-security-updates).
-The npm audit includes development dependencies, which the current Docker image
-also contains. It checks known npm advisories; container/host OS packages and
-application security require separate review.
+## Secrets and settings
 
-To deploy an accepted update, pull the updated repository on the server, then
-refresh the images and rebuild the application:
+GitHub environment **production** (deployments restricted to `main`):
 
-```bash
-docker compose pull cron nginx
-docker compose build --pull app
-docker compose up -d
-```
+| Name | Type | Purpose |
+| --- | --- | --- |
+| `DEPLOY_HOST` | Variable | VM hostname or IP |
+| `DEPLOY_SSH_KEY` | Secret | Private key of the VM's `deploy` user |
+| `DEPLOY_KNOWN_HOSTS` | Secret | The VM's host key line (`ssh-keyscan -t ed25519 <host>`, verified out of band) |
+| `STEAM_WEB_API_KEY`, `ADMIN_STEAM_IDS`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, `OUTBOX_CRON_SECRET`, `GAMESERVER_API_SECRET` | Secrets | App settings (`scripts/checkRequiredEnv.mjs` lists the required ones) |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_REDIRECT_URI`, `DISCORD_GUILD_ID`, `DISCORD_CONFIRMED_ROLE_ID`, `DISCORD_TOKEN_ENCRYPTION_KEY` | Secrets | Discord integration |
+| `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`, `BREVO_REPLY_TO_EMAIL` | Secrets | Email |
+| `LITESTREAM_SECRET_ACCESS_KEY` | Secret | Bunny storage zone password (write) |
+| `ALERT_DISCORD_WEBHOOK_URL` | Secret | Discord channel webhook for alerts |
 
-## Deploy on a fresh server (high level)
-1. Put the repo on the server.
-2. Create `.env` (same folder as `docker-compose.yml`) based on `.env.example` and set:
-  - `STEAM_WEB_API_KEY=...`
-  - `ADMIN_STEAM_IDS=...`
-  - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=...`
-  - `OUTBOX_CRON_SECRET=...`
-3. Set up TLS (see "TLS (Let's Encrypt)" below).
-4. Start:
-   - `docker compose up -d --build`
+Repository level: variable `AUTO_DEPLOY` (`true` to deploy automatically) and secret
+`LITESTREAM_READONLY_PASSWORD` (the zone's read-only password, for the restore check).
 
-## TLS (Let's Encrypt)
+`gh secret set --env production -f production.env` imports a whole dotenv file at once.
+Keep `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` stable across deploys, or open pages fail with
+"Failed to find Server Action".
 
-Certificates are issued and renewed by **certbot on the host** (not in Docker).
-Nginx (in Docker) serves the ACME challenges from `/var/www/certbot` and reads
-certs from `/etc/letsencrypt` (both host-mounted read-only).
+## Backups
 
-### First-time setup
+Litestream streams every database change to the Bunny storage zone `triad-tactics-com`
+(Frankfurt, S3 API, created with S3 enabled) under `litestream/`. It takes a snapshot daily,
+so the database can be restored to any point in the last 30 days. The zone holds plain SQLite
+pages: Litestream does not encrypt. Discord tokens are encrypted by the app with a key that
+is not in the backup.
+
+The **Backup restore check** workflow restores the latest backup every Monday with the
+read-only password and runs `PRAGMA integrity_check`.
+
+### Restore on the running VM
 
 ```bash
-# 1. Install certbot
-sudo apt update && sudo apt install -y certbot
-
-# 2. Create the ACME challenge webroot
-sudo mkdir -p /var/www/certbot
-
-# 3. Issue the certificate.
-#    If nginx is NOT running yet (fresh server), use standalone mode:
-sudo certbot certonly --standalone -d triad-tactics.com \
-  --agree-tos -m <your-email> --no-eff-email
-
-#    If nginx IS already running with this repo's config, use webroot mode:
-# sudo certbot certonly --webroot -w /var/www/certbot -d triad-tactics.com \
-#   --agree-tos -m <your-email> --no-eff-email
-
-# 4. Start/restart nginx
-docker compose up -d --force-recreate nginx
-
-# 5. If step 3 used standalone mode, switch renewals to webroot
-#    (standalone renewal would fail because nginx occupies port 80):
-sudo certbot certonly --webroot -w /var/www/certbot -d triad-tactics.com --force-renewal
-
-# 6. Verify renewal works end-to-end
-sudo certbot renew --dry-run
+read -rs LITESTREAM_SECRET_ACCESS_KEY && export LITESTREAM_SECRET_ACCESS_KEY  # read-only password
+docker stop triad-tactics-litestream
+# Add -timestamp 2026-10-30T12:00:00Z before the last argument for an earlier point in time.
+docker run --rm --user 1001:1001 --volumes-from triad-tactics-litestream \
+  -e LITESTREAM_SECRET_ACCESS_KEY litestream/litestream:0.5.17 \
+  restore -o /data/restored.db /data/applications.db
+docker stop $(docker ps -q --filter label=service=triad-tactics --filter label=role=web) \
+  $(docker ps -q --filter label=service=triad-tactics --filter label=role=cron)
+# Keep the replaced database (and Litestream's position for it) instead of deleting it.
+docker run --rm --user 1001:1001 -v triad-tactics_db:/data alpine sh -c '
+  mkdir -p /data/pre-restore &&
+  mv /data/applications.db* /data/.applications.db-litestream /data/pre-restore/ 2>/dev/null
+  mv /data/restored.db /data/applications.db'
 ```
 
-### Auto-renewal
+Then run **Production → deploy**: it starts the app and reboots Litestream on the restored file.
 
-Certbot installs a systemd timer (`systemctl list-timers | grep certbot`) that
-renews automatically. Nginx must reload to pick up a renewed cert — add a deploy
-hook (replace `/opt/triad-tactics-com` with the repo path on the server):
+### New VM
 
-```bash
-sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh >/dev/null <<'EOF'
-#!/bin/sh
-cd /opt/triad-tactics-com && docker compose exec -T nginx nginx -s reload
-EOF
-sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
-```
+1. Install Docker. Create a `deploy` user in the `docker` group whose `authorized_keys` holds
+   the public half of `DEPLOY_SSH_KEY`. Disable root and password SSH logins, allow only
+   22, 80 and 443 inbound, and enable `unattended-upgrades`.
+2. Cap container logs in `/etc/docker/daemon.json`, then restart Docker:
+   ```json
+   { "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
+   ```
+3. Point the DNS record at the VM; update `DEPLOY_HOST` and `DEPLOY_KNOWN_HOSTS`.
+4. Restore the database into a new volume (copy `config/litestream.yml` to the VM first):
+   ```bash
+   read -rs LITESTREAM_SECRET_ACCESS_KEY && export LITESTREAM_SECRET_ACCESS_KEY
+   docker volume create triad-tactics_db
+   docker run --rm -v triad-tactics_db:/data alpine chown 1001:1001 /data
+   docker run --rm --user 1001:1001 -e LITESTREAM_SECRET_ACCESS_KEY \
+     -v triad-tactics_db:/data -v "$HOME/litestream.yml:/etc/litestream.yml:ro" \
+     litestream/litestream:0.5.17 restore /data/applications.db
+   ```
+5. Run **Production → setup**.
 
-## Notes
-- Nginx listens on `80` and `443`; the Next.js app runs internally on `3000`.
-- Steam sign-in uses `x-forwarded-host`/`x-forwarded-proto` from Nginx; keep the proxy config as-is.
-- Admin is now protected by Steam login + allowlisted SteamID64s. Configure `ADMIN_STEAM_IDS` and visit `/<locale>/admin`.
-- Outbox processing runs via the `/api/cron/outbox` endpoint, triggered by the `cron` container in `docker-compose.yml`.
+## Monitoring
+
+- **Uptime:** an external monitor checks `https://triad-tactics.com/api/health`. It is the
+  alert that still works when the VM itself is down.
+- **Alerts:** vmalert rules in `config/observability/alerts.yml` (disk, memory, backup
+  errors, 5xx rate, silent scrape targets) post to Discord through Alertmanager.
+- **Dashboards and logs** listen on the VM's loopback only. Open a tunnel:
+  ```bash
+  ssh -N -L 8428:127.0.0.1:8428 -L 9428:127.0.0.1:9428 <user>@<host>
+  ```
+  Metrics dashboard "Website": `http://127.0.0.1:8428/vmui/#/dashboards`; alert state:
+  `http://127.0.0.1:8428/vmalert/`; logs: `http://127.0.0.1:9428/select/vmui/`. Query strings
+  containing `secret=` are redacted before logs are stored.
+
+## Dependency updates
+
+Renovate opens updates on Mondays between 01:00 and 07:00 UTC once a release is three days
+old, and merges minor, patch and digest updates itself in the same window on weekdays once CI
+passes — which deploys them. GitHub Actions and Kamal updates always wait for a review, as do major
+versions, which start from the Dependency Dashboard. Renovate opens security fixes
+immediately; it reads Dependabot alerts, so keep those enabled.
 
 ## Canary email check
 
@@ -160,32 +150,4 @@ If you keep secrets in `.env.local`, run:
 
 ```bash
 DOTENV_CONFIG_PATH=.env.local npm run canary:email
-```
-
-### Server Actions key stability
-
-If you see Next.js errors like "Failed to find Server Action" in production (especially while self-hosting across multiple servers/instances), set `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` to a persistent value shared by all instances.
-
-If you deploy on Vercel, consider enabling Skew Protection so assets/functions from the previous deployment remain available during rollout.
-
-## Firewall (Ubuntu)
-
-Expose only what you need publicly:
-- `80/tcp` and `443/tcp` (Nginx)
-- `22/tcp` (SSH)
-
-Do **not** publish the Next.js app port (`3000`) to the internet. In `docker-compose.yml`, keep it internal (no `ports: "3000:3000"` on the `app` service).
-
-### UFW example
-
-```bash
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-sudo ufw enable
-sudo ufw status verbose
 ```

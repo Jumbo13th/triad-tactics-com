@@ -181,23 +181,25 @@ See `.env.example` for complete list. Key variables:
 ## Steam Integration
 
 - Uses Steam OpenID for authentication
-- `x-forwarded-proto` and `x-forwarded-host` headers required (set by nginx in production)
+- `x-forwarded-proto` and `x-forwarded-host` headers required (set by kamal-proxy in production)
 - Steam API calls for ownership verification and persona lookup
 
 ## Email System
 
 - **Provider**: Brevo (transactional email)
 - **Pattern**: Outbox pattern for async email processing
-- **Cron**: `/api/cron/outbox` endpoint triggered by cron container
+- **Cron**: `/api/cron` endpoint triggered by the Kamal `cron` role (`scripts/cron.mjs`)
 - **Test**: Use `npm run canary:email` to verify email templates
 
 ## Deployment
 
-- **Container**: Docker + nginx (TLS termination)
-- **Files**: `Dockerfile`, `docker-compose.yml`, `nginx/default.conf`
-- **Start**: `docker compose up -d --build`
-- **TLS**: Let's Encrypt via certbot on the host (webroot mode), see DEPLOYMENT.md
-- **Ports**: nginx on 80/443, Next.js internal on 3000
+- **Tooling**: Kamal; every green push to `main` deploys through `.github/workflows/production.yml`
+- **Files**: `Dockerfile`, `config/deploy.yml`, `config/litestream.yml`, `config/observability/`
+- **TLS**: kamal-proxy with Let's Encrypt; security headers come from `next.config.ts`
+- **Health**: `/api/health` gates every deploy; keep it cheap and unguarded
+- **Client IP**: right-most `X-Forwarded-For` only (`src/platform/net/clientIp.ts`); never trust `X-Real-IP`
+- **Migrations**: additive only; old and new containers share the database during a switch
+- **Ports**: kamal-proxy on 80/443, Next.js internal on 3000
 
 See `DEPLOYMENT.md` for complete deployment instructions.
 

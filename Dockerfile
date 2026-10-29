@@ -2,48 +2,51 @@
 
 # Multi-stage build for Next.js + better-sqlite3
 
-FROM node:24.22.1-bookworm-slim AS deps
+FROM node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea AS base
 WORKDIR /app
 
-# better-sqlite3 needs build tooling
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
-  && rm -rf /var/lib/apt/lists/*
-
+FROM base AS deps
+# No install scripts: hijacked npm releases run through them. better-sqlite3 13 ships its binary.
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --engine-strict --ignore-scripts
 
-FROM node:24.22.1-bookworm-slim AS builder
-WORKDIR /app
+FROM deps AS production-deps
+RUN npm prune --omit=dev && npm cache clean --force
+
+FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN npm run build && rm -rf /app/.next/cache
 
-FROM node:24.22.1-bookworm-slim AS runner
-WORKDIR /app
+FROM base AS runner
+
+# Kamal refuses to boot an image that lacks its service label.
+LABEL service="triad-tactics"
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
-RUN useradd -m -u 1001 nodejs
+# Pick up Debian fixes between base-image rebuilds; npm is not needed at runtime.
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+  && useradd -m -u 1001 nodejs \
+  && install -d -o nodejs -g nodejs /app/database
 
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/messages ./messages
-COPY --from=builder /app/content ./content
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-
-# Persist SQLite DB here (mount a volume in docker-compose)
-RUN mkdir -p /app/database && chown -R nodejs:nodejs /app
+COPY --from=production-deps --chown=nodejs:nodejs /app/package.json /app/package-lock.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/next.config.ts ./next.config.ts
+COPY --from=builder --chown=nodejs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nodejs:nodejs /app/messages ./messages
+COPY --from=builder --chown=nodejs:nodejs /app/content ./content
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+COPY --from=builder --chown=nodejs:nodejs /app/.next ./.next
+COPY --from=production-deps --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 USER nodejs
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "node scripts/checkRequiredEnv.mjs && exec node node_modules/next/dist/bin/next start"]

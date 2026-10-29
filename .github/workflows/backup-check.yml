@@ -1,0 +1,44 @@
+name: Backup restore check
+
+on:
+  schedule:
+  - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    if: github.repository == 'Jumbo13th/triad-tactics-com' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+
+    - name: Restore the latest backup
+      env:
+        # Read-only: this workflow must never be able to alter the backup.
+        LITESTREAM_SECRET_ACCESS_KEY: ${{ secrets.LITESTREAM_READONLY_PASSWORD }}
+      run: |
+        image=$(yq -e '.accessories.litestream.image' config/deploy.yml)
+        docker run --rm -e LITESTREAM_SECRET_ACCESS_KEY \
+          -v "$GITHUB_WORKSPACE/config/litestream.yml:/etc/litestream.yml:ro" \
+          -v "$RUNNER_TEMP:/restore" \
+          "$image" restore -o /restore/applications.db /data/applications.db
+
+    # Workflow logs are public: print counts only, never row contents.
+    - name: Check the restored database
+      run: |
+        python3 - "$RUNNER_TEMP/applications.db" <<'PY'
+        import sqlite3, sys
+        db = sqlite3.connect(f'file:{sys.argv[1]}?mode=ro', uri=True)
+        assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',), 'integrity check failed'
+        migrations = db.execute('SELECT COUNT(*) FROM schema_migrations').fetchone()[0]
+        assert migrations > 0, 'restored database has no migrations'
+        print(f'Restored database is intact ({migrations} migrations applied).')
+        PY

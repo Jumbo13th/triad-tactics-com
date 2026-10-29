@@ -1,0 +1,83 @@
+{
+  "title": "Website",
+  "rows": [
+    {
+      "title": "Traffic",
+      "panels": [
+        {
+          "title": "Requests per second",
+          "width": 6,
+          "expr": [
+            "sum(rate(kamal_proxy_http_requests_total[5m]))",
+            "sum(rate(kamal_proxy_http_requests_total{status=~\"4..\"}[5m]))",
+            "sum(rate(kamal_proxy_http_requests_total{status=~\"5..\"}[5m]))"
+          ],
+          "alias": ["All", "4xx", "5xx"]
+        },
+        {
+          "title": "Response time",
+          "width": 6,
+          "expr": [
+            "histogram_quantile(0.5, sum(rate(kamal_proxy_http_request_duration_seconds_bucket[5m])) by (le))",
+            "histogram_quantile(0.95, sum(rate(kamal_proxy_http_request_duration_seconds_bucket[5m])) by (le))"
+          ],
+          "alias": ["Median", "95th percentile"],
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "title": "Host",
+      "panels": [
+        {
+          "title": "CPU usage",
+          "width": 4,
+          "expr": [
+            "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+          ],
+          "unit": "%"
+        },
+        {
+          "title": "RAM usage",
+          "width": 4,
+          "expr": [
+            "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100"
+          ],
+          "unit": "%"
+        },
+        {
+          "title": "Disk usage",
+          "width": 4,
+          "expr": [
+            "(1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100"
+          ],
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "title": "Backups",
+      "panels": [
+        {
+          "title": "Replication errors (15 min)",
+          "width": 6,
+          "expr": [
+            "increase(litestream_sync_error_count[15m])",
+            "sum(increase(litestream_replica_operation_errors_total[15m]))"
+          ],
+          "alias": ["Sync", "Bunny operations"]
+        },
+        {
+          "title": "Database size",
+          "width": 6,
+          "expr": [
+            "litestream_db_size / 1048576",
+            "litestream_wal_size / 1048576"
+          ],
+          "alias": ["Database", "WAL"],
+          "unit": "MB"
+        }
+      ]
+    }
+  ]
+}
