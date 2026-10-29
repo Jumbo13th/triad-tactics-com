@@ -93,7 +93,6 @@ accessories:
     env:
       secret:
         - LITESTREAM_SECRET_ACCESS_KEY
-        - LITESTREAM_HEARTBEAT_URL
     options:
       # The app's uid: WAL/SHM files Litestream creates must stay writable for the app.
       user: "1001:1001"

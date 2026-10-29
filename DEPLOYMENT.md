@@ -51,7 +51,6 @@ GitHub environment **production** (deployments restricted to `main`):
 | `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`, `BREVO_REPLY_TO_EMAIL` | Secrets | Email |
 | `LITESTREAM_SECRET_ACCESS_KEY` | Secret | Bunny storage zone password (write) |
 | `ALERT_DISCORD_WEBHOOK_URL` | Secret | Discord channel webhook for alerts |
-| `LITESTREAM_HEARTBEAT_URL` | Secret, optional | Heartbeat monitor URL Litestream pings while replication succeeds |
 
 Repository level: variable `AUTO_DEPLOY` (`true` to deploy automatically) and secret
 `LITESTREAM_READONLY_PASSWORD` (the zone's read-only password, for the restore check).
@@ -116,11 +115,12 @@ Then run **Production → deploy**: it starts the app and reboots Litestream on 
 
 - **Uptime:** an external monitor checks `https://triad-tactics.com/api/health`. It is the
   alert that still works when the VM itself is down.
-- **Backup freshness:** with `LITESTREAM_HEARTBEAT_URL` set, a heartbeat monitor alerts when
-  Litestream stops confirming successful replication. The restore check proves a backup
-  restores, not that it is recent.
+- **Backup freshness:** the `BackupStale` alert fires when the database changed but nothing
+  reached Bunny for an hour, or nothing was uploaded for 26 hours (the daily snapshot always
+  uploads). The restore check proves a backup restores, not that it is recent.
 - **Alerts:** vmalert rules in `config/observability/alerts.yml` (disk, memory, backup
-  errors, 5xx rate, silent scrape targets) post to Discord through Alertmanager.
+  errors and staleness, 5xx rate, silent scrape targets) post to Discord through Alertmanager.
+  If the monitoring containers themselves stop, nothing alerts; the dashboards show it.
 - **Dashboards and logs** listen on the VM's loopback only. Open a tunnel:
   ```bash
   ssh -N -L 8428:127.0.0.1:8428 -L 9428:127.0.0.1:9428 <user>@<host>

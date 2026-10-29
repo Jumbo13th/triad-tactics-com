@@ -1,9 +1,5 @@
 addr: ":9090"
 
-# Pinged only while replication succeeds, so an external heartbeat monitor catches a
-# backup that silently stopped. Empty disables it.
-heartbeat-url: ${LITESTREAM_HEARTBEAT_URL}
-
 snapshot:
   interval: 24h
   # Point-in-time restore reaches back this far.

@@ -26,6 +26,19 @@ groups:
         annotations:
           summary: "Litestream keeps failing to replicate the database to Bunny"
 
+      # Errors alone miss a backup that silently stops. The daily snapshot guarantees an
+      # upload every 24h; any database change should upload within seconds.
+      - alert: BackupStale
+        expr: |
+          (
+            sum(increase(litestream_total_wal_bytes[1h])) > 0
+            unless sum(increase(litestream_replica_operation_total{operation="PUT"}[1h])) > 0
+          )
+          or absent_over_time(litestream_replica_operation_total{operation="PUT"}[26h])
+        for: 30m
+        annotations:
+          summary: "The database backup in Bunny is not being updated"
+
       - alert: BackupPausedDiskFull
         expr: litestream_disk_full > 0
         annotations:
