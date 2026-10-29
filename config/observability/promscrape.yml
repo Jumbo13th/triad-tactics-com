@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ["triad-tactics-node-exporter:9100"]
+        labels:
+          instance: website
+  - job_name: proxy
+    static_configs:
+      - targets: ["kamal-proxy:9090"]
+  - job_name: litestream
+    static_configs:
+      - targets: ["triad-tactics-litestream:9090"]
+  - job_name: victorialogs
+    static_configs:
+      - targets: ["triad-tactics-victorialogs:9428"]
+  - job_name: vmalert
+    static_configs:
+      - targets: ["triad-tactics-vmalert:8880"]
+  - job_name: alertmanager
+    static_configs:
+      - targets: ["triad-tactics-alertmanager:9093"]

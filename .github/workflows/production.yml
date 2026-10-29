@@ -1,0 +1,124 @@
+name: Production
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Kamal operation
+        type: choice
+        options:
+        - deploy
+        - rollback
+        - reboot-accessories
+        - setup
+      version:
+        description: Full commit SHA for deploy or rollback (defaults to the head of main)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  packages: read
+
+# Queue instead of failing on Kamal's server lock.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  kamal:
+    if: github.repository == 'Jumbo13th/triad-tactics-com' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      COMMAND: ${{ inputs.command }}
+      VERSION: ${{ inputs.version || github.sha }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      KAMAL_REGISTRY_PASSWORD: ${{ github.token }}
+      STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
+      ADMIN_STEAM_IDS: ${{ secrets.ADMIN_STEAM_IDS }}
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+      OUTBOX_CRON_SECRET: ${{ secrets.OUTBOX_CRON_SECRET }}
+      GAMESERVER_API_SECRET: ${{ secrets.GAMESERVER_API_SECRET }}
+      DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+      DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      DISCORD_REDIRECT_URI: ${{ secrets.DISCORD_REDIRECT_URI }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      DISCORD_CONFIRMED_ROLE_ID: ${{ secrets.DISCORD_CONFIRMED_ROLE_ID }}
+      DISCORD_TOKEN_ENCRYPTION_KEY: ${{ secrets.DISCORD_TOKEN_ENCRYPTION_KEY }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
+      BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
+      BREVO_REPLY_TO_EMAIL: ${{ secrets.BREVO_REPLY_TO_EMAIL }}
+      LITESTREAM_SECRET_ACCESS_KEY: ${{ secrets.LITESTREAM_SECRET_ACCESS_KEY }}
+      ALERT_DISCORD_WEBHOOK_URL: ${{ secrets.ALERT_DISCORD_WEBHOOK_URL }}
+
+    steps:
+    - name: Check the requested version
+      env:
+        REQUESTED: ${{ inputs.version }}
+        AUTO_DEPLOY: ${{ vars.AUTO_DEPLOY }}
+      run: |
+        # Defaulting to main would "roll back" to the release already running.
+        if [[ "$COMMAND" == rollback && -z "$REQUESTED" ]]; then
+          echo "rollback needs the commit SHA to return to" >&2; exit 1
+        fi
+        # Otherwise the next merge to main redeploys the commit being rolled back.
+        if [[ "$COMMAND" == rollback && "$AUTO_DEPLOY" == true ]]; then
+          echo "set the AUTO_DEPLOY repository variable to false before rolling back" >&2; exit 1
+        fi
+        [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]] || { echo "version must be a full commit SHA" >&2; exit 1; }
+
+    # Config must come from the same commit as the image, including on rollback.
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        ref: ${{ env.VERSION }}
+        persist-credentials: false
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+      with:
+        ruby-version: '3.4'
+
+    - name: Install Kamal
+      env:
+        # renovate: datasource=rubygems depName=kamal
+        KAMAL_VERSION: 2.12.0
+      run: gem install kamal --version "$KAMAL_VERSION" --no-document
+
+    - name: Load the deploy key
+      uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Pin the server's host key
+      env:
+        KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      run: |
+        install -d -m 700 ~/.ssh
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        printf 'Host *\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
+
+    - name: Run Kamal
+      run: |
+        case "$COMMAND" in
+          deploy)
+            kamal deploy --skip-push --version "$VERSION"
+            # Deploy never touches accessories; without this their config and images drift.
+            kamal accessory reboot all ;;
+          rollback) kamal rollback "$VERSION" ;;
+          reboot-accessories) kamal accessory reboot all ;;
+          setup) kamal setup --skip-push --version "$VERSION" ;;
+          *) echo "Unknown command: $COMMAND" >&2; exit 1 ;;
+        esac

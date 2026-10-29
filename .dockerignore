@@ -26,3 +26,7 @@ database
 # Local deployment backups and certificates
 backups
 certs
+
+# Deployment config; not part of the app image
+.kamal
+config

@@ -13,18 +13,22 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a main run: it may be in the middle of a deploy.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   dependency-audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
 
     - name: Setup Node
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version-file: .nvmrc
 
@@ -34,6 +38,7 @@ jobs:
   lint-and-test:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     env:
       NODE_ENV: test
@@ -44,24 +49,22 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
 
     - name: Setup Node
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version-file: .nvmrc
         cache: npm
 
+    # Install scripts are how hijacked npm releases reach CI secrets; keep them off.
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
 
     - name: Lint (format check)
       run: npm run lint
-
-    - name: Build
-      env:
-        NODE_ENV: production
-      run: npm run build
 
     - name: Tests
       run: npm test
@@ -75,3 +78,102 @@ jobs:
         BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
         CANARY_EMAIL_TO: ${{ secrets.CANARY_EMAIL_TO }}
       run: npm run canary:email
+
+  container-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/jumbo13th/triad-tactics-com:${{ github.sha }}
+      # renovate: datasource=github-releases depName=aquasecurity/trivy
+      TRIVY_VERSION: v0.76.1
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+
+    - name: Validate monitoring config with the images Kamal will run
+      run: |
+        image() { yq -e ".accessories.$1.image" config/deploy.yml; }
+        config="$GITHUB_WORKSPACE/config/observability"
+        docker run --rm -v "$config:/cfg:ro" "$(image victoriametrics)" \
+          -promscrape.config=/cfg/promscrape.yml -dryRun
+        docker run --rm -v "$config:/cfg:ro" "$(image vmalert)" -rule=/cfg/alerts.yml -dryRun
+        docker run --rm -v "$config:/cfg:ro" "$(image vector)" validate --no-environment /cfg/vector.yaml
+        ALERT_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/0/ci \
+          erb "$config/alertmanager.yml.erb" > "$RUNNER_TEMP/alertmanager.yml"
+        docker run --rm --entrypoint amtool -v "$RUNNER_TEMP/alertmanager.yml:/alertmanager.yml:ro" \
+          "$(image alertmanager)" check-config /alertmanager.yml
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Build production image
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      with:
+        context: .
+        load: true
+        pull: true
+        tags: ${{ env.IMAGE }}
+        labels: |
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.source=https://github.com/Jumbo13th/triad-tactics-com
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Check production HTTP and SQLite without external network access
+      run: |
+        # Dummy values; --network none also prevents outbound API/email calls.
+        docker run --detach --name triad-smoke --network none \
+          --env-file .github/fixtures/smoke.env \
+          --tmpfs /app/database:rw,uid=1001,gid=1001,mode=0700 "$IMAGE"
+        test "$(docker exec triad-smoke node --version)" = "v$(cat .nvmrc)"
+        docker exec triad-smoke node scripts/smokeContainer.mjs
+
+    - name: Container logs and cleanup
+      if: always()
+      run: |
+        if docker container inspect triad-smoke >/dev/null 2>&1; then
+          docker logs --tail 150 triad-smoke
+          docker rm --force triad-smoke
+        fi
+
+    - name: Install vulnerability scanner
+      uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+      with:
+        version: ${{ env.TRIVY_VERSION }}
+        cache: true
+
+    - name: Block releases on fixable HIGH/CRITICAL vulnerabilities
+      run: |
+        trivy image --scanners vuln --pkg-types os,library --severity HIGH,CRITICAL \
+          --ignore-unfixed --exit-code 1 --timeout 10m "$IMAGE"
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Publish the tested image
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: docker push "$IMAGE"
+
+  deploy:
+    needs: [dependency-audit, lint-and-test, container-validation]
+    # Pause switch: anything but "true" in the AUTO_DEPLOY repository variable.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AUTO_DEPLOY == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/production.yml
+    with:
+      command: deploy
+      version: ${{ github.sha }}
+    secrets: inherit

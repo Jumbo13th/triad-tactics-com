@@ -1,0 +1,102 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    "helpers:pinGitHubActionDigests",
+    "customManagers:githubActionsVersions"
+  ],
+  "schedule": ["* 1-6 * * 1"],
+  "automergeSchedule": ["* 1-6 * * 1-5"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": false
+  },
+  "vulnerabilityAlerts": {
+    "schedule": [],
+    "minimumReleaseAge": null,
+    "dependencyDashboardApproval": false,
+    "prCreation": "immediate"
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^config/deploy\\.yml$/"],
+      "matchStrings": ["image:\\s+(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?"],
+      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "automerge": true
+    },
+    {
+      "description": "Runs beside the production SSH key; always reviewed.",
+      "matchManagers": ["github-actions"],
+      "automerge": false
+    },
+    {
+      "description": "Accessory images (Docker socket, host root, database, Bunny key) and Trivy; always reviewed.",
+      "matchManagers": ["custom.regex"],
+      "automerge": false,
+      "groupName": "Deploy tooling images"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm non-major"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["next", "eslint-config-next"],
+      "groupName": "Next.js"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "React"
+    },
+    {
+      "matchDatasources": ["node-version", "docker"],
+      "matchPackageNames": ["node"],
+      "groupName": "Node.js 24"
+    },
+    {
+      "matchDatasources": ["node-version"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": ">=24 <25"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["node"],
+      "allowedVersions": "/^24\\./"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": ">=24 <25",
+      "groupName": "Node.js 24"
+    },
+    {
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["npm"],
+      "allowedVersions": ">=11 <12"
+    },
+    {
+      "description": "typescript-eslint supports TypeScript below 6.1.",
+      "matchDatasources": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": ">=6 <6.1"
+    }
+  ]
+}

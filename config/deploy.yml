@@ -1,0 +1,167 @@
+service: triad-tactics
+image: jumbo13th/triad-tactics-com
+
+servers:
+  web:
+    hosts:
+      - <%= ENV.fetch("DEPLOY_HOST") %>
+    options:
+      # Kamal names app containers per version; the cron role needs a fixed target.
+      network-alias: triad-tactics-web
+    env:
+      secret:
+        - STEAM_WEB_API_KEY
+        - ADMIN_STEAM_IDS
+        - NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+        - OUTBOX_CRON_SECRET
+        - GAMESERVER_API_SECRET
+        - DISCORD_CLIENT_ID
+        - DISCORD_CLIENT_SECRET
+        - DISCORD_BOT_TOKEN
+        - DISCORD_REDIRECT_URI
+        - DISCORD_GUILD_ID
+        - DISCORD_CONFIRMED_ROLE_ID
+        - DISCORD_TOKEN_ENCRYPTION_KEY
+        - BREVO_API_KEY
+        - BREVO_SENDER_EMAIL
+        - BREVO_SENDER_NAME
+        - BREVO_REPLY_TO_EMAIL
+  cron:
+    hosts:
+      - <%= ENV.fetch("DEPLOY_HOST") %>
+    cmd: node scripts/cron.mjs
+    env:
+      secret:
+        - OUTBOX_CRON_SECRET
+
+proxy:
+  host: triad-tactics.com
+  app_port: 3000
+  ssl: true
+  response_timeout: 60
+  healthcheck:
+    path: /api/health
+    interval: 3
+    timeout: 3
+  buffering:
+    requests: true
+    responses: true
+    max_request_body: 2_000_000
+  run:
+    metrics_port: 9090
+
+registry:
+  server: ghcr.io
+  username: jumbo13th
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+
+ssh:
+  user: deploy
+  forward_agent: false
+
+retain_containers: 3
+deploy_timeout: 60
+
+logging:
+  options:
+    max-size: 10m
+    max-file: "3"
+
+volumes:
+  # Existing volume holding the live database; renaming it starts an empty one.
+  - triad-tactics_db:/app/database
+
+env:
+  clear:
+    NODE_ENV: production
+    DISABLE_RATE_LIMITS: "false"
+    RATE_LIMIT_WINDOW_SECONDS: "120"
+
+accessories:
+  litestream:
+    image: litestream/litestream:0.5.17@sha256:4b02b9859a6b6b4087d8b8944e15f7e984bd7957cba322bbeee38b0e27b9656a
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    cmd: replicate
+    files:
+      - config/litestream.yml:/etc/litestream.yml:ro
+    volumes:
+      - triad-tactics_db:/data
+    env:
+      secret:
+        - LITESTREAM_SECRET_ACCESS_KEY
+    options:
+      # The app's uid: WAL/SHM files Litestream creates must stay writable for the app.
+      user: "1001:1001"
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.155.0@sha256:f60dc268b54ecf87f6e09d740c2b732838aa9193090cc741417c9f6386a130df
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    port: "127.0.0.1:8428:8428"
+    cmd: >-
+      -storageDataPath=/storage
+      -retentionPeriod=3
+      -promscrape.config=/etc/victoriametrics/promscrape.yml
+      -selfScrapeInterval=15s
+      -vmui.customDashboardsPath=/etc/victoriametrics/dashboards
+      -vmalert.proxyURL=http://triad-tactics-vmalert:8880
+    files:
+      - config/observability/promscrape.yml:/etc/victoriametrics/promscrape.yml:ro
+      # Files only: Kamal uploads without SCP's recursive flag, so a directory entry fails.
+      - config/observability/dashboards/website.json:/etc/victoriametrics/dashboards/website.json:ro
+    volumes:
+      - triad-tactics-metrics:/storage
+
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.53.0@sha256:251121fa882af99b95ba0c230a4a2f412ea602d2698c64a96c58dc9842bb755d
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    port: "127.0.0.1:9428:9428"
+    cmd: -storageDataPath=/storage -retentionPeriod=30d -retention.maxDiskSpaceUsageBytes=3GiB
+    volumes:
+      - triad-tactics-logs:/storage
+
+  vector:
+    image: timberio/vector:0.61.0-alpine@sha256:3bb7ed5152910ed51729e256937b1d8a4bf67ff624e9d565e8e5877bffd015c7
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    cmd: --config /etc/vector/vector.yaml
+    files:
+      - config/observability/vector.yaml:/etc/vector/vector.yaml:ro
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - triad-tactics-vector:/var/lib/vector
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    cmd: --path.rootfs=/host
+    volumes:
+      - /:/host:ro,rslave
+    options:
+      pid: host
+
+  vmalert:
+    image: victoriametrics/vmalert:v1.155.0@sha256:3256cba5ddaca5974eae6141105cec4ce37871f1c213f0a5c267ec0111bc68e1
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    cmd: >-
+      -rule=/etc/vmalert/alerts.yml
+      -datasource.url=http://triad-tactics-victoriametrics:8428
+      -remoteRead.url=http://triad-tactics-victoriametrics:8428
+      -remoteWrite.url=http://triad-tactics-victoriametrics:8428
+      -notifier.url=http://triad-tactics-alertmanager:9093
+      -external.url=http://127.0.0.1:8428/vmalert
+    files:
+      - config/observability/alerts.yml:/etc/vmalert/alerts.yml:ro
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.2@sha256:39d8bb3966c694a124428a3a88fbcffd40bd069129ecd47c059f8a3f17c55f3b
+    host: <%= ENV.fetch("DEPLOY_HOST") %>
+    files:
+      - config/observability/alertmanager.yml.erb:/etc/alertmanager/alertmanager.yml:ro
+    volumes:
+      - triad-tactics-alertmanager:/alertmanager
+    env:
+      secret:
+        - ALERT_DISCORD_WEBHOOK_URL

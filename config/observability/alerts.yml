@@ -1,0 +1,54 @@
+# No site-down rule: the external uptime monitor covers it and still works when this VM is gone.
+groups:
+  - name: website
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 5m
+        annotations:
+          summary: "{{ $labels.job }} on the website VM has not answered for 5 minutes"
+
+      - alert: DiskAlmostFull
+        expr: 1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} > 0.8
+        for: 15m
+        annotations:
+          summary: "Website VM disk is {{ $value | humanizePercentage }} full"
+
+      - alert: MemoryLow
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
+        for: 15m
+        annotations:
+          summary: "Website VM has only {{ $value | humanizePercentage }} of its memory available"
+
+      - alert: BackupFailing
+        expr: increase(litestream_sync_error_count[15m]) > 0 or sum(increase(litestream_replica_operation_errors_total[15m])) > 0
+        for: 10m
+        annotations:
+          summary: "Litestream keeps failing to replicate the database to Bunny"
+
+      # Errors alone miss a backup that silently stops: changes that never reach Bunny, or a
+      # sync loop that stalls (it runs every second even when idle, so its counter never rests).
+      - alert: BackupStale
+        expr: |
+          (
+            sum(increase(litestream_total_wal_bytes[1h])) > 0
+            unless sum(increase(litestream_replica_operation_total{operation="PUT"}[1h])) > 0
+          )
+          or sum(increase(litestream_sync_count[15m])) == 0
+        for: 30m
+        annotations:
+          summary: "The database backup in Bunny is not being updated"
+
+      - alert: BackupPausedDiskFull
+        expr: litestream_disk_full > 0
+        annotations:
+          summary: "Litestream paused replication because the VM disk is full"
+
+      - alert: ServerErrors
+        expr: |
+          sum(rate(kamal_proxy_http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(kamal_proxy_http_requests_total[5m])) > 0.05
+          and sum(rate(kamal_proxy_http_requests_total[5m])) > 0.05
+        for: 10m
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of website requests fail with a 5xx status"

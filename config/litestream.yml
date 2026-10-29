@@ -1,0 +1,19 @@
+addr: ":9090"
+
+snapshot:
+  interval: 24h
+  # Point-in-time restore reaches back this far.
+  retention: 720h
+
+dbs:
+  - path: /data/applications.db
+    replica:
+      type: s3
+      # Bunny uses the storage zone name as both bucket and access key ID.
+      bucket: triad-tactics-com
+      path: litestream
+      endpoint: https://de-s3.storage.bunnycdn.com
+      region: de
+      force-path-style: true
+      access-key-id: triad-tactics-com
+      secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}

@@ -1,0 +1,12 @@
+route:
+  receiver: discord
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+
+receivers:
+  - name: discord
+    discord_configs:
+      - webhook_url: '<%= ENV.fetch("ALERT_DISCORD_WEBHOOK_URL") %>'
+        send_resolved: true
