@@ -26,8 +26,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^config/deploy\\.yml$/"],
-      "matchStrings": ["image:\\s+(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)@(?<currentDigest>sha256:[a-f0-9]{64})"],
-      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}@{{{newDigest}}}",
+      "matchStrings": ["image:\\s+(?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?"],
+      "autoReplaceStringTemplate": "image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}",
       "datasourceTemplate": "docker"
     }
   ],

@@ -17,7 +17,8 @@ Manual: **Actions → Production → Run workflow** on `main`.
 | `reboot-accessories` | Apply accessory config changes |
 | `setup` | First run on a new VM |
 
-- Pause `AUTO_DEPLOY` before a rollback, or the next merge redeploys the bad commit.
+- `rollback` refuses to run until `AUTO_DEPLOY` is `false`; otherwise the next merge would
+  redeploy the bad commit.
 - Keep migrations additive: old and new containers share the database during a deploy.
 
 ## Secrets

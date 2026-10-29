@@ -67,10 +67,15 @@ jobs:
     - name: Check the requested version
       env:
         REQUESTED: ${{ inputs.version }}
+        AUTO_DEPLOY: ${{ vars.AUTO_DEPLOY }}
       run: |
         # Defaulting to main would "roll back" to the release already running.
         if [[ "$COMMAND" == rollback && -z "$REQUESTED" ]]; then
           echo "rollback needs the commit SHA to return to" >&2; exit 1
+        fi
+        # Otherwise the next merge to main redeploys the commit being rolled back.
+        if [[ "$COMMAND" == rollback && "$AUTO_DEPLOY" == true ]]; then
+          echo "set the AUTO_DEPLOY repository variable to false before rolling back" >&2; exit 1
         fi
         [[ "$VERSION" =~ ^[0-9a-f]{40}$ ]] || { echo "version must be a full commit SHA" >&2; exit 1; }
 
