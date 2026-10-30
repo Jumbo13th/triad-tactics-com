@@ -57,6 +57,11 @@ const snapshotZoneSchema = z.object({
 	defenderFaction: z.string().default(''),
 	captured: z.boolean().default(false),
 	resolved: z.boolean().default(false),
+	// A contested zone changes hands all game and is never sealed, so `captured`
+	// stays false however it ends: who the pool belongs to is `holderFaction` at
+	// the moment the GM published. Absent on snapshots predating contested zones.
+	contested: z.boolean().default(false),
+	holderFaction: z.string().default(''),
 	presence: z.array(z.object({ guid: z.string(), seconds: z.number().default(0) })).default([]),
 });
 
