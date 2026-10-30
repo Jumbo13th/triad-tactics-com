@@ -124,7 +124,9 @@ export function computeUnitScores(input: ComputeInput): UnitScore[] {
 	for (const zone of snapshot.zones) {
 		if (zone.pool <= 0) continue;
 
-		const winSide = zone.captured ? zone.attackerFaction : zone.defenderFaction;
+		// A contested zone never seals `captured`, so reading it would hand every
+		// such pool to the defender no matter who actually held the ground.
+		const winSide = zone.contested ? zone.holderFaction : zone.captured ? zone.attackerFaction : zone.defenderFaction;
 		if (!winSide) continue;
 
 		const byUnit = new Map<number, { seconds: number; contributors: number }>();

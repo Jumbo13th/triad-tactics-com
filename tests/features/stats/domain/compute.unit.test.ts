@@ -178,6 +178,64 @@ describe('computeUnitScores', () => {
 		expect(unitB?.objectivePoints).toBeCloseTo(30);
 	});
 
+	it('awards a contested zone pool to whoever held it at publish, not the defenders', () => {
+		const snapshot = buildSnapshot({
+			zones: [
+				{
+					name: 'Bridge',
+					entityName: 'zone_bridge',
+					pool: 30,
+					maxPerPlayer: 0,
+					attackerFaction: 'US',
+					defenderFaction: 'USSR',
+					// A zone that can still change hands is never sealed, so `captured`
+					// stays false even though the attackers were holding it at the end.
+					captured: false,
+					contested: true,
+					holderFaction: 'US',
+					presence: [
+						{ guid: 'g-a1', seconds: 500 },
+						{ guid: 'g-b1', seconds: 200 },
+					],
+				},
+			],
+		});
+
+		const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: mapping() });
+		const unitA = rows.find((r) => r.unitId === UNIT_A);
+		const unitB = rows.find((r) => r.unitId === UNIT_B);
+
+		expect(unitA?.objectivePoints).toBeCloseTo(30);
+		expect(unitB?.objectivePoints ?? 0).toBeCloseTo(0);
+	});
+
+	it('awards nothing for a contested zone left standing neutral', () => {
+		const snapshot = buildSnapshot({
+			zones: [
+				{
+					name: 'Bridge',
+					entityName: 'zone_bridge',
+					pool: 30,
+					maxPerPlayer: 0,
+					attackerFaction: 'US',
+					defenderFaction: 'USSR',
+					captured: false,
+					contested: true,
+					holderFaction: '', // pushed off both sides — nobody holds it
+					presence: [
+						{ guid: 'g-a1', seconds: 500 },
+						{ guid: 'g-b1', seconds: 200 },
+					],
+				},
+			],
+		});
+
+		const rows = computeUnitScores({ snapshot, config: snapshot.config, mapping: mapping() });
+
+		// Neither the side that started on it nor the side that denied it is paid.
+		expect(rows.every((r) => r.objectivePoints === 0)).toBe(true);
+	});
+
 	it('computes occupancy against the allocation on the row own side', () => {
 		const snapshot = buildSnapshot({ events: [] });
 
