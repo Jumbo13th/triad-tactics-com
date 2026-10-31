@@ -16,6 +16,25 @@ export function sha256Hex(data: Buffer): string {
 	return createHash('sha256').update(data).digest('hex');
 }
 
+/** The whole content of a small stored file, or null when it is not the file it claims to be. */
+export async function inflateText(encoded: Buffer, size: number, sha256: string): Promise<string | null> {
+	const chunks: Buffer[] = [];
+	let total = 0;
+	try {
+		await pipeline(Readable.from([encoded], { objectMode: false }), createGunzip(), async (source: AsyncIterable<Buffer>) => {
+			for await (const chunk of source) {
+				total += chunk.length;
+				if (total > size) throw new Error('inflated_past_size');
+				chunks.push(chunk);
+			}
+		});
+	} catch {
+		return null;
+	}
+	const content = Buffer.concat(chunks);
+	return total === size && sha256Hex(content) === sha256 ? content.toString('utf8') : null;
+}
+
 // Inflates as a stream so a file is never held uncompressed, and stops once the output
 // passes `limit` so a stream that inflates far beyond its declared size costs nothing.
 export async function inflate(encoded: Buffer, limit: number): Promise<Inflated | null> {

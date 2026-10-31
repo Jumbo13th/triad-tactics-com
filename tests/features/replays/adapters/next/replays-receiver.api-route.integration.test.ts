@@ -1,22 +1,28 @@
-import { createHash, createHmac } from 'node:crypto';
 import fs from 'node:fs';
-import http from 'node:http';
-import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setupIsolatedDb } from '../../../../fixtures/isolatedDb';
+import {
+	SERVER,
+	SESSION,
+	UPLOAD_SECRET as SECRET,
+	buildFile,
+	commitBody,
+	gameBody,
+	segmentContent,
+	sha256,
+	signedRequest,
+	startFakeStorage,
+	type FakeStorage,
+	type SignOptions,
+	type TestFile,
+} from '../../../../fixtures/replays';
 import { createSteamSession } from '../../../../fixtures/steamSession';
 
 const ADMIN_STEAM_ID = '76561198012345678';
 const USER_STEAM_ID = '76561198000000400';
-const SECRET = 'replay-upload-secret-of-at-least-32-characters';
-const SERVER = 'server-1';
 const BUCKET = 'replays-test';
-const SESSION = '20261031-201500-eden';
-
-const sha256 = (data: string | Buffer) => createHash('sha256').update(data).digest('hex');
 
 type Harness = Awaited<ReturnType<typeof loadHarness>>;
 
@@ -38,89 +44,8 @@ async function loadHarness() {
 	};
 }
 
-type SignOptions = {
-	timestamp?: number;
-	server?: string;
-	secret?: string;
-	signedPath?: string;
-	contentSha256?: string;
-	contentLength?: string | null;
-};
-
-// Signed independently of the receiver, from the protocol text.
 function signed(h: Harness, method: 'GET' | 'PUT' | 'POST', urlPath: string, body?: Buffer, options: SignOptions = {}) {
-	const payload = body ?? Buffer.alloc(0);
-	const timestamp = String(options.timestamp ?? Math.floor(Date.now() / 1000));
-	const contentSha256 = options.contentSha256 ?? sha256(payload);
-	const canonical = `${method}\n${options.signedPath ?? urlPath}\n${timestamp}\n${contentSha256}`;
-	const headers: Record<string, string> = {
-		'x-ll-server': options.server ?? SERVER,
-		'x-ll-timestamp': timestamp,
-		'x-ll-content-sha256': contentSha256,
-		'x-ll-signature': createHmac('sha256', options.secret ?? SECRET).update(canonical).digest('hex'),
-	};
-	if (method !== 'GET') {
-		const length = options.contentLength === undefined ? String(payload.length) : options.contentLength;
-		if (length !== null) headers['content-length'] = length;
-		headers['content-type'] = urlPath.includes('/pieces/') ? 'application/octet-stream' : 'application/json';
-	}
-	return new h.NextRequest(`http://localhost/api/replays/v1${urlPath}`, {
-		method,
-		headers,
-		body: method === 'GET' ? undefined : new Uint8Array(payload),
-	});
-}
-
-type TestFile = {
-	sha256: string;
-	size: number;
-	encoded: Buffer;
-	encodedSha256: string;
-	pieces: Buffer[];
-};
-
-// The receiver joins whatever pieces it is given, so small files split anywhere stand in
-// for 1.5 MB pieces.
-function buildFile(content: string, pieceCount: number): TestFile {
-	const raw = Buffer.from(content, 'utf8');
-	const encoded = gzipSync(raw);
-	const step = Math.ceil(encoded.length / pieceCount);
-	const pieces = Array.from({ length: pieceCount }, (_, i) => encoded.subarray(i * step, (i + 1) * step));
-	return { sha256: sha256(raw), size: raw.length, encoded, encodedSha256: sha256(encoded), pieces };
-}
-
-function segmentContent(segment: number, mission = 'Operation Example'): string {
-	return [
-		'LLR 1',
-		`H session ${SESSION}`,
-		`H segment ${segment}`,
-		`H mission ${JSON.stringify(mission)}`,
-		'H author "[ABC]Author"',
-		'H world "{853E92315D1D9EFE}worlds/Eden/Eden.ent"',
-		'H bounds 0 0 12800 12800',
-		'H started 1793563200',
-		'H end',
-		'SNAP',
-		...Array.from({ length: 200 }, (_, i) => `P ${i} ${4500 + i} ${6100 + segment} 41 87`),
-		'SNAP-END',
-		'',
-	].join('\n');
-}
-
-function commitBody(file: TestFile, kind: 'segment' | 'identity' | 'stats', name: string, overrides: Record<string, unknown> = {}) {
-	return Buffer.from(
-		JSON.stringify({
-			kind,
-			session: SESSION,
-			name,
-			size: file.size,
-			encoding: 'gzip',
-			encodedSize: file.encoded.length,
-			encodedSha256: file.encodedSha256,
-			pieces: file.pieces.length,
-			...overrides,
-		})
-	);
+	return signedRequest(h.NextRequest, method, urlPath, body, options);
 }
 
 const fileParams = (sha: string) => ({ params: Promise.resolve({ sha }) });
@@ -140,45 +65,17 @@ async function upload(h: Harness, file: TestFile, kind: 'segment' | 'identity' |
 	expect(res.status).toBe(201);
 }
 
-function gameBody(post: Record<string, unknown>) {
-	return Buffer.from(JSON.stringify({ session: SESSION, over: 'stopped', identity: null, stats: null, ...post }));
-}
-
 describe('replay receiver ll-upload/1 (handler integration)', () => {
-	const stored = new Map<string, { body: Buffer; headers: http.IncomingHttpHeaders }>();
-	let failingPuts = 0;
-	let storage: http.Server;
+	let storage: FakeStorage;
 	let piecesDir: string;
 	let adminSid: string;
 	let userSid: string;
 
 	beforeAll(async () => {
-		storage = http.createServer((req, res) => {
-			const chunks: Buffer[] = [];
-			req.on('data', (chunk: Buffer) => chunks.push(chunk));
-			req.on('end', () => {
-				if (req.method !== 'PUT') {
-					res.statusCode = 405;
-					res.end();
-					return;
-				}
-				if (failingPuts > 0) {
-					failingPuts--;
-					res.statusCode = 500;
-					res.end();
-					return;
-				}
-				stored.set(req.url ?? '', { body: Buffer.concat(chunks), headers: req.headers });
-				res.statusCode = 200;
-				res.end();
-			});
-		});
-		await new Promise<void>((resolve) => storage.listen(0, '127.0.0.1', resolve));
-		const { port } = storage.address() as AddressInfo;
-
+		storage = await startFakeStorage();
 		piecesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'replay-pieces-'));
 		process.env.REPLAY_UPLOAD_SECRET = SECRET;
-		process.env.REPLAY_S3_ENDPOINT = `http://127.0.0.1:${port}`;
+		process.env.REPLAY_S3_ENDPOINT = storage.url;
 		process.env.REPLAY_S3_REGION = 'de';
 		process.env.REPLAY_S3_BUCKET = BUCKET;
 		process.env.REPLAY_S3_ACCESS_KEY_ID = BUCKET;
@@ -192,7 +89,7 @@ describe('replay receiver ll-upload/1 (handler integration)', () => {
 	});
 
 	afterAll(async () => {
-		await new Promise<void>((resolve) => storage.close(() => resolve()));
+		await storage.close();
 		fs.rmSync(piecesDir, { recursive: true, force: true });
 	});
 
@@ -282,7 +179,7 @@ describe('replay receiver ll-upload/1 (handler integration)', () => {
 		const commit = await h.commit(signed(h, 'POST', at, commitBody(file, 'segment', `${SESSION}-1.llr`)), fileParams(file.sha256));
 		expect(commit.status).toBe(201);
 
-		const object = stored.get(`/${BUCKET}/segment/${file.sha256}.gz`);
+		const object = storage.stored.get(`/${BUCKET}/segment/${file.sha256}.gz`);
 		expect(object?.body.equals(file.encoded)).toBe(true);
 		expect(object?.headers['x-amz-content-sha256']).toBe(file.encodedSha256);
 		expect(String(object?.headers.authorization)).toMatch(/^AWS4-HMAC-SHA256 Credential=replays-test\/\d{8}\/de\/s3\/aws4_request/);
@@ -339,7 +236,7 @@ describe('replay receiver ll-upload/1 (handler integration)', () => {
 			fileParams(file.sha256)
 		);
 		expect(wrongIdentity.status).toBe(422);
-		expect(stored.has(`/${BUCKET}/segment/${file.sha256}.gz`)).toBe(false);
+		expect(storage.stored.has(`/${BUCKET}/segment/${file.sha256}.gz`)).toBe(false);
 	});
 
 	it('keeps the pieces and answers 503 while storage fails', async () => {
@@ -348,13 +245,13 @@ describe('replay receiver ll-upload/1 (handler integration)', () => {
 		const at = `/files/${file.sha256}`;
 		await sendAll(h, file);
 
-		failingPuts = 3;
+		storage.failPuts(3);
 		const failed = await h.commit(signed(h, 'POST', at, commitBody(file, 'segment', 'x.llr')), fileParams(file.sha256));
 		expect(failed.status).toBe(503);
 		const held = await h.getFile(signed(h, 'GET', at), fileParams(file.sha256));
 		expect(await held.json()).toEqual({ state: 'partial', pieces: [0, 1] });
 
-		failingPuts = 0;
+		storage.failPuts(0);
 		const retried = await h.commit(signed(h, 'POST', at, commitBody(file, 'segment', 'x.llr')), fileParams(file.sha256));
 		expect(retried.status).toBe(201);
 	});

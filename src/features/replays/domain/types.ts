@@ -23,4 +23,35 @@ export type ReplayGameInput = {
 	stats: string | null;
 };
 
-export type { ReplayGameListItem } from './adminApi';
+export type ReplayGameRecord = ReplayGameInput & {
+	id: number;
+	missionId: number | null;
+	episodeNumber: number | null;
+	publishedAt: string | null;
+	announcedAt: string | null;
+};
+
+export type ReplayMission = {
+	id: number;
+	title: string;
+	shortCode: string | null;
+	startsAt: string | null;
+};
+
+export type ReplayEpisodeStats = {
+	id: number;
+	status: 'draft' | 'published';
+};
+
+export type ReplayMap = {
+	world: string;
+	reliefSha256: string | null;
+	topoSha256: string | null;
+};
+
+export type {
+	ReplayGameListItem,
+	ReplayGameDetail,
+	PublicReplayListItem,
+	PublicReplayGame,
+} from './api';

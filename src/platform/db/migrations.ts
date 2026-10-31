@@ -1137,5 +1137,31 @@ export const migrations: Migration[] = [
 				UNIQUE(server_id, session)
 			);
 		`
+	},
+	{
+		id: 30,
+		name: 'replay_publication',
+		up: `
+			-- An admin links a received game to the mission episode it was, then
+			-- publishes it; only published games are ever served to viewers.
+			-- announced_at keeps a re-publish from posting to Discord twice.
+			ALTER TABLE replay_games ADD COLUMN mission_id INTEGER REFERENCES missions(id) ON DELETE SET NULL;
+			ALTER TABLE replay_games ADD COLUMN episode_number INTEGER;
+			ALTER TABLE replay_games ADD COLUMN published_at DATETIME;
+			ALTER TABLE replay_games ADD COLUMN published_by_steamid64 TEXT;
+			ALTER TABLE replay_games ADD COLUMN announced_at DATETIME;
+			CREATE INDEX IF NOT EXISTS idx_replay_games_published ON replay_games(published_at);
+
+			-- The map drawn under a replay, per recorded world: the relief raster
+			-- (WebP) and the vector geometry (.topo) exported from Workbench. Several
+			-- mission worlds on one terrain share the same stored files.
+			CREATE TABLE IF NOT EXISTS replay_maps (
+				world TEXT PRIMARY KEY,
+				relief_sha256 TEXT,
+				topo_sha256 TEXT,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_by_steamid64 TEXT
+			);
+		`
 	}
 ];

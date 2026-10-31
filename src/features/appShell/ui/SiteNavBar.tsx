@@ -21,7 +21,8 @@ function isActiveGamesDropdown(pathname: string) {
 		pathname.startsWith('/games') ||
 		pathname.startsWith('/units') ||
 		pathname.startsWith('/sanctions') ||
-		pathname.startsWith('/stats')
+		pathname.startsWith('/stats') ||
+		pathname.startsWith('/replays')
 	);
 }
 
@@ -74,6 +75,8 @@ export default function SiteNavBar() {
 		// they get a top-level entry instead. The admin "hide statistics"
 		// toggle removes both along with the main-page teaser.
 		if (statsLinkVisible && !isAuthorized) base.push({ href: '/stats', label: t('stats'), badge: null });
+		// Replays are public too, and stay listed when the statistics teaser is hidden.
+		if (!isAuthorized) base.push({ href: '/replays', label: t('replays'), badge: null });
 		return base;
 	}, [t, statsLinkVisible, isAuthorized]);
 
@@ -155,6 +158,7 @@ export default function SiteNavBar() {
 										{ href: '/sanctions', label: t('sanctions') }
 									];
 									if (statsLinkVisible) gamesItems.push({ href: '/stats', label: t('stats') });
+									gamesItems.push({ href: '/replays', label: t('replays') });
 									return gamesItems.map((item) => (
 										<Link
 											key={item.href}
