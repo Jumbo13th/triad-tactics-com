@@ -1096,5 +1096,72 @@ export const migrations: Migration[] = [
 			);
 			INSERT OR IGNORE INTO stats_settings (id, hidden) VALUES (1, 0);
 		`
+	},
+	{
+		id: 29,
+		name: 'replays',
+		up: `
+			-- Files received over ll-upload/1 from the game hosts. A file is named by
+			-- the SHA-256 of its uncompressed content and kept in object storage as
+			-- the gzip stream the host sent, so it can be served without re-encoding.
+			-- header_json holds a segment's header lines for listing without a download.
+			CREATE TABLE IF NOT EXISTS replay_files (
+				sha256 TEXT PRIMARY KEY,
+				kind TEXT NOT NULL CHECK(kind IN ('segment', 'identity', 'stats')),
+				server_id TEXT NOT NULL,
+				session TEXT NOT NULL,
+				name TEXT NOT NULL,
+				size INTEGER NOT NULL,
+				encoded_size INTEGER NOT NULL,
+				encoded_sha256 TEXT NOT NULL,
+				storage_key TEXT NOT NULL,
+				header_json TEXT,
+				committed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			);
+			CREATE INDEX IF NOT EXISTS idx_replay_files_session ON replay_files(session);
+
+			-- A game a host reported over. A host posts again whenever the game's file
+			-- set changes (newer statistics, a segment after a resume); the latest post
+			-- replaces the set. segments_json lists segment identities in order.
+			CREATE TABLE IF NOT EXISTS replay_games (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				server_id TEXT NOT NULL,
+				session TEXT NOT NULL,
+				over TEXT NOT NULL CHECK(over IN ('stopped', 'abandoned')),
+				segments_json TEXT NOT NULL,
+				identity_sha256 TEXT,
+				stats_sha256 TEXT,
+				post_count INTEGER NOT NULL DEFAULT 1,
+				first_posted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				last_posted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				UNIQUE(server_id, session)
+			);
+		`
+	},
+	{
+		id: 30,
+		name: 'replay_publication',
+		up: `
+			-- An admin links a received game to the mission episode it was, then
+			-- publishes it; only published games are ever served to viewers.
+			-- announced_at keeps a re-publish from posting to Discord twice.
+			ALTER TABLE replay_games ADD COLUMN mission_id INTEGER REFERENCES missions(id) ON DELETE SET NULL;
+			ALTER TABLE replay_games ADD COLUMN episode_number INTEGER;
+			ALTER TABLE replay_games ADD COLUMN published_at DATETIME;
+			ALTER TABLE replay_games ADD COLUMN published_by_steamid64 TEXT;
+			ALTER TABLE replay_games ADD COLUMN announced_at DATETIME;
+			CREATE INDEX IF NOT EXISTS idx_replay_games_published ON replay_games(published_at);
+
+			-- The map drawn under a replay, per recorded world: the relief raster
+			-- (WebP) and the vector geometry (.topo) exported from Workbench. Several
+			-- mission worlds on one terrain share the same stored files.
+			CREATE TABLE IF NOT EXISTS replay_maps (
+				world TEXT PRIMARY KEY,
+				relief_sha256 TEXT,
+				topo_sha256 TEXT,
+				updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				updated_by_steamid64 TEXT
+			);
+		`
 	}
 ];

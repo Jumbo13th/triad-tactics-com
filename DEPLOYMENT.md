@@ -32,6 +32,9 @@ Environment `production` (main only):
   `DISCORD_TOKEN_ENCRYPTION_KEY`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`,
   `BREVO_REPLY_TO_EMAIL`
 - `LITESTREAM_SECRET_ACCESS_KEY` (Bunny zone password), `ALERT_DISCORD_WEBHOOK_URL`
+- Replays: `REPLAY_UPLOAD_SECRET` (shared with every game host's ll-uplink, at least 32
+  characters), `REPLAY_S3_SECRET_ACCESS_KEY` (password of the private Bunny zone
+  `triad-tactics-com-replays`). Either one empty turns the receiver off.
 
 Repository: variable `AUTO_DEPLOY`, secret `LITESTREAM_READONLY_PASSWORD`.
 
