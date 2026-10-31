@@ -26,6 +26,14 @@ servers:
         - BREVO_SENDER_EMAIL
         - BREVO_SENDER_NAME
         - BREVO_REPLY_TO_EMAIL
+        - REPLAY_UPLOAD_SECRET
+        - REPLAY_S3_SECRET_ACCESS_KEY
+      clear:
+        # Bunny uses the storage zone name as both bucket and access key ID.
+        REPLAY_S3_ENDPOINT: https://de-s3.storage.bunnycdn.com
+        REPLAY_S3_REGION: de
+        REPLAY_S3_BUCKET: triad-tactics-com-replays
+        REPLAY_S3_ACCESS_KEY_ID: triad-tactics-com-replays
   cron:
     hosts:
       - <%= ENV.fetch("DEPLOY_HOST") %>
