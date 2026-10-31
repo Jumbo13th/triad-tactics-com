@@ -4,7 +4,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from 'r
 import { positionAt, segmentAt, valueAt, type Entity, type ReplayModel } from '../../domain/replayFormat';
 import { drawTopo, type TopoLayers } from './topoDraw';
 
-export type MapLayers = { names: boolean; fire: boolean; markers: boolean; areas: boolean };
+export type MapLayers = { names: boolean; fire: boolean; markers: boolean; areas: boolean; dead: boolean };
 
 export type MapCanvasHandle = { fit: () => void; zoom: (factor: number) => void };
 
@@ -25,7 +25,6 @@ type Props = {
 	ariaLabel: string;
 };
 
-const DEAD_VISIBLE = 600;
 const KILL_LINE = 30;
 const DETONATION = 20;
 const SHOT = 10;
@@ -288,10 +287,8 @@ export default function MapCanvas(props: Props) {
 		for (const entity of model.entities.values()) {
 			if (entity.kind !== 'man' || entity.appearedAt > t || (entity.removedAt !== null && entity.removedAt <= t)) continue;
 			const life = valueAt(entity.life, t, 'alive');
-			if (life === 'dead') {
-				const died = entity.life[entity.life.length - 1];
-				if (!died || t - died.t > DEAD_VISIBLE) continue;
-			}
+			// A body stays where it fell until the game removes it, as in the game.
+			if (life === 'dead' && !layers.dead) continue;
 			const seat = valueAt(entity.seats, t, null);
 			if (seat && life !== 'dead') {
 				crews.set(seat.vehicle, (crews.get(seat.vehicle) ?? 0) + 1);
@@ -310,8 +307,34 @@ export default function MapCanvas(props: Props) {
 			}
 		}
 
-		for (const entity of model.entities.values()) {
-			if (entity.kind === 'man' || entity.appearedAt > t || (entity.removedAt !== null && entity.removedAt <= t)) continue;
+		// The dead are drawn first and fainter, so they never cover the living.
+		for (const man of men) {
+			if (man.life !== 'dead') continue;
+			ctx.lineCap = 'round';
+			for (const [stroke, width] of [
+				['rgba(255,255,255,0.7)', 3.5],
+				[hexAlpha(sideColor(man.entity.side), 0.8), 2],
+			] as const) {
+				ctx.strokeStyle = stroke;
+				ctx.lineWidth = width;
+				ctx.beginPath();
+				ctx.moveTo(man.x - 3.5, man.y - 3.5);
+				ctx.lineTo(man.x + 3.5, man.y + 3.5);
+				ctx.moveTo(man.x + 3.5, man.y - 3.5);
+				ctx.lineTo(man.x - 3.5, man.y + 3.5);
+				ctx.stroke();
+			}
+			ctx.lineCap = 'butt';
+			hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
+		}
+
+		const vehicles = [...model.entities.values()].filter(
+			(entity) => entity.kind !== 'man' && entity.appearedAt <= t && (entity.removedAt === null || entity.removedAt > t)
+		);
+		const wrecked = (entity: Entity) => valueAt(entity.life, t, 'alive') === 'dead';
+		vehicles.sort((a, b) => Number(wrecked(b)) - Number(wrecked(a)));
+		for (const entity of vehicles) {
+			if (wrecked(entity) && !layers.dead) continue;
 			const at = positionAt(entity, t);
 			if (!at) continue;
 			const x = sx(at.x);
@@ -324,8 +347,9 @@ export default function MapCanvas(props: Props) {
 				ctx.fill();
 				continue;
 			}
-			const dead = valueAt(entity.life, t, 'alive') === 'dead';
+			const dead = wrecked(entity);
 			const color = dead ? NEUTRAL : sideColor(entity.side);
+			ctx.globalAlpha = dead ? 0.75 : 1;
 			ctx.fillStyle = color;
 			ctx.strokeStyle = '#ffffff';
 			ctx.lineWidth = 1.5;
@@ -337,6 +361,7 @@ export default function MapCanvas(props: Props) {
 			ctx.strokeStyle = dead ? '#1d232b' : '#0b0d10';
 			ctx.lineWidth = 1.3;
 			ctx.stroke();
+			ctx.globalAlpha = 1;
 			const crew = crews.get(entity.eid);
 			if (crew) {
 				ctx.fillStyle = '#0b0d10';
@@ -364,17 +389,7 @@ export default function MapCanvas(props: Props) {
 
 		for (const man of men) {
 			const color = sideColor(man.entity.side);
-			if (man.life === 'dead') {
-				ctx.strokeStyle = 'rgba(40,46,54,0.85)';
-				ctx.lineWidth = 2;
-				ctx.beginPath();
-				ctx.moveTo(man.x - 3.5, man.y - 3.5);
-				ctx.lineTo(man.x + 3.5, man.y + 3.5);
-				ctx.moveTo(man.x + 3.5, man.y - 3.5);
-				ctx.lineTo(man.x - 3.5, man.y + 3.5);
-				ctx.stroke();
-				continue;
-			}
+			if (man.life === 'dead') continue;
 			const a = (man.h * Math.PI) / 180;
 			ctx.strokeStyle = color;
 			ctx.lineWidth = 2;

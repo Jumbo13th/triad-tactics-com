@@ -227,6 +227,7 @@
     "layer_fire": "Огонь",
     "layer_markers": "Метки",
     "layer_areas": "Зоны",
+    "layer_dead": "Убитые",
     "loading": "Загрузка сегмента {segment} из {segments}…",
     "loadFailed": "Не удалось загрузить реплей.",
     "retry": "Повторить",

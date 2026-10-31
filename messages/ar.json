@@ -227,6 +227,7 @@
     "layer_fire": "النيران",
     "layer_markers": "العلامات",
     "layer_areas": "المناطق",
+    "layer_dead": "القتلى",
     "loading": "جارٍ تحميل المقطع {segment} من {segments}…",
     "loadFailed": "تعذر تحميل الإعادة.",
     "retry": "إعادة المحاولة",

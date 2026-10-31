@@ -69,7 +69,7 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 	const [playing, setPlaying] = useState(false);
 	const [speed, setSpeed] = useState(16);
 	const [follow, setFollow] = useState<number | null>(null);
-	const [layers, setLayers] = useState<MapLayers>({ names: true, fire: true, markers: true, areas: true });
+	const [layers, setLayers] = useState<MapLayers>({ names: true, fire: true, markers: true, areas: true, dead: true });
 	const [tab, setTab] = useState<'units' | 'events'>('events');
 	const [layersOpen, setLayersOpen] = useState(false);
 	const [copied, setCopied] = useState(false);
@@ -365,7 +365,7 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 									{layersOpen ? (
 									<fieldset className="flex flex-col gap-0.5 rounded-xl bg-neutral-950/90 p-1.5 text-xs font-semibold text-neutral-100">
 										<legend className="sr-only">{t('layers')}</legend>
-										{(['names', 'fire', 'markers', 'areas'] as const).map((key) => (
+										{(['names', 'fire', 'markers', 'areas', 'dead'] as const).map((key) => (
 											<label key={key} className="flex min-h-8 cursor-pointer items-center gap-2 px-2">
 												<input
 													type="checkbox"

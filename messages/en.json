@@ -227,6 +227,7 @@
     "layer_fire": "Fire",
     "layer_markers": "Markers",
     "layer_areas": "Areas",
+    "layer_dead": "Dead",
     "loading": "Loading segment {segment} of {segments}…",
     "loadFailed": "The replay could not be loaded.",
     "retry": "Try again",
