@@ -12,7 +12,8 @@ import { gameName, loadGameNames, type GameNames } from './gameNames';
 import MapCanvas, { type MapCanvasHandle, type MapLayers } from './MapCanvas';
 import { readableOnDark } from './readableColor';
 import Timeline from './Timeline';
-import type { TopoLayers } from './topoDraw';
+import { parseTopo, toLayers } from '../../domain/topo';
+import { prepareTopo, type PreparedTopo } from './topoDraw';
 import UnitsPanel from './UnitsPanel';
 
 const Units = memo(UnitsPanel);
@@ -64,7 +65,7 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 	const [attempt, setAttempt] = useState(0);
 	const [names, setNames] = useState<GameNames>({});
 	const [relief, setRelief] = useState<HTMLImageElement | null>(null);
-	const [topo] = useState<TopoLayers | null>(null);
+	const [topo, setTopo] = useState<PreparedTopo | null>(null);
 	const [time, setTime] = useState(0);
 	const [playing, setPlaying] = useState(false);
 	const [speed, setSpeed] = useState(16);
@@ -112,6 +113,29 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 	}, [game.map.relief]);
 
 	const model = load.state === 'ready' ? load.model : null;
+
+	// The geometry stores map y = terrain size - z; the recording's bounds give that size. The map
+	// works without it, so a failure here only leaves the relief bare.
+	useEffect(() => {
+		if (!game.map.topo || !model) return;
+		let cancelled = false;
+		(async () => {
+			try {
+				const res = await fetch(fileUrl(game.map.topo as string));
+				if (!res.ok || cancelled) return;
+				const map = parseTopo(await res.arrayBuffer());
+				const terrainSize = model.bounds[3] > 0 ? model.bounds[3] : undefined;
+				const fine = toLayers(map, { terrainSize, lod: 0 });
+				const coarse = toLayers({ ...map, areas: null }, { terrainSize, lod: 3 });
+				if (!cancelled) setTopo(prepareTopo(fine, coarse));
+			} catch {
+				// Left without vector layers.
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [game.map.topo, model]);
 
 	useEffect(() => {
 		if (!playing || !model) return;

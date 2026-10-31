@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from 'react';
 import { positionAt, segmentAt, valueAt, type Entity, type ReplayModel } from '../../domain/replayFormat';
-import { drawTopo, type TopoLayers } from './topoDraw';
+import { drawTopo, type PreparedTopo } from './topoDraw';
 
 export type MapLayers = { names: boolean; fire: boolean; markers: boolean; areas: boolean; dead: boolean };
 
@@ -14,7 +14,7 @@ type Props = {
 	model: ReplayModel;
 	t: number;
 	relief: HTMLImageElement | null;
-	topo: TopoLayers | null;
+	topo: PreparedTopo | null;
 	follow: number | null;
 	layers: MapLayers;
 	sideColor: (side: string | null) => string;
@@ -133,16 +133,16 @@ export default function MapCanvas(props: Props) {
 			ctx.imageSmoothingEnabled = view.scale < 2;
 			ctx.drawImage(relief, sx(minX), sy(maxZ), (maxX - minX) * view.scale, (maxZ - minZ) * view.scale);
 		}
-		if (topo) drawTopo(ctx, topo, sx, sy, view.scale);
+		const left = view.cx - w / 2 / view.scale;
+		const right = view.cx + w / 2 / view.scale;
+		const top = view.cz + h / 2 / view.scale;
+		const bottom = view.cz - h / 2 / view.scale;
+		if (topo) drawTopo(ctx, topo, sx, sy, view.scale, { left, right, bottom, top });
 
 		// A kilometre grid like the in-game map's, with 100 m lines once zoomed in.
 		const step = view.scale > 0.6 ? 100 : 1000;
 		ctx.lineWidth = 1;
 		const from = (v: number) => Math.floor(v / step) * step;
-		const left = view.cx - w / 2 / view.scale;
-		const right = view.cx + w / 2 / view.scale;
-		const top = view.cz + h / 2 / view.scale;
-		const bottom = view.cz - h / 2 / view.scale;
 		for (let x = from(left); x <= right; x += step) {
 			ctx.strokeStyle = x % 1000 === 0 ? 'rgba(20,28,36,0.28)' : 'rgba(20,28,36,0.10)';
 			ctx.beginPath();
