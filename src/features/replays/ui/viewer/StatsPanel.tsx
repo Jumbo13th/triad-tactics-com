@@ -54,18 +54,25 @@ function recordingTotals(model: ReplayModel) {
 	return [...sides.values()].filter((side) => side.fielded);
 }
 
+/** Column headings that wrap rather than cut off; the first column holds names and gets `firstWidth`. */
+function HeadRow({ head, firstWidth }: { head: string[]; firstWidth: string }) {
+	return (
+		<thead>
+			<tr className="border-b border-[#2c2c2c] text-neutral-400">
+				{head.map((label, i) => (
+					<th key={label} scope="col" className={`${i === 0 ? `${firstWidth} px-[6px] py-[5px] text-left` : cell} hyphens-auto align-bottom text-[10px] font-semibold uppercase leading-[12px] tracking-[0.04em]`}>
+						{label}
+					</th>
+				))}
+			</tr>
+		</thead>
+	);
+}
+
 function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 	return (
 		<table className="w-full table-fixed border-collapse text-[13px] leading-[18px]">
-			<thead>
-				<tr className="border-b border-[#2c2c2c] text-neutral-400">
-					{head.map((label, i) => (
-						<th key={label} scope="col" className={`${i === 0 ? 'w-[24%] px-[6px] py-[5px] text-left' : cell} hyphens-auto align-bottom text-[10px] font-semibold uppercase leading-[12px] tracking-[0.04em]`}>
-							{label}
-						</th>
-					))}
-				</tr>
-			</thead>
+			<HeadRow head={head} firstWidth="w-[24%]" />
 			<tbody>
 				{rows.map((row, r) => (
 					<tr key={r} className="border-b border-[#1e1e1e] last:border-0">
@@ -92,25 +99,23 @@ function StatsSheet({ stats, sideStyle, sideName }: { stats: ReplayStatsSummary 
 		count(row.participants),
 		count(row.kills - row.zoneKills),
 		count(row.zoneKills),
-		<span key="tk" className={row.teamkills > 0 ? 'text-red-300' : 'text-neutral-500'}>{row.teamkills}</span>,
+		<span key="teamkills" className={row.teamkills > 0 ? 'text-red-300' : 'text-neutral-500'}>
+			{row.teamkills}
+		</span>,
 		count(row.deaths),
-		row.objectivePoints > 0 ? tenths(row.objectivePoints) : <span className="text-neutral-500">{tenths(0)}</span>,
-		<span key="pts" className="font-semibold text-neutral-100">{tenths(row.points)}</span>,
+		<span key="objectives" className={row.objectivePoints > 0 ? undefined : 'text-neutral-500'}>
+			{tenths(row.objectivePoints)}
+		</span>,
+		<span key="points" className="font-semibold text-neutral-100">
+			{tenths(row.points)}
+		</span>,
 	];
 	const head = [t('statsUnit'), t('statsPlayers'), t('statsKills'), t('statsInTrigger'), t('statsTeamkills'), t('statsLosses'), t('statsObjectives'), t('statsPoints')];
 
 	return (
 		<div className="-mx-[6px] overflow-x-auto px-[6px]">
 			<table className="w-full min-w-[580px] table-fixed border-collapse text-[13px] leading-[18px]">
-				<thead>
-					<tr className="border-b border-[#2c2c2c] text-neutral-400">
-						{head.map((label, i) => (
-							<th key={label} scope="col" className={`${i === 0 ? 'w-[25%] px-[6px] py-[5px] text-left' : cell} hyphens-auto align-bottom text-[10px] font-semibold uppercase leading-[12px] tracking-[0.04em]`}>
-								{label}
-							</th>
-						))}
-					</tr>
-				</thead>
+				<HeadRow head={head} firstWidth="w-[25%]" />
 				{stats.sides.map((side) => (
 					<tbody key={side.side}>
 						<tr>

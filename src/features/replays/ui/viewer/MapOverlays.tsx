@@ -197,6 +197,17 @@ const NAME_LAYERS: ToggleLayer[] = ['nicknames', 'aiRoles', 'squads', 'vehicleNa
 /** A side whose markers the game has; a null style is the markers every side could see. */
 export type MarkerSide = { key: string; label: string; style: SideStyle | null };
 
+/** One checkbox of the layers menu; `children` sits at the row's end (a hint or a side's colour). */
+function LayerRow({ label, checked, onChange, children }: { label: string; checked: boolean; onChange: (checked: boolean) => void; children?: ReactNode }) {
+	return (
+		<label className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
+			<input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-[16px] accent-[color:var(--accent)]" />
+			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{label}</span>
+			{children}
+		</label>
+	);
+}
+
 export function MapControls({
 	layers,
 	onLayers,
@@ -323,37 +334,25 @@ export function MapControls({
 	];
 
 	const toggleRow = (key: ToggleLayer) => (
-		<label key={key} className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
-			<input
-				type="checkbox"
-				checked={layers[key]}
-				onChange={(e) => onLayers({ ...layers, [key]: e.target.checked })}
-				className="size-[16px] accent-[color:var(--accent)]"
-			/>
-			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{t(`layer_${key}`)}</span>
+		<LayerRow key={key} label={t(`layer_${key}`)} checked={layers[key]} onChange={(checked) => onLayers({ ...layers, [key]: checked })}>
 			{key === 'squads' || key === 'aiRoles' ? <span className="text-[12px] leading-[16px] text-neutral-500">{t(`layerHint_${key}`)}</span> : null}
-		</label>
+		</LayerRow>
 	);
 	const markerRow = (side: MarkerSide) => (
-		<label key={`markers-${side.key}`} className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
-			<input
-				type="checkbox"
-				checked={layers.markerSides.includes(side.key)}
-				onChange={(e) =>
-					onLayers({
-						...layers,
-						markerSides: e.target.checked ? [...layers.markerSides, side.key] : layers.markerSides.filter((key) => key !== side.key),
-					})
-				}
-				className="size-[16px] accent-[color:var(--accent)]"
-			/>
-			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{side.label}</span>
+		<LayerRow
+			key={`markers-${side.key}`}
+			label={side.label}
+			checked={layers.markerSides.includes(side.key)}
+			onChange={(checked) =>
+				onLayers({ ...layers, markerSides: checked ? [...layers.markerSides, side.key] : layers.markerSides.filter((key) => key !== side.key) })
+			}
+		>
 			{side.style ? (
 				<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
 					<path d={diamond(5, 5, 4.5)} fill={side.style.fill} stroke={side.style.edge} strokeWidth="1" />
 				</svg>
 			) : null}
-		</label>
+		</LayerRow>
 	);
 	const atDefaults = TOGGLE_LAYERS.every((key) => layers[key] === DEFAULT_LAYERS[key]) && layers.markerSides.length === 0;
 

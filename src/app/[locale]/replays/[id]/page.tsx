@@ -23,7 +23,6 @@ export default async function ReplayRoutePage({ params }: { params: Promise<{ lo
 	const game = getReplayForViewer(publicReplaysDeps, { gameId, viewerIsAdmin });
 	if (!game) notFound();
 
-	// The episode's statistics, once published, in brief for the viewer's summary.
 	const stats = game.statsId !== null ? getGameStatsSummary(statsDeps, { gameStatsId: game.statsId }) : null;
 
 	return <ReplayViewer game={game} stats={stats} />;
