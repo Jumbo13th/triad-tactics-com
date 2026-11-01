@@ -101,7 +101,11 @@ export default function MapUpload({
 	const [reliefFile, setReliefFile] = useState<File | null>(null);
 	const [topoFile, setTopoFile] = useState<File | null>(null);
 	const [status, setStatus] = useState<Status>(null);
+	const [replacing, setReplacing] = useState(false);
 	const busy = status?.tone === 'busy';
+	// The map belongs to the world, not the game: once both files are stored, every later game
+	// on the same world already has it, so the form stays out of the way unless asked for.
+	const complete = map.relief && map.topo;
 
 	const upload = async () => {
 		let relief: string | null = null;
@@ -154,6 +158,7 @@ export default function MapUpload({
 			setStatus({ tone: 'ok', text: t('adminMapSaved') });
 			setReliefFile(null);
 			setTopoFile(null);
+			setReplacing(false);
 			onSaved();
 		} catch {
 			setStatus({ tone: 'err', text: t('adminMapErrUpload') });
@@ -162,6 +167,19 @@ export default function MapUpload({
 
 	const inputClass =
 		'block w-full text-sm text-neutral-300 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-50 hover:file:bg-white/15';
+	const linkClass = 'text-sm font-semibold text-[color:var(--accent)] hover:underline disabled:opacity-50';
+
+	if (complete && !replacing) {
+		return (
+			<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+				<p className="text-sm text-neutral-300">{t('adminMapReady')}</p>
+				<button type="button" className={linkClass} onClick={() => setReplacing(true)}>
+					{t('adminMapReplace')}
+				</button>
+				{status?.tone === 'ok' ? <span className="text-sm text-emerald-300">{status.text}</span> : null}
+			</div>
+		);
+	}
 
 	return (
 		<div className="grid gap-3">
@@ -186,6 +204,21 @@ export default function MapUpload({
 				<AdminButton variant="secondary" disabled={busy || (!reliefFile && !topoFile)} onClick={() => void upload()}>
 					{t('adminMapUpload')}
 				</AdminButton>
+				{complete ? (
+					<button
+						type="button"
+						className={linkClass}
+						disabled={busy}
+						onClick={() => {
+							setReplacing(false);
+							setReliefFile(null);
+							setTopoFile(null);
+							setStatus(null);
+						}}
+					>
+						{t('adminMapKeep')}
+					</button>
+				) : null}
 				{status ? (
 					<span className={status.tone === 'err' ? 'text-sm text-red-300' : status.tone === 'ok' ? 'text-sm text-emerald-300' : 'text-sm text-neutral-300'}>
 						{status.text}

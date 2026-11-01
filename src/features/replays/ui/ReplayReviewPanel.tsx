@@ -142,13 +142,14 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 
 	const linked = game.missionId !== null && game.episodeNumber !== null;
 	const published = game.publishedAt !== null;
+	const title = game.missionTitle ?? game.mission ?? game.session;
 
 	return (
 		<div className="grid gap-4 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
 				<div>
-					<p className="text-sm font-semibold text-neutral-100">{game.missionTitle ?? game.mission ?? game.session}</p>
-					<p className="font-mono text-xs text-neutral-500">{game.session}</p>
+					<p className="text-sm font-semibold text-neutral-100">{title}</p>
+					{title !== game.session ? <p className="font-mono text-xs text-neutral-500">{game.session}</p> : null}
 				</div>
 				<Link href={`/replays/${game.id}`} locale={locale} className="text-sm font-semibold text-[color:var(--accent)] hover:underline">
 					{t('adminOpenViewer')}
