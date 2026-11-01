@@ -311,7 +311,7 @@
     "destroyedAlone": "<victim></victim> уничтожена",
     "contested": "оспаривается",
     "legend": "Условные обозначения",
-    "legend_soldier": "Боец и направление",
+    "legend_soldier": "Игрок и направление",
     "legend_unconscious": "Без сознания",
     "legend_corpse": "Тело",
     "legend_squad": "Отряд",
@@ -390,10 +390,13 @@
     "statsMoreUnits": "{count, plural, one {и ещё # отряд} few {и ещё # отряда} many {и ещё # отрядов} other {и ещё # отряда}}",
     "statsOpenFull": "Открыть полную статистику",
     "statsNotPublished": "Официальная статистика этой игры ещё не опубликована. Итоги ниже — по записи.",
-    "layersNamesHint": "Подписи появляются при приближении. Наведите на бойца, чтобы узнать, кто это.",
+    "layersNamesHint": "Подписи появляются при приближении. Наведите на игрока, чтобы узнать, кто это.",
     "statsInTrigger": "В триггере",
     "statsObjectives": "Задачи",
-    "showUnits": "Показать отряды (U)"
+    "showUnits": "Показать отряды (U)",
+    "layersReset": "Вернуть по умолчанию",
+    "layerHint_squads": "при отдалении",
+    "layerHint_aiRoles": "вблизи"
   },
   "nav": {
     "aria": "Навигация",

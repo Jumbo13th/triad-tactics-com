@@ -311,7 +311,7 @@
     "destroyedAlone": "<victim></victim> знищена",
     "contested": "оспорюється",
     "legend": "Умовні позначення",
-    "legend_soldier": "Боєць і напрямок",
+    "legend_soldier": "Гравець і напрямок",
     "legend_unconscious": "Непритомний",
     "legend_corpse": "Тіло",
     "legend_squad": "Загін",
@@ -390,10 +390,13 @@
     "statsMoreUnits": "{count, plural, one {і ще # загін} few {і ще # загони} many {і ще # загонів} other {і ще # загону}}",
     "statsOpenFull": "Відкрити повну статистику",
     "statsNotPublished": "Офіційну статистику цієї гри ще не опубліковано. Підсумки нижче — за записом.",
-    "layersNamesHint": "Підписи з’являються при наближенні. Наведіть на бійця, щоб дізнатися, хто це.",
+    "layersNamesHint": "Підписи з’являються при наближенні. Наведіть на гравця, щоб дізнатися, хто це.",
     "statsInTrigger": "У тригері",
     "statsObjectives": "Завдання",
-    "showUnits": "Показати загони (U)"
+    "showUnits": "Показати загони (U)",
+    "layersReset": "Повернути типові",
+    "layerHint_squads": "при віддаленні",
+    "layerHint_aiRoles": "зблизька"
   },
   "nav": {
     "aria": "Навігація",

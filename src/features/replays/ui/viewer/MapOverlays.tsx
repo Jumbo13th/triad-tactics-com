@@ -7,7 +7,7 @@ import { DeadGlyph, DotGlyph, Icon, UnconsciousGlyph, VehicleGlyph } from './gly
 import type { SelectionInfo } from './selection';
 import { DEAD_STYLE, NEUTRAL_STYLE, type SideStyle } from './sideStyle';
 import { useDismiss } from './useDismiss';
-import type { MapLayers } from './viewerSettings';
+import { DEFAULT_LAYERS, type MapLayers } from './viewerSettings';
 
 const plate = 'rounded-[4px] border border-[#2c2c2c] bg-[rgba(10,10,10,0.9)]';
 const eyebrow = 'text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em]';
@@ -326,8 +326,10 @@ export function MapControls({
 				className="size-[16px] accent-[color:var(--accent)]"
 			/>
 			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{t(`layer_${key}`)}</span>
+			{key === 'squads' || key === 'aiRoles' ? <span className="text-[12px] leading-[16px] text-neutral-500">{t(`layerHint_${key}`)}</span> : null}
 		</label>
 	);
+	const atDefaults = (Object.keys(DEFAULT_LAYERS) as (keyof MapLayers)[]).every((key) => layers[key] === DEFAULT_LAYERS[key]);
 
 	return (
 		<div ref={rootRef} className="absolute right-[12px] top-[32px] z-[3] flex flex-col items-end gap-[8px]">
@@ -360,6 +362,17 @@ export function MapControls({
 					<p className="px-[8px] pb-[4px] pt-[2px] text-[12px] leading-[16px] text-neutral-400">{t('layersNamesHint')}</p>
 					<p className={`mt-[6px] border-t border-[#2c2c2c] px-[8px] pb-[4px] pt-[10px] text-neutral-400 ${eyebrow}`}>{t('layersMap')}</p>
 					{MAP_LAYERS.map(toggleRow)}
+					<div className="mt-[6px] border-t border-[#2c2c2c] px-[4px] pt-[8px]">
+						<button
+							type="button"
+							onClick={() => onLayers(DEFAULT_LAYERS)}
+							disabled={atDefaults}
+							className="inline-flex min-h-[32px] w-full items-center justify-center gap-[6px] rounded-[4px] border border-[#2c2c2c] bg-[#121212] text-[13px] font-semibold text-neutral-100 hover:border-[#666666] disabled:cursor-default disabled:border-[#2c2c2c] disabled:text-[#6b6b6b]"
+						>
+							<Icon.Retry size={14} />
+							{t('layersReset')}
+						</button>
+					</div>
 				</div>
 			) : null}
 			{open === 'legend' ? (

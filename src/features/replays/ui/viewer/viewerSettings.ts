@@ -34,7 +34,7 @@ export const SPEED_MIN = 0.1;
 export const SPEED_MAX = 300;
 
 // Only what is needed to follow a game is on by default; the rest is a toggle away.
-const DEFAULT_LAYERS: MapLayers = {
+export const DEFAULT_LAYERS: MapLayers = {
 	nicknames: true,
 	aiRoles: false,
 	squads: false,
