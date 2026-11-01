@@ -10,6 +10,7 @@ import {
 	parsePieceIndex,
 } from '../../domain/protocol';
 import { commitFile } from '../../useCases/commitFile';
+import { fileReplayGame } from '../../useCases/fileReplayGame';
 import { getFileState } from '../../useCases/getFileState';
 import { putPiece } from '../../useCases/putPiece';
 import { recordGame } from '../../useCases/recordGame';
@@ -128,6 +129,16 @@ export async function commitReplayFileRoute(request: NextRequest, context: FileC
 	}
 }
 
+// The server has done its part once the game is recorded, so a failure to file it is only logged.
+async function fileGame(serverId: string, session: string, gameId: number): Promise<void> {
+	try {
+		const filed = await fileReplayGame(receiverDeps, gameId);
+		logger.info({ serverId, session, gameId, ...filed }, 'replay_game_filed');
+	} catch (error: unknown) {
+		logger.error({ serverId, session, gameId, ...errorToLogObject(error) }, 'replay_game_filing_failed');
+	}
+}
+
 export async function postReplayGameRoute(request: NextRequest, context: GameContext): Promise<NextResponse> {
 	try {
 		const accepted = await accept(request, JSON_MAX_BYTES);
@@ -153,6 +164,7 @@ export async function postReplayGameRoute(request: NextRequest, context: GameCon
 					},
 					'replay_game_recorded'
 				);
+				await fileGame(accepted.serverId, session, outcome.gameId);
 				return NextResponse.json({ ok: true }, { status: outcome.result === 'created' ? 201 : 200 });
 			case 'missing':
 				return NextResponse.json({ missing: outcome.missing }, { status: 409 });

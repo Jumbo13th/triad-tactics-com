@@ -2,8 +2,8 @@ import type { GamePost, ReplayFileKind } from '../domain/protocol';
 import type { ReceiverDeps } from '../ports';
 
 export type RecordGameResult =
-	| { result: 'created' }
-	| { result: 'replaced' }
+	| { result: 'created'; gameId: number }
+	| { result: 'replaced'; gameId: number }
 	| { result: 'missing'; missing: string[] }
 	| { result: 'wrong_kind'; sha256: string };
 
@@ -24,7 +24,7 @@ export function recordGame(deps: Pick<ReceiverDeps, 'repo'>, input: { serverId: 
 	const misnamed = named.find((n) => files.get(n.sha256)?.kind !== n.kind);
 	if (misnamed) return { result: 'wrong_kind', sha256: misnamed.sha256 };
 
-	const { created } = deps.repo.saveGame({
+	const { id, created } = deps.repo.saveGame({
 		serverId: input.serverId,
 		session: post.session,
 		over: post.over,
@@ -32,5 +32,5 @@ export function recordGame(deps: Pick<ReceiverDeps, 'repo'>, input: { serverId: 
 		identity: post.identity,
 		stats: post.stats,
 	});
-	return { result: created ? 'created' : 'replaced' };
+	return { result: created ? 'created' : 'replaced', gameId: id };
 }

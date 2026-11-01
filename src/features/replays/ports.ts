@@ -18,13 +18,19 @@ export type ReplayRepo = {
 	findFiles: (sha256s: string[]) => ReplayFile[];
 	/** A file committed twice keeps its first record. */
 	insertFile: (file: ReplayFile) => void;
-	saveGame: (game: ReplayGameInput) => { created: boolean };
+	saveGame: (game: ReplayGameInput) => { id: number; created: boolean };
 	listGames: (input: { limit: number; offset: number }) => ReplayGameListItem[];
 	findGame: (id: number) => ReplayGameRecord | null;
 	findGameListItem: (id: number) => ReplayGameListItem | null;
 	listMissions: () => ReplayMission[];
 	findMission: (id: number) => ReplayMission | null;
 	linkGame: (id: number, missionId: number, episodeNumber: number) => void;
+	/** Missions past their draft that have an announced start, in epoch seconds. */
+	listScheduledMissions: () => { id: number; startsAt: number }[];
+	/** The mission's "episode N started" posts, timed in epoch seconds. */
+	listEpisodeStartPosts: (missionId: number) => { episodeNumber: number; at: number }[];
+	/** How many episodes the mission has, by its slottings, unit assignments and posts. */
+	countMissionEpisodes: (missionId: number) => number;
 	/** null unpublishes. */
 	setPublished: (id: number, publishedBySteamid64: string | null) => void;
 	markAnnounced: (id: number) => void;
@@ -85,7 +91,8 @@ export type StatsImporter = (input: {
 	missionId: number;
 	episodeNumber: number;
 	snapshotText: string;
-	uploadedBySteamid64: string;
+	/** null when the site filed it on its own. */
+	uploadedBySteamid64: string | null;
 }) => StatsImportResult;
 
 export type ReceiverDeps = {
@@ -93,6 +100,7 @@ export type ReceiverDeps = {
 	pieces: PieceStore;
 	objects: ObjectStore;
 	now: () => Date;
+	importStats: StatsImporter;
 };
 
 export type AdminReplaysDeps = {

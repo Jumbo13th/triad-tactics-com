@@ -18,6 +18,7 @@ export const receiverDeps: ReceiverDeps = {
 	pieces,
 	objects,
 	now: () => new Date(),
+	importStats,
 };
 
 export const adminReplaysDeps: AdminReplaysDeps = {

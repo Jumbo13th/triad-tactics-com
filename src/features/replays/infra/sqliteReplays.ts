@@ -1,4 +1,5 @@
 import { getDb } from '@/platform/db/connection';
+import { parseDateTimeValue } from '@/platform/dateTime';
 import type { ReplayPlayer } from '../domain/players';
 import type { ReplayFileKind, ReplayGameEnding } from '../domain/protocol';
 import type { ReplayFacets, ReplayGameFilter, ReplaySearchTerm, ReplaySort } from '../domain/search';
@@ -284,7 +285,7 @@ export function insertFile(file: ReplayFile): void {
 		);
 }
 
-export function saveGame(game: ReplayGameInput): { created: boolean } {
+export function saveGame(game: ReplayGameInput): { id: number; created: boolean } {
 	const row = getDb()
 		.prepare(
 			`INSERT INTO replay_games (server_id, session, over, segments_json, identity_sha256, stats_sha256)
@@ -296,12 +297,13 @@ export function saveGame(game: ReplayGameInput): { created: boolean } {
 				stats_sha256 = excluded.stats_sha256,
 				post_count = replay_games.post_count + 1,
 				last_posted_at = CURRENT_TIMESTAMP
-			RETURNING post_count`
+			RETURNING id, post_count`
 		)
 		.get(game.serverId, game.session, game.over, JSON.stringify(game.segments), game.identity, game.stats) as {
+		id: number;
 		post_count: number;
 	};
-	return { created: row.post_count === 1 };
+	return { id: row.id, created: row.post_count === 1 };
 }
 
 export function listGames(input: { limit: number; offset: number }): ReplayGameListItem[] {
@@ -352,6 +354,47 @@ export function findMission(id: number): ReplayMission | null {
 		| { id: number; title: string; short_code: string | null; starts_at: string | null }
 		| undefined;
 	return row ? { id: row.id, title: row.title, shortCode: row.short_code, startsAt: row.starts_at } : null;
+}
+
+function epochSeconds(value: string): number | null {
+	const date = parseDateTimeValue(value);
+	return date ? Math.floor(date.getTime() / 1000) : null;
+}
+
+export function listScheduledMissions(): { id: number; startsAt: number }[] {
+	const rows = getDb()
+		.prepare(`SELECT id, starts_at FROM missions WHERE status != 'draft' AND starts_at IS NOT NULL`)
+		.all() as { id: number; starts_at: string }[];
+	return rows.flatMap((row) => {
+		const startsAt = epochSeconds(row.starts_at);
+		return startsAt === null ? [] : [{ id: row.id, startsAt }];
+	});
+}
+
+export function listEpisodeStartPosts(missionId: number): { episodeNumber: number; at: number }[] {
+	const rows = getDb()
+		.prepare(
+			`SELECT episode_number, created_at FROM mission_public_updates
+			WHERE mission_id = ? AND kind = 'game_started_wait_next_episode' AND episode_number IS NOT NULL AND created_at IS NOT NULL`
+		)
+		.all(missionId) as { episode_number: number; created_at: string }[];
+	return rows.flatMap((row) => {
+		const at = epochSeconds(row.created_at);
+		return at === null ? [] : [{ episodeNumber: row.episode_number, at }];
+	});
+}
+
+export function countMissionEpisodes(missionId: number): number {
+	const row = getDb()
+		.prepare(
+			`SELECT MAX(n) AS n FROM (
+				SELECT MAX(episode_number) AS n FROM mission_episode_slotting WHERE mission_id = ?
+				UNION ALL SELECT MAX(episode_number) FROM mission_unit_assignments WHERE mission_id = ?
+				UNION ALL SELECT MAX(total_episodes) FROM mission_public_updates WHERE mission_id = ?
+			)`
+		)
+		.get(missionId, missionId, missionId) as { n: number | null };
+	return row.n ?? 1;
 }
 
 export function linkGame(id: number, missionId: number, episodeNumber: number): void {

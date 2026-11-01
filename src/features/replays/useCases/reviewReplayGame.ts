@@ -45,8 +45,8 @@ export function linkReplayGame(
 
 /** Hands the game's statistics file to the statistics admin as the episode's draft. */
 export async function importReplayStats(
-	deps: AdminReplaysDeps,
-	input: { gameId: number; uploadedBySteamid64: string }
+	deps: Pick<AdminReplaysDeps, 'repo' | 'objects' | 'importStats'>,
+	input: { gameId: number; uploadedBySteamid64: string | null }
 ): Promise<StatsImportResult> {
 	const game = deps.repo.findGame(input.gameId);
 	if (!game) return { ok: false, error: 'not_found' };

@@ -19,7 +19,7 @@ export type UploadSnapshotResult =
 /** Manual sync entry point: the GUID→unit automap is resolved NOW and frozen with the record. */
 export function uploadSnapshot(
 	deps: StatsDeps,
-	input: { missionId: number; episodeNumber: number; snapshotText: string; replaceDraft: boolean; uploadedBySteamid64: string }
+	input: { missionId: number; episodeNumber: number; snapshotText: string; replaceDraft: boolean; uploadedBySteamid64: string | null }
 ): UploadSnapshotResult {
 	const parsed = parseSnapshot(input.snapshotText);
 	if (!parsed.success) return { success: false, error: parsed.error };

@@ -135,7 +135,7 @@ export function insertDraft(input: {
 	winnerSide: string;
 	missionName: string;
 	playedAt: string;
-	uploadedBySteamid64: string;
+	uploadedBySteamid64: string | null;
 }): number {
 	const db = getDb();
 	const result = db
@@ -166,7 +166,7 @@ export function replaceDraft(gameStatsId: number, input: {
 	winnerSide: string;
 	missionName: string;
 	playedAt: string;
-	uploadedBySteamid64: string;
+	uploadedBySteamid64: string | null;
 }): void {
 	const db = getDb();
 	db.prepare(

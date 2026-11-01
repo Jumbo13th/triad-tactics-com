@@ -70,7 +70,7 @@ export type StatsRepo = {
 		winnerSide: string;
 		missionName: string;
 		playedAt: string;
-		uploadedBySteamid64: string;
+		uploadedBySteamid64: string | null;
 	}) => number;
 	replaceDraft: (gameStatsId: number, input: {
 		snapshotJson: string;
@@ -80,7 +80,7 @@ export type StatsRepo = {
 		winnerSide: string;
 		missionName: string;
 		playedAt: string;
-		uploadedBySteamid64: string;
+		uploadedBySteamid64: string | null;
 	}) => void;
 	getMeta: (gameStatsId: number) => GameStatsMeta | null;
 	getSnapshot: (gameStatsId: number) => StatsSnapshot | null;

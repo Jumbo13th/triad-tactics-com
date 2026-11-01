@@ -97,10 +97,17 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 	}, [gameId, applyDetail, t]);
 
 	const run = useCallback(
-		async (body: Record<string, unknown>, success: (json: Record<string, unknown>) => string) => {
+		async (body: Record<string, unknown>, success: (json: Record<string, unknown>) => string, linkFirst = false) => {
 			setBusy(true);
 			setFeedback(null);
 			try {
+				if (linkFirst) {
+					const linked = await act({ action: 'link', gameId, missionId: Number(missionId), episodeNumber: Number(episode) });
+					if (!linked.ok) {
+						setFeedback({ tone: 'err', text: describeError(linked.json.error) });
+						return;
+					}
+				}
 				const { ok, json } = await act({ ...body, gameId });
 				if (!ok) {
 					setFeedback({ tone: 'err', text: describeError(json.error) });
@@ -115,7 +122,7 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 				setBusy(false);
 			}
 		},
-		[gameId, describeError, applyDetail, onChanged, t]
+		[gameId, missionId, episode, describeError, applyDetail, onChanged, t]
 	);
 
 	const announcementText = useCallback(
@@ -143,6 +150,8 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 	const linked = game.missionId !== null && game.episodeNumber !== null;
 	const published = game.publishedAt !== null;
 	const title = game.missionTitle ?? game.mission ?? game.session;
+	const picked = missionId !== '' && Number(episode) >= 1;
+	const pickSaved = linked && game.missionId === Number(missionId) && game.episodeNumber === Number(episode);
 
 	return (
 		<div className="grid gap-4 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
@@ -214,8 +223,8 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 					{game.hasStats && game.statistics?.status !== 'published' ? (
 						<AdminButton
 							variant="secondary"
-							disabled={busy || !linked}
-							onClick={() => void run({ action: 'importStats' }, () => t('adminStatsImported'))}
+							disabled={busy || !picked}
+							onClick={() => void run({ action: 'importStats' }, () => t('adminStatsImported'), !pickSaved)}
 						>
 							{t('adminImportStats')}
 						</AdminButton>
@@ -239,8 +248,10 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 					) : (
 						<AdminButton
 							variant="primary"
-							disabled={busy || !linked}
-							onClick={() => void run({ action: 'publish' }, (json) => `${t('adminPublishedNow')} ${announcementText(json.announcement)}`)}
+							disabled={busy || !picked}
+							onClick={() =>
+								void run({ action: 'publish' }, (json) => `${t('adminPublishedNow')} ${announcementText(json.announcement)}`, !pickSaved)
+							}
 						>
 							{t('adminPublish')}
 						</AdminButton>
