@@ -22,11 +22,21 @@ type Props = {
 
 /** Side totals read from the recording itself, for a game whose statistics are not out yet. */
 function recordingTotals(model: ReplayModel) {
-	const sides = new Map(model.sides.map((side) => [side.key, { side: side.key, soldiers: 0, kills: 0, deaths: 0, teamkills: 0 }]));
+	const sides = new Map(model.sides.map((side) => [side.key, { side: side.key, players: 0, fielded: false, kills: 0, deaths: 0, teamkills: 0 }]));
 	for (const entity of model.entities.values()) {
-		if (entity.kind === 'man' && entity.side) {
-			const side = sides.get(entity.side);
-			if (side) side.soldiers++;
+		const side = entity.kind === 'man' && entity.side ? sides.get(entity.side) : undefined;
+		if (side) side.fielded = true;
+	}
+	// A player counts once for each side whose soldiers they played, however many bodies.
+	for (const player of model.players.values()) {
+		const played = new Set<string>();
+		for (const change of player.controls) {
+			const body = change.value !== null ? model.entities.get(change.value) : undefined;
+			if (body?.kind === 'man' && body.side) played.add(body.side);
+		}
+		for (const key of played) {
+			const side = sides.get(key);
+			if (side) side.players++;
 		}
 	}
 	for (const event of model.events) {
@@ -41,7 +51,7 @@ function recordingTotals(model: ReplayModel) {
 		if (event.relation === 'friendly') scorer.teamkills++;
 		else if (event.relation === 'enemy') scorer.kills++;
 	}
-	return [...sides.values()].filter((side) => side.soldiers > 0);
+	return [...sides.values()].filter((side) => side.fielded);
 }
 
 function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
@@ -180,8 +190,8 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 							<p className="text-[13px] leading-[18px] text-neutral-300">{t('statsNotPublished')}</p>
 							{totals.length > 0 ? (
 								<Table
-									head={[t('statsSide'), t('statsSoldiers'), t('statsKills'), t('statsLosses'), t('statsTeamkills')]}
-									rows={totals.map((side) => [sideLabel(side.side), side.soldiers, side.kills, side.deaths, side.teamkills])}
+									head={[t('statsSide'), t('statsPlayers'), t('statsKills'), t('statsLosses'), t('statsTeamkills')]}
+									rows={totals.map((side) => [sideLabel(side.side), side.players, side.kills, side.deaths, side.teamkills])}
 								/>
 							) : null}
 						</div>
