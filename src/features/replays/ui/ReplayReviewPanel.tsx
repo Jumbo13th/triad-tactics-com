@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { AdminButton } from '@/features/admin/ui/root';
-import { parseDateTimeValue } from '@/platform/dateTime';
+import { formatLocalizedDateTime, parseDateTimeValue } from '@/platform/dateTime';
+import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import { adminReplayDetailResponseSchema, type ReplayGameDetail } from '../domain/api';
+import { formatSize } from './formatSize';
 import MapUpload from './MapUpload';
 import { terrainName } from '../domain/terrain';
 
@@ -48,6 +50,7 @@ function nearestMission(missions: Mission[], startedAt: number | null): number |
 export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: number; onChanged: () => void }) {
 	const t = useTranslations('replays');
 	const locale = useLocale();
+	const { timeZone, hourCycle } = useViewerDateTimePreferences();
 	const [game, setGame] = useState<ReplayGameDetail | null>(null);
 	const [missions, setMissions] = useState<Mission[]>([]);
 	const [missionId, setMissionId] = useState('');
@@ -159,6 +162,18 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 				<div>
 					<p className="text-sm font-semibold text-neutral-100">{title}</p>
 					{title !== game.session ? <p className="font-mono text-xs text-neutral-500">{game.session}</p> : null}
+					<p className="mt-1 text-xs text-neutral-500">
+						{[
+							game.serverId,
+							t('adminSegments', { count: game.segmentCount }),
+							formatSize(game.size, locale),
+							game.over === 'stopped' ? t('adminOverStopped') : t('adminOverAbandoned'),
+							t('adminReceivedAt', { time: formatLocalizedDateTime(game.lastPostedAt, { locale, timeZone, hourCycle }) ?? '—' }),
+							game.postCount > 1 ? t('adminReportCount', { count: game.postCount }) : null,
+						]
+							.filter(Boolean)
+							.join(' · ')}
+					</p>
 				</div>
 				<Link href={`/replays/${game.id}`} locale={locale} className="text-sm font-semibold text-[color:var(--accent)] hover:underline">
 					{t('adminOpenViewer')}

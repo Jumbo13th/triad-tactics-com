@@ -49,6 +49,7 @@ type GameListRow = {
 	mission_title: string | null;
 	episode_number: number | null;
 	published_at: string | null;
+	stats_status: 'draft' | 'published' | null;
 };
 
 type GameRow = {
@@ -88,6 +89,8 @@ const GAME_LIST_SELECT = `
 		g.id, g.server_id, g.session, g.over, g.identity_sha256, g.stats_sha256,
 		g.post_count, g.first_posted_at, g.last_posted_at,
 		g.mission_id, m.title AS mission_title, g.episode_number, g.published_at,
+		(SELECT s.status FROM game_stats s
+			WHERE s.mission_id = g.mission_id AND s.episode_number = g.episode_number) AS stats_status,
 		(SELECT COUNT(*) FROM json_each(g.segments_json)) AS segment_count,
 		(SELECT COALESCE(SUM(f.size), 0) FROM json_each(g.segments_json) j
 			JOIN replay_files f ON f.sha256 = j.value) AS size,
@@ -234,6 +237,7 @@ function toListItem(row: GameListRow): ReplayGameListItem {
 		missionTitle: row.mission_title,
 		episodeNumber: row.episode_number,
 		publishedAt: row.published_at,
+		statsStatus: row.stats_status,
 	};
 }
 

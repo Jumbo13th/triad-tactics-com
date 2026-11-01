@@ -25,6 +25,8 @@ const replayGameListItemSchema = z.object({
 	missionTitle: z.string().nullable(),
 	episodeNumber: z.number().nullable(),
 	publishedAt: z.string().nullable(),
+	/** The linked episode's statistics, null when it has none. */
+	statsStatus: z.enum(['draft', 'published']).nullable(),
 });
 
 export type ReplayGameListItem = z.infer<typeof replayGameListItemSchema>;

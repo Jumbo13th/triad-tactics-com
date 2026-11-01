@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AdminButton, AdminSurface, AdminToolbar } from '@/features/admin/ui/root';
 import { formatLocalizedDateTime } from '@/platform/dateTime';
@@ -11,13 +11,7 @@ import ReplayReviewPanel from './ReplayReviewPanel';
 const th =
 	'whitespace-nowrap border-b border-neutral-800 px-3 py-3 text-left align-middle text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500';
 const td = 'whitespace-nowrap border-t border-neutral-800 px-3 py-2.5 align-middle text-sm text-neutral-200';
-const tdNum = `${td} text-center tabular-nums`;
-
-function formatSize(bytes: number, locale: string): string {
-	if (bytes < 1_000_000) return `${Math.max(1, Math.round(bytes / 1000)).toLocaleString(locale)} KB`;
-	const value = (bytes / 1_000_000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-	return `${value} MB`;
-}
+const COLUMNS = 5;
 
 async function fetchReplayPage(offset: number) {
 	const res = await fetch(`/api/admin/replays?offset=${offset}`, { cache: 'no-store' });
@@ -81,6 +75,12 @@ export default function AdminReplaysPage() {
 
 	const formatTime = (value: string | null) => formatLocalizedDateTime(value, { locale, timeZone, hourCycle }) ?? '—';
 
+	const statsLabel = (game: ReplayGameListItem) => {
+		if (game.statsStatus === 'published') return t('adminStatsShortPublished');
+		if (game.statsStatus === 'draft') return t('adminStatsShortDraft');
+		return <span className="text-neutral-500">{game.hasStats ? t('adminStatsShortWaiting') : '—'}</span>;
+	};
+
 	return (
 		<AdminSurface>
 			<div className="grid gap-6">
@@ -90,10 +90,6 @@ export default function AdminReplaysPage() {
 				</div>
 
 				{failed ? <p className="text-sm text-red-300">{t('adminLoadError')}</p> : null}
-
-				{selectedId !== null ? (
-					<ReplayReviewPanel key={selectedId} gameId={selectedId} onChanged={() => void refreshList()} />
-				) : null}
 
 				{games === null ? (
 					failed ? null : <p className="text-sm text-neutral-300">{t('adminLoading')}</p>
@@ -105,50 +101,61 @@ export default function AdminReplaysPage() {
 							<thead>
 								<tr>
 									<th className={th}>{t('adminColGame')}</th>
-									<th className={th}>{t('adminColMission')}</th>
-									<th className={th}>{t('adminColStatus')}</th>
-									<th className={th}>{t('adminColServer')}</th>
-									<th className={th}>{t('adminColStarted')}</th>
-									<th className={th}>{t('adminColSegments')}</th>
-									<th className={th}>{t('adminColSize')}</th>
 									<th className={th}>{t('adminColStats')}</th>
-									<th className={th}>{t('adminColOver')}</th>
-									<th className={th}>{t('adminColReported')}</th>
+									<th className={th}>{t('adminColReplay')}</th>
+									<th className={th}>{t('adminColStarted')}</th>
 									<th className={th} />
 								</tr>
 							</thead>
 							<tbody>
-								{games.map((game) => (
-									<tr key={game.id}>
-										<td className={td}>
-											<div className="font-semibold text-neutral-100">{game.mission ?? game.session}</div>
-											{game.mission ? <div className="font-mono text-xs text-neutral-500">{game.session}</div> : null}
-										</td>
-										<td className={td}>
-											{game.missionTitle ? `${game.missionTitle} · ${t('adminEpisodeShort', { episode: game.episodeNumber ?? 1 })}` : '—'}
-										</td>
-										<td className={td}>{game.publishedAt ? t('adminStatusPublished') : t('adminStatusHidden')}</td>
-										<td className={`${td} font-mono text-xs`}>{game.serverId}</td>
-										<td className={td}>
-											{game.startedAt === null ? '—' : formatTime(new Date(game.startedAt * 1000).toISOString())}
-										</td>
-										<td className={tdNum}>{game.segmentCount}</td>
-										<td className={tdNum}>{formatSize(game.size, locale)}</td>
-										<td className={tdNum}>{game.hasStats ? t('adminYes') : '—'}</td>
-										<td className={td}>{game.over === 'stopped' ? t('adminOverStopped') : t('adminOverAbandoned')}</td>
-										<td className={td}>
-											<div>{formatTime(game.lastPostedAt)}</div>
-											{game.postCount > 1 ? (
-												<div className="text-xs text-neutral-500">{t('adminReportCount', { count: game.postCount })}</div>
+								{games.map((game) => {
+									const open = game.id === selectedId;
+									const name = game.missionTitle
+										? `${game.missionTitle} · ${t('adminEpisodeShort', { episode: game.episodeNumber ?? 1 })}`
+										: (game.mission ?? game.session);
+									return (
+										<Fragment key={game.id}>
+											<tr className={open ? 'bg-white/[0.03]' : undefined}>
+												<td className={`${td} max-w-72`}>
+													<div className="flex items-baseline gap-2">
+														<span className="truncate font-semibold text-neutral-100" title={name}>
+															{name}
+														</span>
+														{game.missionTitle ? null : (
+															<span className="shrink-0 rounded border border-amber-300/30 px-1.5 text-[11px] text-amber-200/90">
+																{t('adminNotLinked')}
+															</span>
+														)}
+													</div>
+													{name !== game.session ? <div className="truncate font-mono text-xs text-neutral-500">{game.session}</div> : null}
+												</td>
+												<td className={td}>{statsLabel(game)}</td>
+												<td className={td}>
+													{game.publishedAt ? (
+														t('adminStatusPublished')
+													) : (
+														<span className="text-neutral-400">{t('adminStatusHidden')}</span>
+													)}
+												</td>
+												<td className={td}>
+													{game.startedAt === null ? '—' : formatTime(new Date(game.startedAt * 1000).toISOString())}
+												</td>
+												<td className={`${td} text-right`}>
+													<AdminButton variant="secondary" className="h-8" onClick={() => setSelectedId(open ? null : game.id)}>
+														{open ? t('adminClose') : t('adminReview')}
+													</AdminButton>
+												</td>
+											</tr>
+											{open ? (
+												<tr>
+													<td colSpan={COLUMNS} className="border-t border-neutral-800 px-0 pb-4 pt-2">
+														<ReplayReviewPanel key={game.id} gameId={game.id} onChanged={() => void refreshList()} />
+													</td>
+												</tr>
 											) : null}
-										</td>
-										<td className={td}>
-											<AdminButton variant="secondary" className="h-8" onClick={() => setSelectedId(game.id === selectedId ? null : game.id)}>
-												{game.id === selectedId ? t('adminClose') : t('adminReview')}
-											</AdminButton>
-										</td>
-									</tr>
-								))}
+										</Fragment>
+									);
+								})}
 							</tbody>
 						</table>
 					</div>
