@@ -20,161 +20,204 @@ function diamond(ctx: Ctx, x: number, y: number, r: number) {
 	ctx.closePath();
 }
 
-// A dot of radius 4.5 with its nose 8.5 out along the heading; the sides are tangents.
+/**
+ * How large unit symbols are drawn at a zoom (pixels per metre). They grow a little as the
+ * view closes in, so a soldier is easy to pick out up close, and shrink on the wide view,
+ * where a hundred of them must not run together.
+ */
+export function symbolScale(pixelsPerMetre: number): number {
+	return Math.min(1.25, Math.max(0.9, 0.85 + 0.25 * Math.log2(pixelsPerMetre / 0.5)));
+}
+
+/** Draws a symbol in its own frame: the origin at (x, y), every length times k. */
+function at(ctx: Ctx, x: number, y: number, k: number, draw: () => void) {
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.scale(k, k);
+	draw();
+	ctx.restore();
+}
+
+// The sizes below are the symbols at scale 1, about 1.2 pixels per metre.
+
+// A dot of radius 6.5 with its nose 12.5 out along the heading; the sides are tangents.
 // Built on first use: the module is also evaluated while the page renders on the server.
+const SOLDIER_R = 6.5;
+const SOLDIER_NOSE = 12.5;
 let soldierPath: Path2D | null = null;
 
 function soldier(): Path2D {
 	if (soldierPath) return soldierPath;
-	const r = 4.5;
-	const d = 8.5;
-	const a = Math.acos(r / d);
+	const a = Math.acos(SOLDIER_R / SOLDIER_NOSE);
 	const path = new Path2D();
-	path.moveTo(0, -d);
-	path.lineTo(r * Math.sin(a), -r * Math.cos(a));
-	path.arc(0, 0, r, a - Math.PI / 2, Math.PI * 1.5 - a);
+	path.moveTo(0, -SOLDIER_NOSE);
+	path.lineTo(SOLDIER_R * Math.sin(a), -SOLDIER_R * Math.cos(a));
+	path.arc(0, 0, SOLDIER_R, a - Math.PI / 2, Math.PI * 1.5 - a);
 	path.closePath();
 	soldierPath = path;
 	return path;
 }
 
 /** Heading in degrees clockwise from north. */
-export function drawSoldier(ctx: Ctx, x: number, y: number, heading: number, style: SideStyle) {
+export function drawSoldier(ctx: Ctx, x: number, y: number, heading: number, style: SideStyle, k: number) {
 	const path = soldier();
-	ctx.save();
-	ctx.translate(x, y);
-	ctx.rotate((heading * Math.PI) / 180);
-	ctx.fillStyle = style.fill;
-	ctx.fill(path);
-	ctx.strokeStyle = style.edge;
-	ctx.lineWidth = 1.25;
-	ctx.lineJoin = 'round';
-	ctx.stroke(path);
-	ctx.restore();
+	at(ctx, x, y, k, () => {
+		ctx.rotate((heading * Math.PI) / 180);
+		ctx.fillStyle = style.fill;
+		ctx.fill(path);
+		ctx.strokeStyle = style.edge;
+		ctx.lineWidth = 1.5;
+		ctx.lineJoin = 'round';
+		ctx.stroke(path);
+	});
 }
 
-export function drawUnconscious(ctx: Ctx, x: number, y: number, style: SideStyle) {
-	ctx.beginPath();
-	ctx.arc(x, y, 5.5, 0, Math.PI * 2);
-	ctx.strokeStyle = style.edge;
-	ctx.lineWidth = 1;
-	ctx.stroke();
-	ctx.beginPath();
-	ctx.arc(x, y, 4, 0, Math.PI * 2);
-	ctx.fillStyle = '#ffffff';
-	ctx.fill();
-	ctx.strokeStyle = style.fill;
-	ctx.lineWidth = 2;
-	ctx.stroke();
+export function drawUnconscious(ctx: Ctx, x: number, y: number, style: SideStyle, k: number) {
+	at(ctx, x, y, k, () => {
+		ctx.beginPath();
+		ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+		ctx.strokeStyle = style.edge;
+		ctx.lineWidth = 1.25;
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+		ctx.fillStyle = '#ffffff';
+		ctx.fill();
+		ctx.strokeStyle = style.fill;
+		ctx.lineWidth = 2.5;
+		ctx.stroke();
+	});
 }
 
-export function drawCorpse(ctx: Ctx, x: number, y: number) {
-	ctx.globalAlpha = 0.9;
-	ctx.beginPath();
-	ctx.arc(x, y, 3, 0, Math.PI * 2);
-	ctx.fillStyle = DEAD_STYLE.fill;
-	ctx.fill();
-	ctx.strokeStyle = DEAD_STYLE.edge;
-	ctx.lineWidth = 1;
-	ctx.stroke();
-	ctx.globalAlpha = 1;
+export function drawCorpse(ctx: Ctx, x: number, y: number, k: number) {
+	at(ctx, x, y, k, () => {
+		ctx.globalAlpha = 0.9;
+		ctx.beginPath();
+		ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+		ctx.fillStyle = DEAD_STYLE.fill;
+		ctx.fill();
+		ctx.strokeStyle = DEAD_STYLE.edge;
+		ctx.lineWidth = 1.25;
+		ctx.stroke();
+	});
 }
 
-/** The squad frame: a 22 px diamond quartered by lines joining its edge midpoints. */
-export function drawSquad(ctx: Ctx, x: number, y: number, style: SideStyle) {
-	const r = 11;
+/** The squad frame: a 30 px diamond quartered by lines joining its edge midpoints. */
+export function drawSquad(ctx: Ctx, x: number, y: number, style: SideStyle, k: number) {
+	const r = 15;
 	const m = r / 2;
-	diamond(ctx, x, y, r + 1.75);
-	ctx.fillStyle = HALO;
-	ctx.fill();
-	diamond(ctx, x, y, r);
-	ctx.fillStyle = style.fill;
-	ctx.fill();
-	ctx.strokeStyle = style.edge;
-	ctx.lineWidth = 1.5;
-	ctx.stroke();
-	ctx.beginPath();
-	ctx.moveTo(x - m, y - m);
-	ctx.lineTo(x + m, y + m);
-	ctx.moveTo(x + m, y - m);
-	ctx.lineTo(x - m, y + m);
-	ctx.lineWidth = 1.25;
-	ctx.stroke();
-}
-
-/** The vehicle frame: a 26 px diamond around an oval; a wreck is a smaller grey frame. */
-export function drawVehicle(ctx: Ctx, x: number, y: number, style: SideStyle, wreck: boolean) {
-	const size = wreck ? 22 : 26;
-	const r = size / 2;
-	const colors = wreck ? DEAD_STYLE : style;
-	if (wreck) ctx.globalAlpha = 0.9;
-	else {
-		diamond(ctx, x, y, r + 1.75);
+	at(ctx, x, y, k, () => {
+		diamond(ctx, 0, 0, r + 2);
 		ctx.fillStyle = HALO;
 		ctx.fill();
-	}
-	diamond(ctx, x, y, r);
-	ctx.fillStyle = colors.fill;
-	ctx.fill();
-	ctx.strokeStyle = colors.edge;
-	ctx.lineWidth = 1.5;
-	ctx.stroke();
-	ctx.beginPath();
-	ctx.ellipse(x, y, size * 0.2, size * 0.11, 0, 0, Math.PI * 2);
-	ctx.lineWidth = 1.25;
-	ctx.stroke();
-	ctx.globalAlpha = 1;
+		diamond(ctx, 0, 0, r);
+		ctx.fillStyle = style.fill;
+		ctx.fill();
+		ctx.strokeStyle = style.edge;
+		ctx.lineWidth = 2;
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.moveTo(-m, -m);
+		ctx.lineTo(m, m);
+		ctx.moveTo(m, -m);
+		ctx.lineTo(-m, m);
+		ctx.lineWidth = 1.5;
+		ctx.stroke();
+	});
+}
+
+/** The vehicle frame: a 36 px diamond around an oval; a wreck is a smaller grey frame. */
+export function drawVehicle(ctx: Ctx, x: number, y: number, style: SideStyle, wreck: boolean, k: number) {
+	const size = wreck ? 30 : 36;
+	const r = size / 2;
+	const colors = wreck ? DEAD_STYLE : style;
+	at(ctx, x, y, k, () => {
+		if (wreck) ctx.globalAlpha = 0.9;
+		else {
+			diamond(ctx, 0, 0, r + 2);
+			ctx.fillStyle = HALO;
+			ctx.fill();
+		}
+		diamond(ctx, 0, 0, r);
+		ctx.fillStyle = colors.fill;
+		ctx.fill();
+		ctx.strokeStyle = colors.edge;
+		ctx.lineWidth = 2;
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.ellipse(0, 0, size * 0.2, size * 0.11, 0, 0, Math.PI * 2);
+		ctx.lineWidth = 1.5;
+		ctx.stroke();
+	});
 }
 
 /** How many are aboard, in a badge on the vehicle frame's upper right. */
-export function drawCrew(ctx: Ctx, x: number, y: number, count: number) {
-	ctx.beginPath();
-	ctx.roundRect(x + 6, y - 23, 14, 14, 2);
-	ctx.fillStyle = '#0a0a0a';
-	ctx.fill();
-	ctx.strokeStyle = '#ffffff';
-	ctx.lineWidth = 1;
-	ctx.stroke();
-	ctx.font = '700 11px Inter, ui-sans-serif, system-ui, sans-serif';
-	ctx.fillStyle = '#ffffff';
-	ctx.textAlign = 'center';
-	ctx.fillText(String(count), x + 13, y - 12);
-	ctx.textAlign = 'start';
+export function drawCrew(ctx: Ctx, x: number, y: number, count: number, k: number) {
+	at(ctx, x, y, k, () => {
+		ctx.beginPath();
+		ctx.roundRect(9, -30, 17, 17, 3);
+		ctx.fillStyle = '#0a0a0a';
+		ctx.fill();
+		ctx.strokeStyle = '#ffffff';
+		ctx.lineWidth = 1.25;
+		ctx.stroke();
+		ctx.font = '700 12px Inter, ui-sans-serif, system-ui, sans-serif';
+		ctx.fillStyle = '#ffffff';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(String(count), 17.5, -21);
+	});
 }
 
-/** Corner brackets on a 26 px box around whatever the camera follows. */
-export function drawBrackets(ctx: Ctx, x: number, y: number, s = 13) {
-	const arm = 7;
-	ctx.beginPath();
-	for (const [dx, dy] of [
-		[-1, -1],
-		[1, -1],
-		[1, 1],
-		[-1, 1],
-	]) {
-		ctx.moveTo(x + dx * s, y + dy * (s - arm));
-		ctx.lineTo(x + dx * s, y + dy * s);
-		ctx.lineTo(x + dx * (s - arm), y + dy * s);
-	}
-	ctx.lineCap = 'square';
-	ctx.strokeStyle = '#0a0a0a';
-	ctx.lineWidth = 4.5;
-	ctx.stroke();
-	ctx.strokeStyle = ACCENT;
-	ctx.lineWidth = 2;
-	ctx.stroke();
-	ctx.lineCap = 'butt';
+/** Corner brackets around the selected unit: s is half the box, before scaling. */
+export function drawBrackets(ctx: Ctx, x: number, y: number, s: number, k: number) {
+	const arm = 9;
+	at(ctx, x, y, k, () => {
+		ctx.beginPath();
+		for (const [dx, dy] of [
+			[-1, -1],
+			[1, -1],
+			[1, 1],
+			[-1, 1],
+		]) {
+			ctx.moveTo(dx * s, dy * (s - arm));
+			ctx.lineTo(dx * s, dy * s);
+			ctx.lineTo(dx * (s - arm), dy * s);
+		}
+		ctx.lineCap = 'square';
+		ctx.strokeStyle = '#0a0a0a';
+		ctx.lineWidth = 5;
+		ctx.stroke();
+		ctx.strokeStyle = ACCENT;
+		ctx.lineWidth = 2.5;
+		ctx.stroke();
+	});
 }
 
-export function drawTracer(ctx: Ctx, x: number, y: number, heading: number, length: number, opacity: number) {
+/** Sizes the map uses around the symbols: where labels start, how far a click reaches. */
+export const SYMBOL = {
+	soldierLabel: 14,
+	corpseLabel: 9,
+	vehicleLabel: 24,
+	squadLabel: 21,
+	squadAbove: 30,
+	squadSpacing: 36,
+	bracketMan: 18,
+	bracketVehicle: 25,
+	hit: 16,
+};
+
+export function drawTracer(ctx: Ctx, x: number, y: number, heading: number, length: number, opacity: number, k: number) {
 	const a = (heading * Math.PI) / 180;
 	const dx = Math.sin(a);
 	const dy = -Math.cos(a);
+	const from = (SOLDIER_NOSE + 1) * k;
+	const to = from + length * k;
 	ctx.beginPath();
-	ctx.moveTo(x + dx * 7, y + dy * 7);
-	ctx.lineTo(x + dx * (7 + length), y + dy * (7 + length));
+	ctx.moveTo(x + dx * from, y + dy * from);
+	ctx.lineTo(x + dx * to, y + dy * to);
 	ctx.strokeStyle = withAlpha(FIRE, opacity);
-	ctx.lineWidth = 1.5;
+	ctx.lineWidth = 2;
 	ctx.lineCap = 'round';
 	ctx.stroke();
 	ctx.lineCap = 'butt';

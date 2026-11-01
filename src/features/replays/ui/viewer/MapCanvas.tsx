@@ -19,6 +19,8 @@ import {
 	drawTracer,
 	drawUnconscious,
 	drawVehicle,
+	SYMBOL,
+	symbolScale,
 	type LabelBox,
 	type PlateTone,
 } from './mapSymbols';
@@ -62,7 +64,7 @@ type Props = {
 const KILL_LINE = 30;
 const DETONATION = 20;
 const SHOT = 10;
-const BLAST_RADIUS: Record<string, number> = { grenade: 12, rocket: 14, shell: 18 };
+const BLAST_RADIUS: Record<string, number> = { grenade: 16, rocket: 18, shell: 24 };
 const MIN_SCALE = 0.02;
 const MAX_SCALE = 12;
 // Names follow the zoom, so a battle of 128 stays readable: none while the view is wide
@@ -159,6 +161,7 @@ export default function MapCanvas(props: Props) {
 	const viewRef = useRef<View | null>(null);
 	const sizeRef = useRef({ w: 0, h: 0, dpr: 1 });
 	const hitsRef = useRef<{ eid: number; x: number; y: number }[]>([]);
+	const hitRadiusRef = useRef(SYMBOL.hit);
 	const dragRef = useRef<{ x: number; y: number; moved: boolean; pointers: Map<number, { x: number; y: number }>; pinch: number | null }>({
 		x: 0,
 		y: 0,
@@ -220,6 +223,7 @@ export default function MapCanvas(props: Props) {
 			view.cz = shownAt.z;
 		}
 
+		const size = symbolScale(view.scale);
 		const sx = (x: number) => (x - view.cx) * view.scale + w / 2;
 		const sy = (z: number) => (view.cz - z) * view.scale + h / 2;
 		const left = view.cx - w / 2 / view.scale;
@@ -356,9 +360,9 @@ export default function MapCanvas(props: Props) {
 				const y = sy(marker.z);
 				const color = markerColor(marker.color);
 				const image = color && MARKER_ICONS.has(marker.icon) ? markerIcon(`/markers/icons/${marker.icon}-${color}.png`, redraw) : null;
-				if (image) ctx.drawImage(image, x - 12, y - 12, 24, 24);
+				if (image) ctx.drawImage(image, x - 14, y - 14, 28, 28);
 				else drawFallbackMarker(ctx, x, y, marker.color ? displayColor(marker.color) : '#ee322e');
-				if (layers.markerText && marker.text) drawMarkerText(ctx, marker.text, x + (image ? 14 : 10), y);
+				if (layers.markerText && marker.text) drawMarkerText(ctx, marker.text, x + (image ? 17 : 10), y);
 			}
 		}
 
@@ -366,10 +370,10 @@ export default function MapCanvas(props: Props) {
 		if (layers.dead) {
 			for (const man of men) {
 				if (man.life !== 'dead') continue;
-				drawCorpse(ctx, man.x, man.y);
+				drawCorpse(ctx, man.x, man.y, size);
 				hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
 				const nickname = layers.nicknames && view.scale >= DETAIL_FROM && man.entity.eid !== selected ? nicknameOf(man.entity) : null;
-				if (nickname) plates.push({ text: nickname, anchor: man.x + 8, y: man.y, rank: 4, tone: 'dim' });
+				if (nickname) plates.push({ text: nickname, anchor: man.x + SYMBOL.corpseLabel * size, y: man.y, rank: 4, tone: 'dim' });
 			}
 		}
 		const vehicles: { entity: Entity; x: number; y: number; wreck: boolean }[] = [];
@@ -382,7 +386,7 @@ export default function MapCanvas(props: Props) {
 		}
 		for (const vehicle of vehicles) {
 			if (!vehicle.wreck) continue;
-			drawVehicle(ctx, vehicle.x, vehicle.y, NEUTRAL_STYLE, true);
+			drawVehicle(ctx, vehicle.x, vehicle.y, NEUTRAL_STYLE, true, size);
 			hits.push({ eid: vehicle.entity.eid, x: vehicle.x, y: vehicle.y });
 		}
 
@@ -406,7 +410,7 @@ export default function MapCanvas(props: Props) {
 			for (const blast of model.detonations) {
 				if (blast.t > t || blast.t < t - DETONATION) continue;
 				const k = (t - blast.t) / DETONATION;
-				drawBlast(ctx, sx(blast.x), sy(blast.z), (BLAST_RADIUS[blast.kind] ?? 12) * (0.4 + 0.6 * k), 1 - k);
+				drawBlast(ctx, sx(blast.x), sy(blast.z), (BLAST_RADIUS[blast.kind] ?? 16) * size * (0.4 + 0.6 * k), 1 - k);
 			}
 			for (const shot of model.shots) {
 				if (shot.t > t || shot.t < t - SHOT) continue;
@@ -415,20 +419,8 @@ export default function MapCanvas(props: Props) {
 				const seat = valueAt(shooter.seats, shot.t, null);
 				const at = positionAt(carrier(model, shooter, shot.t), shot.t);
 				if (!at) continue;
-				drawTracer(ctx, sx(at.x), sy(at.z), shot.heading, seat?.role === 'gunner' ? 26 : 16, 1 - (t - shot.t) / SHOT);
+				drawTracer(ctx, sx(at.x), sy(at.z), shot.heading, seat?.role === 'gunner' ? 32 : 20, 1 - (t - shot.t) / SHOT, size);
 			}
-		}
-
-		for (const man of men) {
-			if (man.life === 'dead') continue;
-			const style = sideStyle(man.entity.side);
-			if (man.life === 'unconscious') drawUnconscious(ctx, man.x, man.y, style);
-			else drawSoldier(ctx, man.x, man.y, man.h, style);
-			hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
-			if (man.entity.eid === selected || view.scale < NAMES_FROM) continue;
-			const nickname = layers.nicknames ? nicknameOf(man.entity) : null;
-			if (nickname) plates.push({ text: nickname, anchor: man.x + 10, y: man.y, rank: 1 });
-			else if (layers.aiRoles && view.scale >= DETAIL_FROM) plates.push({ text: nameOf(man.entity), anchor: man.x + 10, y: man.y, rank: 5, tone: 'soft' });
 		}
 
 		for (const vehicle of vehicles) {
@@ -436,33 +428,47 @@ export default function MapCanvas(props: Props) {
 			const { entity, x, y } = vehicle;
 			if (entity.kind === 'tracker') {
 				ctx.beginPath();
-				ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+				ctx.arc(x, y, 6 * size, 0, Math.PI * 2);
 				ctx.fillStyle = ACCENT;
 				ctx.fill();
 				ctx.strokeStyle = '#5c5024';
 				ctx.lineWidth = 1.25;
 				ctx.stroke();
 			} else {
-				drawVehicle(ctx, x, y, sideStyle(entity.side), false);
+				drawVehicle(ctx, x, y, sideStyle(entity.side), false, size);
 				const crew = crews.get(entity.eid);
-				if (crew) drawCrew(ctx, x, y, crew);
+				if (crew) drawCrew(ctx, x, y, crew, size);
 			}
 			hits.push({ eid: entity.eid, x, y });
 			if (layers.vehicleNames && view.scale >= NAMES_FROM && entity.eid !== selected) {
-				plates.push({ text: nameOf(entity), anchor: x + (entity.kind === 'tracker' ? 10 : 19), y, rank: 2, tone: 'soft' });
+				plates.push({ text: nameOf(entity), anchor: x + (entity.kind === 'tracker' ? 10 : SYMBOL.vehicleLabel) * size, y, rank: 2, tone: 'soft' });
 			}
+		}
+
+		// Soldiers on foot are drawn over the vehicles beside them, which would otherwise hide them.
+		for (const man of men) {
+			if (man.life === 'dead') continue;
+			const style = sideStyle(man.entity.side);
+			if (man.life === 'unconscious') drawUnconscious(ctx, man.x, man.y, style, size);
+			else drawSoldier(ctx, man.x, man.y, man.h, style, size);
+			hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
+			if (man.entity.eid === selected || view.scale < NAMES_FROM) continue;
+			const nickname = layers.nicknames ? nicknameOf(man.entity) : null;
+			if (nickname) plates.push({ text: nickname, anchor: man.x + SYMBOL.soldierLabel * size, y: man.y, rank: 1 });
+			else if (layers.aiRoles && view.scale >= DETAIL_FROM) plates.push({ text: nameOf(man.entity), anchor: man.x + SYMBOL.soldierLabel * size, y: man.y, rank: 5, tone: 'soft' });
 		}
 
 		if (layers.squads && view.scale < NAMES_FROM) {
 			// Squads standing together are set side by side, as on a paper map, rather than
 			// drawn over one another.
 			const placed: { x: number; y: number }[] = [];
-			const ordered = [...squads].map(([key, squad]) => ({ key, side: squad.side, x: squad.x / squad.n, y: squad.top - 22 })).sort((a, b) => a.x - b.x);
+			const ordered = [...squads].map(([key, squad]) => ({ key, side: squad.side, x: squad.x / squad.n, y: squad.top - SYMBOL.squadAbove * size })).sort((a, b) => a.x - b.x);
 			for (const squad of ordered) {
-				while (placed.some((p) => Math.abs(p.x - squad.x) < 24 && Math.abs(p.y - squad.y) < 24)) squad.x += 26;
+				const spacing = SYMBOL.squadSpacing * size;
+				while (placed.some((p) => Math.abs(p.x - squad.x) < spacing - 2 && Math.abs(p.y - squad.y) < spacing - 2)) squad.x += spacing;
 				placed.push(squad);
-				drawSquad(ctx, squad.x, squad.y, sideStyle(squad.side));
-				plates.push({ text: callsignFor(squad.key), anchor: squad.x + 17, y: squad.y, rank: 3, stack: true });
+				drawSquad(ctx, squad.x, squad.y, sideStyle(squad.side), size);
+				plates.push({ text: callsignFor(squad.key), anchor: squad.x + SYMBOL.squadLabel * size, y: squad.y, rank: 3, stack: true });
 			}
 		}
 
@@ -472,13 +478,13 @@ export default function MapCanvas(props: Props) {
 		if (hover) {
 			for (const hit of hits) {
 				const d = Math.hypot(hit.x - hover.x, hit.y - hover.y);
-				if (d <= 14 && (!hovered || d < hovered.d)) hovered = { ...hit, d };
+				if (d <= SYMBOL.hit * size && (!hovered || d < hovered.d)) hovered = { ...hit, d };
 			}
 		}
 		const pointed = hovered && hovered.eid !== selected ? model.entities.get(hovered.eid) : undefined;
 		if (hovered && pointed) {
 			const name = pointed.kind === 'man' ? (nicknameOf(pointed) ?? nameOf(pointed)) : nameOf(pointed);
-			plates.push({ text: name, anchor: hovered.x + (pointed.kind === 'man' ? 12 : 21), y: hovered.y, rank: 0 });
+			plates.push({ text: name, anchor: hovered.x + (pointed.kind === 'man' ? SYMBOL.soldierLabel : SYMBOL.vehicleLabel) * size, y: hovered.y, rank: 0 });
 		}
 		canvas.style.cursor = hovered ? 'pointer' : 'grab';
 
@@ -487,9 +493,10 @@ export default function MapCanvas(props: Props) {
 			const x = sx(shownAt.x);
 			const y = sy(shownAt.z);
 			const framed = shown !== chosen || shown.kind !== 'man';
-			drawBrackets(ctx, x, y, framed ? 18 : 13);
+			const bracket = framed ? SYMBOL.bracketVehicle : SYMBOL.bracketMan;
+			drawBrackets(ctx, x, y, bracket, size);
 			const name = chosen.kind === 'man' ? (nicknameOf(chosen) ?? nameOf(chosen)) : nameOf(chosen);
-			plates.push({ text: name, anchor: x - (framed ? 23 : 18), y, rank: 0, align: 'right', outlined: true });
+			plates.push({ text: name, anchor: x - (bracket + 5) * size, y, rank: 0, align: 'right', outlined: true });
 		}
 		const taken: LabelBox[] = [];
 		plates.sort((a, b) => a.rank - b.rank);
@@ -517,6 +524,7 @@ export default function MapCanvas(props: Props) {
 		if (scaleFullRef.current) scaleFullRef.current.textContent = unit(metres);
 
 		hitsRef.current = hits;
+		hitRadiusRef.current = SYMBOL.hit * size;
 	}, [model, t, relief, topo, layers, selected, following, sideStyle, nicknameOf, nameOf, callsignFor, contested]);
 
 	useEffect(() => {
@@ -640,7 +648,7 @@ export default function MapCanvas(props: Props) {
 		let best: { eid: number; d: number } | null = null;
 		for (const hit of hitsRef.current) {
 			const d = Math.hypot(hit.x - x, hit.y - y);
-			if (d <= 14 && (!best || d < best.d)) best = { eid: hit.eid, d };
+			if (d <= hitRadiusRef.current && (!best || d < best.d)) best = { eid: hit.eid, d };
 		}
 		onSelect(best ? best.eid : null);
 	};
