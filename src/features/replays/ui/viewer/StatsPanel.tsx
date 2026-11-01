@@ -115,7 +115,7 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 				<div
 					role="dialog"
 					aria-label={t('statsTitle')}
-					className="fixed inset-x-[8px] top-[54px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[6px] sm:w-[520px]"
+					className="fixed inset-x-[8px] top-[56px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[14px] sm:w-[520px]"
 				>
 					<p className={`pb-[8px] text-neutral-400 ${eyebrow}`}>{t('statsTitle')}</p>
 					{stats ? (

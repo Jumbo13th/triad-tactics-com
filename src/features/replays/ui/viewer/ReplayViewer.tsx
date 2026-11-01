@@ -165,7 +165,7 @@ function ShortcutsButton() {
 				<div
 					role="dialog"
 					aria-label={t('shortcuts')}
-					className="absolute right-0 top-full z-30 mt-[6px] w-[260px] rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+					className="absolute right-0 top-full z-30 mt-[14px] w-[260px] rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
 				>
 					<p className={`pb-[6px] text-neutral-400 ${eyebrow}`}>{t('shortcuts')}</p>
 					<dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-[12px] gap-y-[6px] text-[13px] leading-[18px]">
