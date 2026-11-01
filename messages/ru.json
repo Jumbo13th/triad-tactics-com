@@ -396,7 +396,8 @@
     "showUnits": "Показать отряды (U)",
     "layersReset": "Вернуть по умолчанию",
     "layerHint_squads": "при отдалении",
-    "layerHint_aiRoles": "вблизи"
+    "layerHint_aiRoles": "вблизи",
+    "backToNow": "К текущему моменту"
   },
   "nav": {
     "aria": "Навигация",

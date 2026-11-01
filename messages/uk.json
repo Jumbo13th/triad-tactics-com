@@ -396,7 +396,8 @@
     "showUnits": "Показати загони (U)",
     "layersReset": "Повернути типові",
     "layerHint_squads": "при віддаленні",
-    "layerHint_aiRoles": "зблизька"
+    "layerHint_aiRoles": "зблизька",
+    "backToNow": "До поточного моменту"
   },
   "nav": {
     "aria": "Навігація",

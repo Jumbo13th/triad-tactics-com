@@ -396,7 +396,8 @@
     "showUnits": "إظهار الفرق (U)",
     "layersReset": "إعادة الافتراضي",
     "layerHint_squads": "عند التصغير",
-    "layerHint_aiRoles": "عن قرب"
+    "layerHint_aiRoles": "عن قرب",
+    "backToNow": "العودة إلى الآن"
   },
   "nav": {
     "aria": "التنقل",

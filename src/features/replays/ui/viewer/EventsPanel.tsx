@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { valueAt, type ReplayEvent, type ReplayModel } from '../../domain/replayFormat';
 import { formatMissionTime } from './format';
@@ -180,6 +180,7 @@ export default function EventsPanel({ model, second, playing, selected, onPick, 
 	const [filter, setFilter] = useState<Filter>('all');
 	const [query, setQuery] = useState('');
 	const [onlySelected, setOnlySelected] = useState(false);
+	const [trackNow, setTrackNow] = useState(true);
 	const listRef = useRef<HTMLOListElement>(null);
 	const nowRef = useRef<HTMLLIElement>(null);
 	const lastSecond = useRef(second);
@@ -233,19 +234,30 @@ export default function EventsPanel({ model, second, playing, selected, onPick, 
 		}
 	}
 
-	// The list keeps the present in view while it plays or after a jump, but leaves a reader
-	// scrolling a paused list alone.
-	useEffect(() => {
+	const showNow = useCallback((always: boolean) => {
 		const list = listRef.current;
 		const line = nowRef.current;
-		const jumped = Math.abs(second - lastSecond.current) > 30;
-		lastSecond.current = second;
-		if (!list || !line || (!playing && !jumped)) return;
+		if (!list || !line) return;
 		// The list is positioned, so offsets inside it are measured from its top.
 		const top = line.offsetTop;
 		const view = list.clientHeight;
-		if (top < list.scrollTop + view * 0.15 || top > list.scrollTop + view * 0.75) list.scrollTop = top - view * 0.4;
-	}, [second, playing, filter]);
+		if (always || top < list.scrollTop + view * 0.15 || top > list.scrollTop + view * 0.75) list.scrollTop = top - view * 0.4;
+	}, []);
+
+	// The list keeps the present in view while it plays or after a jump, until the reader
+	// scrolls it themselves; then it stays where they put it until they ask to go back.
+	useEffect(() => {
+		const jumped = Math.abs(second - lastSecond.current) > 30;
+		lastSecond.current = second;
+		if (trackNow && (playing || jumped)) showNow(false);
+	}, [second, playing, filter, trackNow, showNow]);
+
+	// Only the reader's own input counts: scroll events also come from rows being added and
+	// from the browser keeping its place, which must not stop the list following.
+	const readerScrolled = () => setTrackNow(false);
+	const onListKey = (event: KeyboardEvent) => {
+		if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) readerScrolled();
+	};
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -294,19 +306,43 @@ export default function EventsPanel({ model, second, playing, selected, onPick, 
 			{events.length === 0 ? (
 				<p className="px-[16px] py-[12px] text-[13px] leading-[18px] text-neutral-400">{needle !== '' || onlySelected ? t('noEventMatches') : t('noEvents')}</p>
 			) : (
-				<ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[6px] pb-[12px] pt-[4px]">
-					{events.slice(0, split).map((event, i) => (
-						<EventRow key={i} event={event} future={false} describe={describe} onPick={onPick} />
-					))}
-					<li ref={nowRef} aria-current="time" className="flex min-h-[28px] items-center gap-[8px] px-[8px]">
-						<span className="text-[12px] font-semibold leading-[16px] tabular-nums text-[color:var(--accent)]">{formatMissionTime(now)}</span>
-						<span aria-hidden="true" className="h-px flex-1 bg-[color:var(--accent)]" />
-						<span className="text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-[color:var(--accent)]">{t('now')}</span>
-					</li>
-					{events.slice(split).map((event, i) => (
-						<EventRow key={split + i} event={event} future describe={describe} onPick={onPick} />
-					))}
-				</ol>
+				<div className="relative flex min-h-0 flex-1 flex-col">
+					<ol
+						ref={listRef}
+						onWheel={readerScrolled}
+						onTouchMove={readerScrolled}
+						onKeyDown={onListKey}
+						onPointerDown={(event) => {
+							// A press on the list itself rather than a row is its scrollbar.
+							if (event.target === event.currentTarget) readerScrolled();
+						}}
+						className="relative min-h-0 flex-1 overflow-y-auto px-[6px] pb-[12px] pt-[4px]"
+					>
+						{events.slice(0, split).map((event, i) => (
+							<EventRow key={i} event={event} future={false} describe={describe} onPick={onPick} />
+						))}
+						<li ref={nowRef} aria-current="time" className="flex min-h-[28px] items-center gap-[8px] px-[8px]">
+							<span className="text-[12px] font-semibold leading-[16px] tabular-nums text-[color:var(--accent)]">{formatMissionTime(now)}</span>
+							<span aria-hidden="true" className="h-px flex-1 bg-[color:var(--accent)]" />
+							<span className="text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-[color:var(--accent)]">{t('now')}</span>
+						</li>
+						{events.slice(split).map((event, i) => (
+							<EventRow key={split + i} event={event} future describe={describe} onPick={onPick} />
+						))}
+					</ol>
+					{!trackNow ? (
+						<button
+							type="button"
+							onClick={() => {
+								setTrackNow(true);
+								showNow(true);
+							}}
+							className="absolute bottom-[12px] left-1/2 inline-flex min-h-[32px] -translate-x-1/2 items-center gap-[6px] whitespace-nowrap rounded-full border border-[rgba(210,184,83,0.5)] bg-[#1a1a1a] px-[12px] text-[12px] font-semibold text-[color:var(--accent)] shadow-[0_4px_16px_rgba(0,0,0,0.5)] hover:bg-[#242424]"
+						>
+							{t('backToNow')}
+						</button>
+					) : null}
+				</div>
 			)}
 		</div>
 	);

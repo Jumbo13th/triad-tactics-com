@@ -396,7 +396,8 @@
     "showUnits": "Show squads (U)",
     "layersReset": "Reset to default",
     "layerHint_squads": "zoomed out",
-    "layerHint_aiRoles": "up close"
+    "layerHint_aiRoles": "up close",
+    "backToNow": "Back to now"
   },
   "nav": {
     "aria": "Navigation",
