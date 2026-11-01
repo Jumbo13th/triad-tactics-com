@@ -1163,5 +1163,23 @@ export const migrations: Migration[] = [
 				updated_by_steamid64 TEXT
 			);
 		`
+	},
+	{
+		id: 31,
+		name: 'replay_game_players',
+		up: `
+			-- Who played each published game, so the replay list can find a game by its
+			-- players: one row per name the game displayed for a player (player_ref is
+			-- the recording's player number), with the identity GUID from the game's
+			-- identity file, which matches users.arma_guid. identity_guid is null for a
+			-- player whose identity the server never learned. Rebuilt on every publish.
+			CREATE TABLE IF NOT EXISTS replay_game_players (
+				game_id INTEGER NOT NULL REFERENCES replay_games(id) ON DELETE CASCADE,
+				player_ref INTEGER NOT NULL,
+				identity_guid TEXT,
+				name TEXT NOT NULL,
+				PRIMARY KEY (game_id, player_ref, name)
+			);
+		`
 	}
 ];

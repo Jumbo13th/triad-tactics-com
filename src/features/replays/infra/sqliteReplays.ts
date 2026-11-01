@@ -1,8 +1,13 @@
 import { getDb } from '@/platform/db/connection';
+import type { ReplayPlayer } from '../domain/players';
 import type { ReplayFileKind, ReplayGameEnding } from '../domain/protocol';
+import type { ReplaySearch, ReplaySearchTerm } from '../domain/search';
 import type { SegmentHeader } from '../domain/segmentHeader';
+import { terrainName } from '../domain/terrain';
 import type {
+	EpisodeReplay,
 	PublicReplayListItem,
+	PublicReplaySearchItem,
 	ReplayEpisodeStats,
 	ReplayFile,
 	ReplayGameInput,
@@ -69,6 +74,8 @@ type PublishedRow = {
 	stats_id: number | null;
 };
 
+type SearchRow = PublishedRow & { player_count: number };
+
 const FILE_COLUMNS = `sha256, kind, server_id, session, name, size, encoded_size, encoded_sha256, storage_key, header_json`;
 
 // The first segment's header names the mission, world and start time of the game.
@@ -90,17 +97,79 @@ const GAME_LIST_SELECT = `
 	LEFT JOIN missions m ON m.id = g.mission_id`;
 
 // Statistics are linked by mission episode and shown only once published.
+const PUBLISHED_STATS_ID = `(SELECT s.id FROM game_stats s
+	WHERE s.mission_id = g.mission_id AND s.episode_number = g.episode_number
+		AND s.status = 'published')`;
+
 const PUBLISHED_SELECT = `
 	SELECT
 		g.id, m.title AS mission_title, m.short_code AS mission_short_code,
 		g.episode_number, g.published_at,
 		${FIRST_HEADER} AS first_header_json,
-		(SELECT s.id FROM game_stats s
-			WHERE s.mission_id = g.mission_id AND s.episode_number = g.episode_number
-				AND s.status = 'published') AS stats_id
+		${PUBLISHED_STATS_ID} AS stats_id
 	FROM replay_games g
 	JOIN missions m ON m.id = g.mission_id
 	WHERE g.published_at IS NOT NULL AND g.episode_number IS NOT NULL`;
+
+// The published games with their first header, kept under the name g so that search
+// conditions and subqueries read as they do against replay_games.
+const PUBLISHED_GAMES = `
+	WITH published AS (
+		SELECT g.id, g.mission_id, g.episode_number, g.published_at, ${FIRST_HEADER} AS first_header_json
+		FROM replay_games g
+		WHERE g.published_at IS NOT NULL AND g.episode_number IS NOT NULL
+	)`;
+
+// A player who reconnected under another reference still has one identity.
+const PLAYER_COUNT = `(SELECT COUNT(DISTINCT COALESCE(p.identity_guid, 'ref ' || p.player_ref))
+	FROM replay_game_players p WHERE p.game_id = g.id)`;
+
+// A player matches by an in-game name, or through the identity GUID by the callsign of the
+// site account it belongs to. The callsign lookup does not depend on the game, so SQLite
+// runs it once per statement.
+const PLAYER_MATCH = `EXISTS (SELECT 1 FROM replay_game_players p WHERE p.game_id = g.id AND (
+	instr(replay_fold(p.name), ?) > 0
+	OR p.identity_guid IN (SELECT LOWER(u.arma_guid) FROM users u
+		WHERE u.arma_guid IS NOT NULL AND instr(replay_fold(u.current_callsign), ?) > 0)))`;
+
+type Db = ReturnType<typeof getDb>;
+const searchReady = new WeakSet<Db>();
+
+// SQLite folds case for ASCII only, while mission titles and in-game names are often
+// Cyrillic, so search compares text lowercased by JavaScript, as the terms themselves are.
+function searchDb(): Db {
+	const db = getDb();
+	if (!searchReady.has(db)) {
+		db.function('replay_fold', { deterministic: true }, (text: unknown) => (typeof text === 'string' ? text.toLowerCase() : null));
+		db.function('replay_terrain', { deterministic: true }, (world: unknown) => (typeof world === 'string' ? terrainName(world) : null));
+		searchReady.add(db);
+	}
+	return db;
+}
+
+function termCondition(term: ReplaySearchTerm): { sql: string; params: (string | number)[] } {
+	switch (term.kind) {
+		case 'episode':
+			return { sql: 'g.episode_number = ?', params: [term.episode] };
+		case 'number':
+			return { sql: '(g.episode_number = ? OR instr(replay_fold(m.title), ?) > 0)', params: [term.episode, term.text] };
+		case 'text':
+			return {
+				sql: `(instr(replay_fold(m.title), ?) > 0
+					OR instr(replay_fold(replay_terrain(json_extract(g.first_header_json, '$.world'))), ?) > 0
+					OR ${PLAYER_MATCH})`,
+				params: [term.text, term.text, term.text, term.text],
+			};
+	}
+}
+
+function searchFilter(search: ReplaySearch): { where: string; params: (string | number)[] } {
+	const conditions = search.terms.map(termCondition);
+	return {
+		where: conditions.length === 0 ? '' : `WHERE ${conditions.map((condition) => condition.sql).join(' AND ')}`,
+		params: conditions.flatMap((condition) => condition.params),
+	};
+}
 
 function parseHeader(json: string | null): SegmentHeader | null {
 	if (!json) return null;
@@ -304,9 +373,75 @@ export function listPublishedGames(input: { limit: number; offset: number }): Pu
 	return rows.map(toPublished);
 }
 
+export function searchPublishedGames(input: { search: ReplaySearch; limit: number; offset: number }): PublicReplaySearchItem[] {
+	const filter = searchFilter(input.search);
+	// A game published late still sits at the date it was played.
+	const rows = searchDb()
+		.prepare(
+			`${PUBLISHED_GAMES}
+			SELECT
+				g.id, m.title AS mission_title, m.short_code AS mission_short_code,
+				g.episode_number, g.published_at, g.first_header_json,
+				${PUBLISHED_STATS_ID} AS stats_id,
+				${PLAYER_COUNT} AS player_count
+			FROM published g
+			JOIN missions m ON m.id = g.mission_id
+			${filter.where}
+			ORDER BY json_extract(g.first_header_json, '$.started') DESC, g.id DESC
+			LIMIT ? OFFSET ?`
+		)
+		.all(...filter.params, input.limit, input.offset) as SearchRow[];
+	return rows.map((row) => ({ ...toPublished(row), playerCount: row.player_count }));
+}
+
+export function countPublishedGames(search: ReplaySearch): number {
+	const filter = searchFilter(search);
+	const row = searchDb()
+		.prepare(`${PUBLISHED_GAMES} SELECT COUNT(*) AS total FROM published g JOIN missions m ON m.id = g.mission_id ${filter.where}`)
+		.get(...filter.params) as { total: number };
+	return row.total;
+}
+
 export function findPublishedGame(id: number): PublicReplayListItem | null {
 	const row = getDb().prepare(`${PUBLISHED_SELECT} AND g.id = ?`).get(id) as PublishedRow | undefined;
 	return row ? toPublished(row) : null;
+}
+
+export function findEpisodeReplays(episodes: { missionId: number; episodeNumber: number }[]): EpisodeReplay[] {
+	if (episodes.length === 0) return [];
+	const rows = getDb()
+		.prepare(
+			`SELECT g.mission_id, g.episode_number, MAX(g.id) AS game_id
+			FROM replay_games g
+			JOIN (SELECT DISTINCT json_extract(e.value, '$[0]') AS mission_id, json_extract(e.value, '$[1]') AS episode_number
+				FROM json_each(?) e) wanted
+				ON wanted.mission_id = g.mission_id AND wanted.episode_number = g.episode_number
+			WHERE g.published_at IS NOT NULL
+			GROUP BY g.mission_id, g.episode_number`
+		)
+		.all(JSON.stringify(episodes.map((episode) => [episode.missionId, episode.episodeNumber]))) as {
+		mission_id: number;
+		episode_number: number;
+		game_id: number;
+	}[];
+	return rows.map((row) => ({ missionId: row.mission_id, episodeNumber: row.episode_number, gameId: row.game_id }));
+}
+
+export function listMissionReplays(missionShortCode: string): PublicReplayListItem[] {
+	const rows = getDb()
+		.prepare(`${PUBLISHED_SELECT} AND m.short_code = ? ORDER BY g.episode_number ASC, g.id ASC`)
+		.all(missionShortCode) as PublishedRow[];
+	return rows.map(toPublished);
+}
+
+export function replaceGamePlayers(gameId: number, players: ReplayPlayer[]): void {
+	const db = getDb();
+	const clear = db.prepare(`DELETE FROM replay_game_players WHERE game_id = ?`);
+	const insert = db.prepare(`INSERT INTO replay_game_players (game_id, player_ref, identity_guid, name) VALUES (?, ?, ?, ?)`);
+	db.transaction(() => {
+		clear.run(gameId);
+		for (const player of players) insert.run(gameId, player.ref, player.identityGuid, player.name);
+	})();
 }
 
 export function findMap(world: string): ReplayMap | null {

@@ -49,9 +49,17 @@ export type ReplayMap = {
 	topoSha256: string | null;
 };
 
+export type EpisodeReplay = {
+	missionId: number;
+	episodeNumber: number;
+	gameId: number;
+};
+
 export type {
 	ReplayGameListItem,
 	ReplayGameDetail,
 	PublicReplayListItem,
 	PublicReplayGame,
+	PublicReplaySearchItem,
+	ReplaySearchPage,
 } from './api';

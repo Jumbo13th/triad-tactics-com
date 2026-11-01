@@ -1,8 +1,9 @@
 import { ROAD_TYPE, type TopoLayers } from '../../domain/topo';
 
-// Draws a terrain's exported map geometry over its relief, in the colours of the game's own
-// map (MapPropsDefault.conf). Every entry is one closed path filled under the nonzero rule;
-// entries joined from several rings must not be stroked, or the joins would show.
+// Draws a terrain's exported map geometry over its relief: the game's own map classes
+// (MapPropsDefault.conf), in muted colours so that side colours, fire and the accent are the
+// only saturated things on the map. Every entry is one closed path filled under the nonzero
+// rule; entries joined from several rings must not be stroked on top, or the joins would show.
 
 type Shape = { kind: number; points: number[]; minX: number; minZ: number; maxX: number; maxZ: number };
 
@@ -18,19 +19,22 @@ export type PreparedTopo = {
 
 export type ViewRect = { left: number; right: number; bottom: number; top: number };
 
-const FOREST = 'rgba(130,225,90,0.33)';
-const WATER = '#b5f2fd';
-const BUILDING_FILL = '#b4b4b4';
-const BUILDING_LINE = '#7d7d7d';
+const FOREST = 'rgba(127,163,106,0.35)';
+const WATER = '#a8d8e6';
+const BUILDINGS = 'rgba(95,100,107,0.85)';
 const ROAD_COLOURS: Record<number, string> = {
 	[ROAD_TYPE.RUNWAY]: '#e5e5e5',
-	[ROAD_TYPE.MAIN]: '#f5eb63',
-	[ROAD_TYPE.MINOR]: '#f5f0ae',
-	[ROAD_TYPE.TRAIL]: '#c8ae8d',
-	[ROAD_TYPE.PATH_TOURIST]: '#ff4b4b',
-	[ROAD_TYPE.PATH_GENERAL]: '#6f6f6f',
-	[ROAD_TYPE.BRIDGE]: '#f5f0ae',
+	[ROAD_TYPE.MAIN]: '#f2e3a6',
+	[ROAD_TYPE.MINOR]: '#efe2bb',
+	[ROAD_TYPE.TRAIL]: '#d2bf9f',
+	[ROAD_TYPE.PATH_TOURIST]: '#8a7a66',
+	[ROAD_TYPE.PATH_GENERAL]: '#8a7a66',
+	[ROAD_TYPE.BRIDGE]: '#efe2bb',
 };
+const CASING = 'rgba(125,107,69,0.5)';
+// Paved classes get a casing: stroked before any fill, its inner half and the ring joins
+// are covered by the fills, which leaves a thin rim outside each road.
+const CASED: ReadonlySet<number> = new Set([ROAD_TYPE.RUNWAY, ROAD_TYPE.MAIN, ROAD_TYPE.MINOR, ROAD_TYPE.BRIDGE]);
 // Lower classes first so main roads and runways lie on top where they cross; bridge decks last.
 const ROAD_ORDER = [
 	ROAD_TYPE.PATH_GENERAL,
@@ -116,8 +120,16 @@ export function drawTopo(
 		ctx.fill();
 	}
 
-	for (const s of coarse ? topo.coarseRoads : topo.roads) {
-		if ((PATHS.has(s.kind) && scale < PATHS_FROM_SCALE) || !visible(s, view)) continue;
+	const roads = (coarse ? topo.coarseRoads : topo.roads).filter((s) => !(PATHS.has(s.kind) && scale < PATHS_FROM_SCALE) && visible(s, view));
+	ctx.strokeStyle = CASING;
+	ctx.lineWidth = 2.5;
+	ctx.lineJoin = 'round';
+	for (const s of roads) {
+		if (!CASED.has(s.kind)) continue;
+		trace(ctx, s.points, sx, sy);
+		ctx.stroke();
+	}
+	for (const s of roads) {
 		trace(ctx, s.points, sx, sy);
 		ctx.fillStyle = ROAD_COLOURS[s.kind] ?? ROAD_COLOURS[ROAD_TYPE.MINOR];
 		ctx.fill();
@@ -130,14 +142,10 @@ export function drawTopo(
 	}
 
 	if (scale < BUILDINGS_FROM_SCALE) return;
-	ctx.fillStyle = BUILDING_FILL;
-	ctx.strokeStyle = BUILDING_LINE;
-	ctx.lineWidth = 1;
+	ctx.fillStyle = BUILDINGS;
 	for (const s of topo.buildings) {
 		if (!visible(s, view)) continue;
 		trace(ctx, s.points, sx, sy);
 		ctx.fill();
-		// Footprints are single rings, so their outline is safe to draw.
-		ctx.stroke();
 	}
 }

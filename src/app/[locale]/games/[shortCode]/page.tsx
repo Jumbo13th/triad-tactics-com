@@ -13,6 +13,9 @@ import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlowRedirect';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
+import { publicReplaysDeps } from '@/features/replays/deps';
+import { listMissionReplays } from '@/features/replays/useCases/findEpisodeReplays';
+import { MissionReplays } from '@/features/replays/ui/root';
 
 export default async function GameMissionRoutePage({
 	params
@@ -82,5 +85,17 @@ export default async function GameMissionRoutePage({
 			</section>
 		) : null;
 
-	return <GameMissionPage mission={mission.mission} statsSlot={statsSlot} />;
+	const replays = listMissionReplays(publicReplaysDeps, { shortCode: trimmedShortCode });
+
+	return (
+		<GameMissionPage
+			mission={mission.mission}
+			statsSlot={
+				<>
+					{statsSlot}
+					{replays.length > 0 ? <MissionReplays replays={replays} /> : null}
+				</>
+			}
+		/>
+	);
 }

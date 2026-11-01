@@ -11,9 +11,37 @@ const LOADERS: Record<string, () => Promise<{ default: GameNames }>> = {
 	uk: () => import('./gameStrings/uk.json'),
 };
 
+// Lite Lobby's own trigger messages, which recordings carry as keys in the same way.
+const LOBBY: Record<string, GameNames> = {
+	en: {
+		'LL-TriggerMsg_CriticalLoss': 'The attackers have suffered critical losses.',
+		'LL-TriggerMsg_Destroyed': 'The key object has been destroyed.',
+		'LL-TriggerMsg_GroupDefeated': 'The key group has been eliminated.',
+		'LL-TriggerMsg_TimeUp': 'The attackers’ time has run out — the defenders win.',
+		'LL-TriggerMsg_Supremacy': 'One side has gained supremacy over the other — the outcome is decided.',
+		'LL-TriggerMsg_ZoneCaptured': 'The attackers have captured the objective.',
+	},
+	ru: {
+		'LL-TriggerMsg_CriticalLoss': 'Атакующие понесли критические потери.',
+		'LL-TriggerMsg_Destroyed': 'Ключевой объект уничтожен.',
+		'LL-TriggerMsg_GroupDefeated': 'Ключевая группа уничтожена.',
+		'LL-TriggerMsg_TimeUp': 'Время атакующих истекло — победа обороняющихся.',
+		'LL-TriggerMsg_Supremacy': 'Одна из сторон добилась превосходства над другой — исход боя предрешён.',
+		'LL-TriggerMsg_ZoneCaptured': 'Атакующие захватили объект.',
+	},
+	uk: {
+		'LL-TriggerMsg_CriticalLoss': 'Атакувальники зазнали критичних втрат.',
+		'LL-TriggerMsg_Destroyed': 'Ключовий об’єкт знищено.',
+		'LL-TriggerMsg_GroupDefeated': 'Ключову групу знищено.',
+		'LL-TriggerMsg_TimeUp': 'Час атакувальників вичерпано — перемога оборонців.',
+		'LL-TriggerMsg_Supremacy': 'Одна зі сторін здобула перевагу над іншою — результат бою вирішено.',
+		'LL-TriggerMsg_ZoneCaptured': 'Атакувальники захопили об’єкт.',
+	},
+};
+
 export async function loadGameNames(locale: string): Promise<GameNames> {
 	const load = LOADERS[locale] ?? LOADERS.en;
-	return (await load()).default;
+	return { ...(await load()).default, ...(LOBBY[locale] ?? LOBBY.en) };
 }
 
 function humanize(key: string): string {

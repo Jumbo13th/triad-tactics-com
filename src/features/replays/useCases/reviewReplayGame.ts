@@ -1,5 +1,6 @@
-import { inflateText } from '../domain/encoding';
-import type { ReplayGameDetail, ReplayMission } from '../domain/types';
+import { forEachInflatedLine, inflateText } from '../domain/encoding';
+import { createPlayerIndex } from '../domain/players';
+import type { ReplayGameDetail, ReplayGameRecord, ReplayMission } from '../domain/types';
 import type { AdminReplaysDeps, StatsImportResult } from '../ports';
 
 export function getReplayGameDetail(
@@ -66,15 +67,50 @@ export async function importReplayStats(
 	});
 }
 
+export type IndexReplayPlayersResult =
+	| { result: 'indexed' }
+	| { result: 'failed'; reason: 'storage_unavailable' | 'unreadable' | 'error'; error?: unknown };
+
+// The list finds a published game by who played it. The index is rebuilt from the stored
+// files on every publish, so publishing again repairs one that failed or went stale.
+async function indexReplayPlayers(
+	deps: Pick<AdminReplaysDeps, 'repo' | 'objects'>,
+	game: ReplayGameRecord
+): Promise<IndexReplayPlayersResult> {
+	try {
+		if (!deps.objects.isConfigured()) return { result: 'failed', reason: 'storage_unavailable' };
+		const sha256s = game.identity === null ? game.segments : [game.identity, ...game.segments];
+		const files = new Map(deps.repo.findFiles(sha256s).map((file) => [file.sha256, file]));
+		const index = createPlayerIndex();
+		for (const sha256 of sha256s) {
+			const file = files.get(sha256);
+			const encoded = file ? await deps.objects.read(file.storageKey) : null;
+			if (!file || !encoded) return { result: 'failed', reason: 'storage_unavailable' };
+			const read = file.kind === 'identity' ? index.readIdentityLine : index.readSegmentLine;
+			if (!(await forEachInflatedLine(encoded, file.size, file.sha256, read))) return { result: 'failed', reason: 'unreadable' };
+		}
+		deps.repo.replaceGamePlayers(game.id, index.players());
+		return { result: 'indexed' };
+	} catch (error: unknown) {
+		return { result: 'failed', reason: 'error', error };
+	}
+}
+
 export type PublishReplayGameResult =
-	| { result: 'published'; announcement: 'sent' | 'skipped' | 'earlier' | 'failed'; error?: unknown }
+	| {
+			result: 'published';
+			announcement: 'sent' | 'skipped' | 'earlier' | 'failed';
+			error?: unknown;
+			players: IndexReplayPlayersResult;
+	  }
 	| { result: 'not_found' }
 	| { result: 'not_linked' };
 
 // The Discord post goes out on the first publish only; a publish that fails to post still
-// publishes, and the next publish tries the post again.
+// publishes, and the next publish tries the post again. A game whose players cannot be
+// indexed is published all the same: search just cannot find it by player yet.
 export async function publishReplayGame(
-	deps: Pick<AdminReplaysDeps, 'repo' | 'announce'>,
+	deps: Pick<AdminReplaysDeps, 'repo' | 'objects' | 'announce'>,
 	input: { gameId: number; publishedBySteamid64: string }
 ): Promise<PublishReplayGameResult> {
 	const game = deps.repo.findGame(input.gameId);
@@ -84,7 +120,8 @@ export async function publishReplayGame(
 	if (!mission) return { result: 'not_linked' };
 
 	deps.repo.setPublished(game.id, input.publishedBySteamid64);
-	if (game.announcedAt !== null) return { result: 'published', announcement: 'earlier' };
+	const players = await indexReplayPlayers(deps, game);
+	if (game.announcedAt !== null) return { result: 'published', announcement: 'earlier', players };
 
 	const stats = deps.repo.findEpisodeStats(game.missionId, game.episodeNumber);
 	try {
@@ -96,9 +133,9 @@ export async function publishReplayGame(
 			statsId: stats?.status === 'published' ? stats.id : null,
 		});
 		if (sent === 'sent') deps.repo.markAnnounced(game.id);
-		return { result: 'published', announcement: sent };
+		return { result: 'published', announcement: sent, players };
 	} catch (error: unknown) {
-		return { result: 'published', announcement: 'failed', error };
+		return { result: 'published', announcement: 'failed', error, players };
 	}
 }
 

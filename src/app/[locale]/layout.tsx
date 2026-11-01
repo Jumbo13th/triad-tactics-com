@@ -3,7 +3,7 @@ import { getMessages } from 'next-intl/server';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { isAppLocale, routing } from '@/i18n/routing';
-import { SiteFooter, SiteHeader } from '@/features/appShell/ui/root';
+import { SiteFooter, SiteFrame, SiteHeader } from '@/features/appShell/ui/root';
 import { BanNotice } from '@/features/sanctions/ui/root';
 
 export function generateStaticParams() {
@@ -32,20 +32,19 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <main className="min-h-screen bg-neutral-950" dir={dir} lang={locale}>
-        <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 pt-6 pb-2 sm:pt-8 sm:pb-6">
-          <SiteHeader
-            homeAriaLabel={t('title')}
-            title={t('title')}
-            subtitle={t('subtitle')}
-            primaryAction={{ href: '/apply', label: tw('applyButtonShort') }}
-          />
-
-          <div className="mt-6 flex-1">
-            <BanNotice>{children}</BanNotice>
-          </div>
-
-          <SiteFooter />
-        </div>
+        <SiteFrame
+          header={
+            <SiteHeader
+              homeAriaLabel={t('title')}
+              title={t('title')}
+              subtitle={t('subtitle')}
+              primaryAction={{ href: '/apply', label: tw('applyButtonShort') }}
+            />
+          }
+          footer={<SiteFooter />}
+        >
+          <BanNotice>{children}</BanNotice>
+        </SiteFrame>
       </main>
     </NextIntlClientProvider>
   );

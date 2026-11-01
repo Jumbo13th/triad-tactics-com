@@ -15,6 +15,8 @@ import { statsDeps } from '@/features/stats/deps';
 import { getUnitHistory } from '@/features/stats/useCases/getUnitHistory';
 import { getUnitSeasonSummary } from '@/features/stats/useCases/getUnitSeasonSummary';
 import { UnitStatsHistory } from '@/features/stats/ui/root';
+import { publicReplaysDeps } from '@/features/replays/deps';
+import { findEpisodeReplayIds } from '@/features/replays/useCases/findEpisodeReplays';
 
 export default async function UnitDetailRoutePage({ params }: { params: Promise<{ locale: string; unitTag: string }> }) {
 	const { locale, unitTag } = await params;
@@ -48,12 +50,19 @@ export default async function UnitDetailRoutePage({ params }: { params: Promise<
 	const statsEntries = getUnitHistory(statsDeps, { unitId: id });
 	const { seasonRank, rankSeries } = getUnitSeasonSummary(statsDeps, { unitId: id });
 
+	const replayIds = findEpisodeReplayIds(publicReplaysDeps, statsEntries.map((entry) => entry.game));
+	const replayHrefs: Record<number, string> = {};
+	statsEntries.forEach((entry, index) => {
+		const replayId = replayIds[index];
+		if (replayId !== null) replayHrefs[entry.game.id] = `/replays/${replayId}`;
+	});
+
 	return (
 		<>
 			<UnitDetailPage unitId={id} rotationSide={rotationSide} initialData={initialData} />
 			{statsEntries.length > 0 && (
 				<div className="mt-8">
-					<UnitStatsHistory entries={statsEntries} seasonRank={seasonRank} rankSeries={rankSeries} />
+					<UnitStatsHistory entries={statsEntries} seasonRank={seasonRank} rankSeries={rankSeries} replayHrefs={replayHrefs} />
 				</div>
 			)}
 		</>

@@ -70,3 +70,17 @@ export type PublicReplayGame = PublicReplayListItem & {
 	segments: { sha256: string; size: number }[];
 	map: { relief: string | null; topo: string | null };
 };
+
+export type PublicReplaySearchItem = PublicReplayListItem & {
+	/** 0 when the game has no player index: published before there was one, or indexing failed. */
+	playerCount: number;
+};
+
+export type ReplaySearchPage = {
+	/** The search as typed, for the form and for page links. */
+	query: string;
+	page: number;
+	totalPages: number;
+	total: number;
+	replays: PublicReplaySearchItem[];
+};

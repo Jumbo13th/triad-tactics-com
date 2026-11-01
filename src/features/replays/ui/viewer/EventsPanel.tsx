@@ -1,25 +1,35 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ReplayEvent, ReplayModel } from '../../domain/replayFormat';
 import { formatMissionTime } from './format';
-import { readableOnDark } from './readableColor';
+import { Icon } from './glyphs';
+import type { SideStyle } from './sideStyle';
 
 type Filter = 'all' | 'kills' | 'objectives' | 'phases';
 
-const SHOWN = 300;
+export type Who = (eid: number | null, t: number) => { name: string; side: string | null; vehicle: boolean } | null;
 
-type Props = {
-	model: ReplayModel;
-	second: number;
-	who: (eid: number | null, t: number) => { name: string; color: string } | null;
+type Describe = {
+	who: Who;
 	weaponName: (wid: number | null) => string | null;
 	sideName: (key: string) => string;
-	sideColor: (side: string | null) => string;
+	sideStyle: (side: string | null) => SideStyle;
 	zoneName: (zid: number) => string;
+	/** Mission texts may be localization keys, like the game's own names. */
+	translate: (value: string) => string;
+};
+
+type Props = Describe & {
+	model: ReplayModel;
+	second: number;
+	playing: boolean;
 	onSeek: (t: number) => void;
 };
+
+const FILTERS: Filter[] = ['all', 'kills', 'objectives', 'phases'];
+const MUTED = '#a3a3a3';
 
 function inFilter(event: ReplayEvent, filter: Filter): boolean {
 	if (filter === 'all') return true;
@@ -28,133 +38,194 @@ function inFilter(event: ReplayEvent, filter: Filter): boolean {
 	return event.type === 'flow' || event.type === 'resume';
 }
 
-export default function EventsPanel({ model, second, who, weaponName, sideName, sideColor, zoneName, onSeek }: Props) {
+const EventRow = memo(function EventRow({ event, future, describe, onSeek }: { event: ReplayEvent; future: boolean; describe: Describe; onSeek: (t: number) => void }) {
 	const t = useTranslations('replayViewer');
-	const [filter, setFilter] = useState<Filter>('all');
-	const now = second * 10;
+	const { who, weaponName, sideName, sideStyle, zoneName, translate } = describe;
+	const tint = (side: string | null) => (future ? MUTED : sideStyle(side).text);
 
-	const shown = useMemo(() => {
-		const out: ReplayEvent[] = [];
-		for (let i = model.events.length - 1; i >= 0 && out.length < SHOWN; i--) {
-			const event = model.events[i];
-			if (event.t <= now && inFilter(event, filter)) out.push(event);
-		}
-		return out;
-	}, [model, now, filter]);
-
-	const person = (eid: number | null, at: number, fallback: string): ReactNode => {
-		const found = who(eid, at);
+	const person = (eid: number | null): ReactNode => {
+		const found = who(eid, event.t);
 		return (
-			<span className="font-semibold" style={{ color: found?.color ?? '#c7ccd2' }}>
-				{found?.name ?? fallback}
+			<span className="font-semibold" style={{ color: found ? tint(found.side) : MUTED }}>
+				{found?.name ?? t('unknown')}
 			</span>
 		);
 	};
-
 	const detail = (weapon: number | null, distance: number | null): string | null => {
 		const parts = [weaponName(weapon), distance !== null ? t('metres', { distance }) : null].filter(Boolean);
 		return parts.length ? parts.join(' · ') : null;
 	};
 
-	const describe = (event: ReplayEvent): { text: ReactNode; sub: string | null; tone?: string } => {
-		switch (event.type) {
-			case 'kill':
-				return event.killer === null || event.killer === event.victim
-					? { text: t.rich('died', { victim: () => person(event.victim, event.t, t('unknown')) }), sub: null }
-					: {
-							text: t.rich('killed', {
-								killer: () => person(event.killer, event.t, t('unknown')),
-								victim: () => person(event.victim, event.t, t('unknown')),
-							}),
-							sub: detail(event.weapon, event.distance),
-						};
-			case 'down':
-				return {
-					text:
-						event.attacker === null
-							? t.rich('downAlone', { victim: () => person(event.victim, event.t, t('unknown')) })
-							: t.rich('down', {
-									attacker: () => person(event.attacker, event.t, t('unknown')),
-									victim: () => person(event.victim, event.t, t('unknown')),
-								}),
-					sub: detail(event.weapon, event.distance),
-				};
-			case 'up':
-				return { text: t.rich('up', { victim: () => person(event.victim, event.t, t('unknown')) }), sub: null };
-			case 'capture':
-				return {
-					text: t.rich('captured', {
-						side: () => (
-							<span className="font-semibold" style={{ color: readableOnDark(sideColor(event.side)) }}>
-								{sideName(event.side)}
-							</span>
-						),
-						zone: () => <span className="font-semibold">{zoneName(event.zid)}</span>,
-					}),
-					sub: null,
-				};
-			case 'trigger':
-				return { text: event.label || event.key, sub: null };
-			case 'resume':
-				return { text: t('resumed'), sub: null, tone: 'text-amber-300' };
-			case 'flow':
-				switch (event.flow) {
-					case 'game':
-						return { text: t('flowGame'), sub: null };
-					case 'freeze':
-						return { text: t('flowFreeze', { seconds: event.seconds ?? 0 }), sub: null };
-					case 'freeze-end':
-						return { text: t('flowFreezeEnd'), sub: null };
-					case 'hardfreeze':
-						return { text: event.seconds ? t('flowHardFreeze', { seconds: event.seconds }) : t('flowHardFreezeHeld'), sub: null };
-					case 'hardfreeze-end':
-						return { text: t('flowHardFreezeEnd'), sub: null };
-				}
+	let icon: ReactNode;
+	let color = MUTED;
+	let text: ReactNode;
+	let sub: string | null = null;
+	switch (event.type) {
+		case 'kill': {
+			const killer = event.killer !== null && event.killer !== event.victim ? who(event.killer, event.t) : null;
+			const vehicle = who(event.victim, event.t)?.vehicle ?? false;
+			icon = vehicle ? <Icon.VehicleKill /> : <Icon.Kill />;
+			color = killer ? tint(killer.side) : MUTED;
+			if (killer) {
+				text = t.rich(vehicle ? 'destroyed' : 'killed', { killer: () => person(event.killer), victim: () => person(event.victim) });
+				sub = detail(event.weapon, event.distance);
+			} else {
+				text = t.rich(vehicle ? 'destroyedAlone' : 'died', { victim: () => person(event.victim) });
+			}
+			break;
 		}
-	};
+		case 'down': {
+			const attacker = event.attacker !== null ? who(event.attacker, event.t) : null;
+			icon = <Icon.Down />;
+			color = attacker ? tint(attacker.side) : MUTED;
+			text = attacker
+				? t.rich('down', { attacker: () => person(event.attacker), victim: () => person(event.victim) })
+				: t.rich('downAlone', { victim: () => person(event.victim) });
+			sub = detail(event.weapon, event.distance);
+			break;
+		}
+		case 'up':
+			icon = <Icon.Up />;
+			color = tint(who(event.victim, event.t)?.side ?? null);
+			text = t.rich('up', { victim: () => person(event.victim) });
+			break;
+		case 'capture':
+			icon = <Icon.Flag />;
+			color = tint(event.side);
+			text = t.rich('captured', {
+				side: () => (
+					<span className="font-semibold" style={{ color: tint(event.side) }}>
+						{sideName(event.side)}
+					</span>
+				),
+				zone: () => <span className={'font-semibold ' + (future ? '' : 'text-neutral-100')}>{zoneName(event.zid)}</span>,
+			});
+			break;
+		case 'trigger':
+			icon = <Icon.Trigger />;
+			color = future ? MUTED : '#d4d4d4';
+			text = translate(event.label || event.key);
+			break;
+		case 'resume':
+			icon = <Icon.Retry />;
+			color = future ? MUTED : '#f5f5f5';
+			text = t('resumed');
+			break;
+		case 'flow':
+			switch (event.flow) {
+				case 'game':
+					icon = <Icon.Start />;
+					text = t('flowGame');
+					break;
+				case 'freeze':
+					icon = <Icon.Freeze />;
+					text = t('flowFreeze', { seconds: event.seconds ?? 0 });
+					break;
+				case 'freeze-end':
+					icon = <Icon.Thaw />;
+					text = t('flowFreezeEnd');
+					break;
+				case 'hardfreeze':
+					icon = <Icon.Freeze />;
+					text = event.seconds ? t('flowHardFreeze', { seconds: event.seconds }) : t('flowHardFreezeHeld');
+					break;
+				case 'hardfreeze-end':
+					icon = <Icon.Thaw />;
+					text = t('flowHardFreezeEnd');
+					break;
+			}
+	}
 
-	const filters: Filter[] = ['all', 'kills', 'objectives', 'phases'];
+	return (
+		<li>
+			<button
+				type="button"
+				onClick={() => onSeek(Math.max(0, event.t - 50))}
+				className={
+					'grid min-h-[44px] w-full grid-cols-[58px_16px_minmax(0,1fr)] items-start gap-x-[8px] rounded-[4px] px-[8px] py-[6px] text-left hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)] ' +
+					(future ? 'text-neutral-400' : 'text-neutral-300')
+				}
+			>
+				<span className="text-[12px] font-medium leading-[18px] tabular-nums text-neutral-400">{formatMissionTime(event.t)}</span>
+				<span className="flex pt-px" style={{ color }}>
+					{icon}
+				</span>
+				<span className="text-[13px] leading-[18px]">
+					{text}
+					{sub ? <span className="block text-[12px] leading-[16px] text-neutral-400">{sub}</span> : null}
+				</span>
+			</button>
+		</li>
+	);
+});
+
+export default function EventsPanel({ model, second, playing, onSeek, who, weaponName, sideName, sideStyle, zoneName, translate }: Props) {
+	const t = useTranslations('replayViewer');
+	const [filter, setFilter] = useState<Filter>('all');
+	const listRef = useRef<HTMLOListElement>(null);
+	const nowRef = useRef<HTMLLIElement>(null);
+	const lastSecond = useRef(second);
+	const now = second * 10;
+
+	const describe = useMemo(() => ({ who, weaponName, sideName, sideStyle, zoneName, translate }), [who, weaponName, sideName, sideStyle, zoneName, translate]);
+	const events = useMemo(() => model.events.filter((event) => inFilter(event, filter)), [model, filter]);
+	let split = events.length;
+	for (let i = 0; i < events.length; i++) {
+		if (events[i].t > now) {
+			split = i;
+			break;
+		}
+	}
+
+	// The list keeps the present in view while it plays or after a jump, but leaves a reader
+	// scrolling a paused list alone.
+	useEffect(() => {
+		const list = listRef.current;
+		const line = nowRef.current;
+		const jumped = Math.abs(second - lastSecond.current) > 30;
+		lastSecond.current = second;
+		if (!list || !line || (!playing && !jumped)) return;
+		// The list is positioned, so offsets inside it are measured from its top.
+		const top = line.offsetTop;
+		const view = list.clientHeight;
+		if (top < list.scrollTop + view * 0.15 || top > list.scrollTop + view * 0.75) list.scrollTop = top - view * 0.4;
+	}, [second, playing, filter]);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="flex flex-wrap gap-1.5 p-3">
-				{filters.map((value) => (
+			<div role="group" aria-label={t('showEvents')} className="grid grid-cols-4 gap-[4px] border-b border-[#1e1e1e] p-[12px]">
+				{FILTERS.map((value) => (
 					<button
 						key={value}
 						type="button"
 						aria-pressed={filter === value}
 						onClick={() => setFilter(value)}
 						className={
-							'min-h-8 rounded-lg px-3 text-xs font-semibold ' +
-							(filter === value ? 'bg-[color:var(--accent)] text-neutral-950' : 'bg-white/5 text-neutral-300 hover:bg-white/10')
+							'min-h-[44px] min-w-0 truncate rounded-[4px] border px-[2px] text-[12px] font-semibold leading-[16px] ' +
+							(filter === value
+								? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
+								: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-300 hover:border-[#666666] hover:bg-[#242424] hover:text-neutral-100')
 						}
 					>
 						{t(`filter_${value}`)}
 					</button>
 				))}
 			</div>
-			{shown.length === 0 ? (
-				<p className="px-4 text-sm text-neutral-400">{t('noEvents')}</p>
+			{events.length === 0 ? (
+				<p className="px-[16px] py-[12px] text-[13px] leading-[18px] text-neutral-400">{t('noEvents')}</p>
 			) : (
-				<ol className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-					{shown.map((event, i) => {
-						const { text, sub, tone } = describe(event);
-						return (
-							<li key={`${event.t}-${event.type}-${i}`}>
-								<button
-									type="button"
-									onClick={() => onSeek(Math.max(0, event.t - 50))}
-									className="grid w-full grid-cols-[4.25rem_minmax(0,1fr)] gap-2 rounded-lg p-2 text-left hover:bg-white/5"
-								>
-									<span className="font-mono text-xs font-semibold tabular-nums text-neutral-400">{formatMissionTime(event.t)}</span>
-									<span className={'text-[13px] leading-snug ' + (tone ?? 'text-neutral-200')}>
-										{text}
-										{sub ? <span className="block text-xs text-neutral-400">{sub}</span> : null}
-									</span>
-								</button>
-							</li>
-						);
-					})}
+				<ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[8px] pb-[12px] pt-[4px]">
+					{events.slice(0, split).map((event, i) => (
+						<EventRow key={i} event={event} future={false} describe={describe} onSeek={onSeek} />
+					))}
+					<li ref={nowRef} aria-current="time" className="flex min-h-[28px] items-center gap-[8px] px-[8px]">
+						<span className="text-[12px] font-semibold leading-[16px] tabular-nums text-[color:var(--accent)]">{formatMissionTime(now)}</span>
+						<span aria-hidden="true" className="h-px flex-1 bg-[color:var(--accent)]" />
+						<span className="text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-[color:var(--accent)]">{t('now')}</span>
+					</li>
+					{events.slice(split).map((event, i) => (
+						<EventRow key={split + i} event={event} future describe={describe} onSeek={onSeek} />
+					))}
 				</ol>
 			)}
 		</div>

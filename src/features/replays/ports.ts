@@ -1,5 +1,9 @@
+import type { ReplayPlayer } from './domain/players';
+import type { ReplaySearch } from './domain/search';
 import type {
+	EpisodeReplay,
 	PublicReplayListItem,
+	PublicReplaySearchItem,
 	ReplayEpisodeStats,
 	ReplayFile,
 	ReplayGameInput,
@@ -26,7 +30,15 @@ export type ReplayRepo = {
 	markAnnounced: (id: number) => void;
 	findEpisodeStats: (missionId: number, episodeNumber: number) => ReplayEpisodeStats | null;
 	listPublishedGames: (input: { limit: number; offset: number }) => PublicReplayListItem[];
+	/** Newest game first, by when it was played. */
+	searchPublishedGames: (input: { search: ReplaySearch; limit: number; offset: number }) => PublicReplaySearchItem[];
+	countPublishedGames: (search: ReplaySearch) => number;
 	findPublishedGame: (id: number) => PublicReplayListItem | null;
+	/** One per episode that has a published game: the newest when there are several. */
+	findEpisodeReplays: (episodes: { missionId: number; episodeNumber: number }[]) => EpisodeReplay[];
+	/** In episode order. */
+	listMissionReplays: (missionShortCode: string) => PublicReplayListItem[];
+	replaceGamePlayers: (gameId: number, players: ReplayPlayer[]) => void;
 	findMap: (world: string) => ReplayMap | null;
 	isPublishedSegment: (sha256: string) => boolean;
 	findMapFileKind: (sha256: string) => 'relief' | 'topo' | null;
@@ -93,7 +105,11 @@ export type PublicReplaysDeps = {
 	repo: Pick<
 		ReplayRepo,
 		| 'listPublishedGames'
+		| 'searchPublishedGames'
+		| 'countPublishedGames'
 		| 'findPublishedGame'
+		| 'findEpisodeReplays'
+		| 'listMissionReplays'
 		| 'findGame'
 		| 'findGameListItem'
 		| 'findFiles'

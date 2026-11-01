@@ -75,7 +75,14 @@ export async function postAdminReplaysRoute(request: NextRequest): Promise<NextR
 				if (result.announcement === 'failed') {
 					logger.error({ gameId: input.gameId, ...errorToLogObject(result.error) }, 'replay_announce_failed');
 				}
-				logger.info({ gameId: input.gameId, announcement: result.announcement }, 'replay_published');
+				if (result.players.result === 'failed') {
+					const { reason, error } = result.players;
+					logger.error(
+						{ gameId: input.gameId, reason, ...(error === undefined ? {} : errorToLogObject(error)) },
+						'replay_players_index_failed'
+					);
+				}
+				logger.info({ gameId: input.gameId, announcement: result.announcement, players: result.players.result }, 'replay_published');
 				return NextResponse.json({ ok: true, announcement: result.announcement });
 			}
 			case 'unpublish': {

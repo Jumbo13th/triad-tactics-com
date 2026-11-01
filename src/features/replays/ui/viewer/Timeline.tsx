@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ReplayModel } from '../../domain/replayFormat';
 import { formatMissionTime } from './format';
+import { Icon } from './glyphs';
+import type { SideStyle } from './sideStyle';
 
 export const SPEEDS = [1, 4, 16, 60] as const;
 
@@ -13,102 +15,237 @@ type Props = {
 	playing: boolean;
 	speed: number;
 	realTime: string | null;
-	sideColor: (side: string | null) => string;
+	sideStyle: (side: string | null) => SideStyle;
+	sideName: (key: string) => string;
+	zoneName: (zid: number) => string;
 	onTogglePlay: () => void;
 	onSpeed: (speed: number) => void;
 	onSeek: (t: number) => void;
 };
 
-export default function Timeline({ model, time, playing, speed, realTime, sideColor, onTogglePlay, onSpeed, onSeek }: Props) {
+type Marks = {
+	lanes: string[];
+	kills: { at: number; lane: number }[];
+	freezes: { from: number; to: number; hard: boolean }[];
+	resumes: number[];
+	captures: { at: number; side: string; zid: number }[];
+};
+
+// Vertical layout of the scrubber, in pixels from its top.
+const LANE_TOP = 14;
+const LANE_H = 4;
+const LANE_GAP = 2;
+const BAND_TOP = 32;
+const BAND_H = 12;
+const TRACK_TOP = 36;
+const AXIS_TOP = 47;
+const HEIGHT = 60;
+const MAX_LANES = 3;
+const AXIS_STEPS = [5, 10, 15, 30, 60, 120].map((minutes) => minutes * 600);
+const HATCH = 'repeating-linear-gradient(135deg,rgba(163,163,163,0.6) 0 1px,transparent 1px 4px)';
+
+function collectMarks(model: ReplayModel): Marks {
+	const lanes = model.sides.slice(0, MAX_LANES).map((side) => side.key);
+	const kills: Marks['kills'] = [];
+	const freezes: Marks['freezes'] = [];
+	const resumes: number[] = [];
+	const captures: Marks['captures'] = [];
+	let open: { from: number; hard: boolean } | null = null;
+	for (const event of model.events) {
+		if (event.type === 'flow') {
+			const starts = event.flow === 'freeze' || event.flow === 'hardfreeze';
+			const ends = event.flow === 'freeze-end' || event.flow === 'hardfreeze-end';
+			if (starts && open === null) open = { from: event.t, hard: event.flow === 'hardfreeze' };
+			if (ends && open !== null) {
+				freezes.push({ ...open, to: event.t });
+				open = null;
+			}
+		} else if (event.type === 'resume') {
+			resumes.push(event.t);
+		} else if (event.type === 'capture') {
+			captures.push({ at: event.t, side: event.side, zid: event.zid });
+		} else if (event.type === 'kill' && event.killer !== null && event.killer !== event.victim) {
+			const side = model.entities.get(event.killer)?.side;
+			const lane = side ? lanes.indexOf(side) : -1;
+			if (lane >= 0) kills.push({ at: event.t, lane });
+			else if (side && lanes.length === MAX_LANES) kills.push({ at: event.t, lane: MAX_LANES - 1 });
+		}
+	}
+	if (open !== null) freezes.push({ ...open, to: model.duration });
+	return { lanes, kills, freezes, resumes, captures };
+}
+
+// Everything on the scrubber that does not move with the playhead, drawn once per replay.
+const StaticMarks = memo(function StaticMarks({
+	marks,
+	duration,
+	sideStyle,
+	labels,
+}: {
+	marks: Marks;
+	duration: number;
+	sideStyle: (side: string | null) => SideStyle;
+	labels: { freeze: string; hardFreeze: string; resumed: string };
+}) {
+	const pct = (v: number) => `${Math.min(100, Math.max(0, (v / duration) * 100))}%`;
+	const step = AXIS_STEPS.find((s) => duration / s <= 8) ?? AXIS_STEPS[AXIS_STEPS.length - 1];
+	const axis: number[] = [];
+	for (let at = 0; at <= duration; at += step) axis.push(at);
+	return (
+		<>
+			{marks.freezes.map((span, i) =>
+				(span.to - span.from) / duration > 0.06 ? (
+					<span key={`fl${i}`} className="absolute top-0 whitespace-nowrap text-[11px] font-medium leading-[12px] text-neutral-400" style={{ left: pct(span.from) }}>
+						{span.hard ? labels.hardFreeze : labels.freeze}
+					</span>
+				) : null
+			)}
+			{marks.resumes.map((at, i) => (
+				<span
+					key={`rl${i}`}
+					className="absolute top-0 whitespace-nowrap bg-[#121212] pr-[4px] text-[11px] font-semibold leading-[12px] text-neutral-300"
+					style={{ left: `calc(${pct(at)} + 5px)` }}
+				>
+					{labels.resumed}
+				</span>
+			))}
+			{marks.captures.map((capture, i) => {
+				const style = sideStyle(capture.side);
+				return (
+					<span
+						key={`c${i}`}
+						className="absolute top-[2px] size-[7px] rotate-45"
+						style={{ left: `calc(${pct(capture.at)} - 4px)`, background: style.fill, boxShadow: `inset 0 0 0 1.5px ${style.edge}` }}
+					/>
+				);
+			})}
+			{marks.lanes.map((side, i) => (
+				<span key={`l${side}`} className="absolute inset-x-0 bg-[#1a1a1a]" style={{ top: LANE_TOP + i * (LANE_H + LANE_GAP), height: LANE_H }} />
+			))}
+			{marks.kills.map((kill, i) => (
+				<span
+					key={`k${i}`}
+					className="absolute w-[2px]"
+					style={{ left: pct(kill.at), top: LANE_TOP + kill.lane * (LANE_H + LANE_GAP), height: LANE_H, background: sideStyle(marks.lanes[kill.lane]).fill }}
+				/>
+			))}
+			{marks.freezes.map((span, i) => (
+				<span
+					key={`f${i}`}
+					className="absolute"
+					style={{
+						left: pct(span.from),
+						width: `calc(${pct(span.to)} - ${pct(span.from)})`,
+						top: BAND_TOP,
+						height: BAND_H,
+						background: HATCH,
+						boxShadow: 'inset 0 0 0 1px rgba(163,163,163,0.4)',
+					}}
+				/>
+			))}
+			<span className="absolute inset-x-0 rounded-[2px] bg-[#333333]" style={{ top: TRACK_TOP, height: 4 }} />
+			{marks.resumes.map((at, i) => (
+				<span key={`r${i}`} className="absolute top-0 w-px bg-neutral-100" style={{ left: pct(at), height: BAND_TOP + BAND_H }} />
+			))}
+			{axis.map((at, i) => (
+				<span key={`a${at}`}>
+					<span className="absolute h-[3px] w-px bg-[#666666]" style={{ left: pct(at), top: AXIS_TOP - 2 }} />
+					<span
+						className={'absolute text-[11px] leading-[12px] tabular-nums text-neutral-400 ' + (i === 0 ? '' : '-translate-x-1/2')}
+						style={{ left: pct(at), top: AXIS_TOP + 1 }}
+					>
+						{formatMissionTime(at).slice(0, 5)}
+					</span>
+				</span>
+			))}
+		</>
+	);
+});
+
+export default function Timeline(props: Props) {
+	const { model, time, playing, speed, realTime, sideStyle, sideName, zoneName, onTogglePlay, onSpeed, onSeek } = props;
 	const t = useTranslations('replayViewer');
 	const duration = Math.max(1, model.duration);
-
-	// Freeze spans and resume points drawn on the track, and a tick per kill by side.
-	const marks = useMemo(() => {
-		const freezes: { from: number; to: number }[] = [];
-		const resumes: number[] = [];
-		const kills: { at: number; color: string }[] = [];
-		let open: number | null = null;
-		for (const event of model.events) {
-			if (event.type === 'flow') {
-				if ((event.flow === 'freeze' || event.flow === 'hardfreeze') && open === null) open = event.t;
-				if ((event.flow === 'freeze-end' || event.flow === 'hardfreeze-end') && open !== null) {
-					freezes.push({ from: open, to: event.t });
-					open = null;
-				}
-			} else if (event.type === 'resume') {
-				resumes.push(event.t);
-			} else if (event.type === 'kill') {
-				const killer = event.killer !== null ? model.entities.get(event.killer) : null;
-				kills.push({ at: event.t, color: sideColor(killer?.side ?? null) });
-			}
-		}
-		if (open !== null) freezes.push({ from: open, to: model.duration });
-		return { freezes, resumes, kills };
-	}, [model, sideColor]);
-
+	const marks = useMemo(() => collectMarks(model), [model]);
+	const labels = useMemo(() => ({ freeze: t('freeze'), hardFreeze: t('hardFreeze'), resumed: t('resumedShort') }), [t]);
+	const [hover, setHover] = useState<{ x: number; width: number } | null>(null);
 	const pct = (v: number) => `${Math.min(100, Math.max(0, (v / duration) * 100))}%`;
+	const lanesBottom = LANE_TOP + marks.lanes.length * (LANE_H + LANE_GAP);
+
+	// What the pointer is over: the time there and anything marked within a few pixels.
+	const tooltip = (() => {
+		if (!hover || hover.width <= 0) return null;
+		const at = Math.max(0, Math.min(duration, (hover.x / hover.width) * duration));
+		const near = (6 / hover.width) * duration;
+		const notes: string[] = [];
+		for (const resume of marks.resumes) if (Math.abs(resume - at) <= near) notes.push(t('resumedLong'));
+		for (const capture of marks.captures) {
+			if (Math.abs(capture.at - at) <= near) notes.push(t('capturedPlain', { side: sideName(capture.side), zone: zoneName(capture.zid) }));
+		}
+		const kills = marks.kills.filter((kill) => Math.abs(kill.at - at) <= near).length;
+		if (kills > 0) notes.push(t('killsNear', { count: kills }));
+		const freeze = marks.freezes.find((span) => at >= span.from && at <= span.to);
+		if (freeze) notes.push(freeze.hard ? t('hardFreeze') : t('freeze'));
+		return { at, notes };
+	})();
 
 	return (
-		<div className="flex flex-wrap items-center gap-3 border-t border-neutral-800 bg-neutral-950 px-3 py-3 sm:gap-4 sm:px-4">
+		<div
+			role="group"
+			aria-label={t('playback')}
+			className="flex flex-wrap items-center gap-x-[16px] gap-y-[8px] border-t border-[#2c2c2c] bg-[#121212] px-[16px] py-[8px] lg:flex-nowrap"
+		>
 			<button
 				type="button"
 				onClick={onTogglePlay}
 				aria-label={playing ? t('pause') : t('play')}
-				className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--accent)] text-neutral-950 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:ring-offset-2 focus:ring-offset-neutral-950"
+				className="inline-flex size-[44px] shrink-0 items-center justify-center rounded-[4px] bg-[color:var(--accent)] text-[#0a0a0a] hover:bg-[#dcc56c] active:bg-[#bca243] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
 			>
-				{playing ? (
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-						<rect x="6" y="5" width="4" height="14" rx="1" />
-						<rect x="14" y="5" width="4" height="14" rx="1" />
-					</svg>
-				) : (
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-						<path d="M8 5v14l11-7z" />
-					</svg>
-				)}
+				{playing ? <Icon.Pause /> : <Icon.Play />}
 			</button>
 
-			<div role="group" aria-label={t('speed')} className="flex rounded-xl bg-white/5 p-1">
-				{SPEEDS.map((value) => (
-					<button
-						key={value}
-						type="button"
-						onClick={() => onSpeed(value)}
-						aria-pressed={speed === value}
-						className={
-							'min-h-9 min-w-10 rounded-lg px-2 font-mono text-xs font-semibold tabular-nums ' +
-							(speed === value ? 'bg-white/15 text-neutral-50' : 'text-neutral-400 hover:text-neutral-100')
-						}
-					>
-						{value}×
-					</button>
-				))}
-			</div>
-
-			<div className="flex min-w-[9rem] flex-col">
-				<span className="font-mono text-sm font-semibold tabular-nums text-neutral-50">
-					{formatMissionTime(time)} <span className="text-neutral-500">/ {formatMissionTime(model.duration)}</span>
+			<div className="flex min-w-[140px] flex-1 flex-col lg:flex-none">
+				<span className="text-[16px] font-semibold leading-[22px] tabular-nums text-neutral-100">
+					{formatMissionTime(time)} <span className="text-[13px] font-medium text-neutral-400">/ {formatMissionTime(model.duration)}</span>
 				</span>
-				{realTime ? <span className="text-xs text-neutral-400">{t('realTime', { time: realTime })}</span> : null}
+				{realTime ? <span className="text-[12px] leading-[16px] text-neutral-400">{t('realTime', { time: realTime })}</span> : null}
 			</div>
 
-			<div className="relative h-8 min-w-[12rem] flex-[999_1_20rem]">
-				<div className="pointer-events-none absolute inset-x-0 top-[14px] h-1 rounded bg-neutral-800" />
-				{marks.freezes.map((span, i) => (
-					<div
-						key={`f${i}`}
-						className="pointer-events-none absolute top-[10px] h-3 rounded-sm bg-amber-400/25"
-						style={{ left: pct(span.from), width: `calc(${pct(span.to)} - ${pct(span.from)})` }}
-					/>
-				))}
-				<div className="pointer-events-none absolute top-[14px] h-1 rounded bg-[color:var(--accent)]" style={{ left: 0, width: pct(time) }} />
-				{marks.kills.map((kill, i) => (
-					<div key={`k${i}`} className="pointer-events-none absolute top-[3px] h-2 w-0.5" style={{ left: pct(kill.at), background: kill.color }} />
-				))}
-				{marks.resumes.map((at, i) => (
-					<div key={`r${i}`} className="pointer-events-none absolute top-0 h-8 w-0.5 bg-amber-400" style={{ left: pct(at) }} />
-				))}
+			<div
+				className="relative order-last min-w-[240px] flex-[1_1_100%] rounded-[2px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-4 has-[:focus-visible]:outline-[color:var(--accent)] lg:order-none lg:flex-[1_1_auto]"
+				style={{ height: HEIGHT }}
+				onPointerMove={(e) => {
+					const rect = e.currentTarget.getBoundingClientRect();
+					setHover({ x: e.clientX - rect.left, width: rect.width });
+				}}
+				onPointerLeave={() => setHover(null)}
+			>
+				<StaticMarks marks={marks} duration={duration} sideStyle={sideStyle} labels={labels} />
+				{/* Kills still ahead show at half strength. */}
+				<span className="pointer-events-none absolute right-0 bg-[rgba(18,18,18,0.5)]" style={{ left: pct(time), top: LANE_TOP, height: lanesBottom - LANE_TOP }} />
+				<span className="pointer-events-none absolute left-0 rounded-[2px] bg-[color:var(--accent)]" style={{ top: TRACK_TOP, height: 4, width: pct(time) }} />
+				<span className="pointer-events-none absolute w-[2px] -translate-x-1/2 bg-[color:var(--accent)]" style={{ left: pct(time), top: 10, height: BAND_TOP + BAND_H - 10 }} />
+				<span
+					className="pointer-events-none absolute size-[12px] -translate-x-1/2 rotate-45 bg-[color:var(--accent)] shadow-[0_0_0_2px_#121212]"
+					style={{ left: pct(time), top: TRACK_TOP - 4 }}
+				/>
+				{tooltip ? (
+					<>
+						<span className="pointer-events-none absolute w-px bg-neutral-300" style={{ left: hover?.x ?? 0, top: 6, height: HEIGHT - 14 }} />
+						<span
+							role="tooltip"
+							className="pointer-events-none absolute bottom-full z-10 mb-[6px] flex -translate-x-1/2 flex-col gap-[2px] whitespace-nowrap rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] px-[10px] py-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+							style={{ left: Math.max(60, Math.min((hover?.width ?? 0) - 60, hover?.x ?? 0)) }}
+						>
+							<span className="text-[12px] font-semibold leading-[16px] tabular-nums text-neutral-100">{formatMissionTime(tooltip.at)}</span>
+							{tooltip.notes.map((note, i) => (
+								<span key={i} className="text-[12px] leading-[16px] text-neutral-400">
+									{note}
+								</span>
+							))}
+						</span>
+					</>
+				) : null}
 				<input
 					type="range"
 					min={0}
@@ -117,13 +254,28 @@ export default function Timeline({ model, time, playing, speed, realTime, sideCo
 					value={Math.min(duration, Math.round(time))}
 					onChange={(e) => onSeek(Number(e.target.value))}
 					aria-label={t('seek')}
-					aria-valuetext={formatMissionTime(time)}
-					className="absolute inset-0 h-8 w-full cursor-pointer appearance-none bg-transparent opacity-0"
+					aria-valuetext={t('seekValue', { time: formatMissionTime(time), duration: formatMissionTime(model.duration) })}
+					className="absolute inset-0 m-0 h-full w-full cursor-pointer appearance-none opacity-0"
 				/>
-				<div
-					className="pointer-events-none absolute top-[8px] h-4 w-4 -translate-x-1/2 rounded-full bg-[color:var(--accent)] ring-4 ring-neutral-950"
-					style={{ left: pct(time) }}
-				/>
+			</div>
+
+			<div role="group" aria-label={t('speed')} className="flex shrink-0 gap-[4px]">
+				{SPEEDS.map((value) => (
+					<button
+						key={value}
+						type="button"
+						onClick={() => onSpeed(value)}
+						aria-pressed={speed === value}
+						className={
+							'min-h-[44px] min-w-[44px] rounded-[4px] border px-[10px] text-[13px] font-semibold leading-[18px] tabular-nums ' +
+							(speed === value
+								? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
+								: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-300 hover:border-[#666666] hover:bg-[#242424] hover:text-neutral-100')
+						}
+					>
+						{value}×
+					</button>
+				))}
 			</div>
 		</div>
 	);
