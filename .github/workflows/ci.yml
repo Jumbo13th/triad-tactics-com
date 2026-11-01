@@ -32,8 +32,13 @@ jobs:
       with:
         node-version-file: .nvmrc
 
-    - name: Audit dependencies
+    - name: Audit production dependencies
+      run: npm audit --omit=dev --audit-level=low
+
+    # Dev tools never reach the image, so their advisories are shown without blocking deploys.
+    - name: Audit all dependencies (report only)
       run: npm audit --audit-level=low
+      continue-on-error: true
 
   lint-and-test:
     if: github.event_name != 'schedule'

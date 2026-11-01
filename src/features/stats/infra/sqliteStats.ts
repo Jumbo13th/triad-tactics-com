@@ -135,7 +135,7 @@ export function insertDraft(input: {
 	winnerSide: string;
 	missionName: string;
 	playedAt: string;
-	uploadedBySteamid64: string;
+	uploadedBySteamid64: string | null;
 }): number {
 	const db = getDb();
 	const result = db
@@ -166,7 +166,7 @@ export function replaceDraft(gameStatsId: number, input: {
 	winnerSide: string;
 	missionName: string;
 	playedAt: string;
-	uploadedBySteamid64: string;
+	uploadedBySteamid64: string | null;
 }): void {
 	const db = getDb();
 	db.prepare(
@@ -326,7 +326,7 @@ export function listGamesForMission(missionId: number): GameStatsMeta[] {
 
 export function findMissionIdByShortCode(shortCode: string): number | null {
 	const db = getDb();
-	const row = db.prepare(`SELECT id FROM missions WHERE short_code = ?`).get(shortCode) as { id: number } | undefined;
+	const row = db.prepare(`SELECT id FROM missions WHERE LOWER(short_code) = LOWER(?)`).get(shortCode) as { id: number } | undefined;
 	return row ? row.id : null;
 }
 

@@ -5,6 +5,8 @@ import { deriveSideColors } from '@/features/stats/useCases/deriveSideColors';
 import { GameStatsView } from '@/features/stats/ui/root';
 import { rotationDeps } from '@/features/rotation/deps';
 import { getRotationMap } from '@/features/rotation/useCases/getRotationMap';
+import { publicReplaysDeps } from '@/features/replays/deps';
+import { findEpisodeReplayId } from '@/features/replays/useCases/findEpisodeReplays';
 
 export default async function GameStatsRoutePage({
 	params,
@@ -21,6 +23,11 @@ export default async function GameStatsRoutePage({
 	for (const [unitId, side] of Object.entries(rotationSides)) colorByUnit[Number(unitId)] = side.sideColor;
 	const sideColors = deriveSideColors(view.scores, view.factions, colorByUnit);
 
+	const replayId = findEpisodeReplayId(publicReplaysDeps, {
+		missionId: view.meta.missionId,
+		episodeNumber: view.meta.episodeNumber,
+	});
+
 	return (
 		<GameStatsView
 			meta={view.meta}
@@ -28,6 +35,7 @@ export default async function GameStatsRoutePage({
 			timeline={view.timeline}
 			factions={view.factions}
 			sideColors={sideColors}
+			replayHref={replayId === null ? null : `/replays/${replayId}`}
 		/>
 	);
 }

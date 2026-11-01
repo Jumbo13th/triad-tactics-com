@@ -58,12 +58,14 @@ export default function GameStatsView({
 	timeline,
 	factions,
 	sideColors = {},
+	replayHref = null,
 }: {
 	meta: GameStatsMeta;
 	scores: UnitScoreWithUnit[];
 	timeline: GameTimelineEvent[];
 	factions: string[];
 	sideColors?: Record<string, string>;
+	replayHref?: string | null;
 }) {
 	const t = useTranslations('stats');
 	const { sort, toggle } = useSortState<ScoreSortKey>({ key: 'final', dir: 'desc' }, SCORE_DEFAULT_DIR);
@@ -83,10 +85,25 @@ export default function GameStatsView({
 					{meta.missionName || t('gameFallbackName', { id: meta.id })}
 					{` · E${meta.episodeNumber}`}
 				</h1>
-				{meta.winnerSide !== '' && (
-					<span className="inline-flex w-fit items-center rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--accent)]">
-						{meta.winnerSide === 'draw' ? t('resultDraw') : t('resultWinner', { side: meta.winnerSide })}
-					</span>
+				{(meta.winnerSide !== '' || replayHref) && (
+					<div className="flex flex-wrap items-center gap-3">
+						{meta.winnerSide !== '' && (
+							<span className="inline-flex w-fit items-center rounded-full border border-[color:var(--accent)]/30 bg-[color:var(--accent)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--accent)]">
+								{meta.winnerSide === 'draw' ? t('resultDraw') : t('resultWinner', { side: meta.winnerSide })}
+							</span>
+						)}
+						{replayHref && (
+							<Link
+								href={replayHref}
+								className="inline-flex items-center gap-2 rounded-full border border-neutral-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-200 transition hover:border-[color:var(--accent)]/60 hover:text-[color:var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+							>
+								<svg className="h-3 w-3 text-[color:var(--accent)]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+									<path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" />
+								</svg>
+								{t('watchReplay')}
+							</Link>
+						)}
+					</div>
 				)}
 			</header>
 

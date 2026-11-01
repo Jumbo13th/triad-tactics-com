@@ -41,10 +41,13 @@ export default function UnitStatsHistory({
 	entries,
 	seasonRank = null,
 	rankSeries = null,
+	replayHrefs = {},
 }: {
 	entries: UnitHistoryEntry[];
 	seasonRank?: { rank: number; total: number } | null;
 	rankSeries?: { games: string[]; ranks: number[]; totalUnits: number } | null;
+	/** Keyed by statistics game id. */
+	replayHrefs?: Record<number, string>;
 }) {
 	const t = useTranslations('stats');
 	const { sort, toggle } = useSortState<HistorySortKey>({ key: 'game', dir: 'desc' }, HISTORY_DEFAULT_DIR);
@@ -158,6 +161,20 @@ export default function UnitStatsHistory({
 													</span>
 												)}
 												{entry.score.isCommander && <span className="shrink-0 text-xs text-[color:var(--accent)]">★</span>}
+												{replayHrefs[entry.game.id] && (
+													<Link
+														href={replayHrefs[entry.game.id]}
+														aria-label={t('replayOf', {
+															game: `${entry.game.missionName || `#${entry.game.id}`} · E${entry.game.episodeNumber}`,
+														})}
+														className="inline-flex min-h-6 shrink-0 items-center gap-1 self-center rounded-md border border-neutral-700 px-2 text-xs font-semibold text-neutral-300 transition hover:border-[color:var(--accent)]/60 hover:text-[color:var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+													>
+														<svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+															<path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" />
+														</svg>
+														{t('replayShort')}
+													</Link>
+												)}
 											</div>
 										</td>
 										<td className={`${tdNum} text-neutral-200`}>{entry.score.kills}</td>

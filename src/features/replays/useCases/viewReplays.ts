@@ -1,0 +1,90 @@
+import { mapStorageKey } from '../domain/maps';
+import { applicableFilters, sortFacets, toGameFilter, type ReplayListFilters } from '../domain/search';
+import type { PublicReplayGame, ReplaySearchPage } from '../domain/types';
+import type { PublicReplaysDeps, StoredObject } from '../ports';
+
+export const REPLAYS_PER_PAGE = 20;
+
+/** A page past the last one shows the last, so a link kept from a longer list still lands. */
+export function searchPublishedReplays(
+	deps: Pick<PublicReplaysDeps, 'repo'>,
+	input: ReplayListFilters & { page: number; locale: string }
+): ReplaySearchPage {
+	const { page: requestedPage, locale, ...requested } = input;
+	const facets = sortFacets(deps.repo.listPublishedFacets(), locale);
+	const filters = applicableFilters(requested, facets);
+	const filter = toGameFilter(filters);
+	const total = deps.repo.countPublishedGames(filter);
+	const totalPages = Math.max(1, Math.ceil(total / REPLAYS_PER_PAGE));
+	const page = Math.min(Math.max(1, Math.floor(requestedPage)), totalPages);
+	const replays =
+		total === 0
+			? []
+			: deps.repo.searchPublishedGames({ filter, sort: filters.sort, limit: REPLAYS_PER_PAGE, offset: (page - 1) * REPLAYS_PER_PAGE });
+	return { filters, facets, page, totalPages, total, replays };
+}
+
+// Admins open a game before publishing it, which is how they check what they approve.
+export function getReplayForViewer(
+	deps: Pick<PublicReplaysDeps, 'repo'>,
+	input: { gameId: number; viewerIsAdmin: boolean }
+): PublicReplayGame | null {
+	const record = deps.repo.findGame(input.gameId);
+	if (!record) return null;
+
+	let item = deps.repo.findPublishedGame(input.gameId);
+	if (!item) {
+		const unpublished = input.viewerIsAdmin ? deps.repo.findGameListItem(input.gameId) : null;
+		if (!unpublished) return null;
+		item = {
+			id: unpublished.id,
+			missionTitle: unpublished.missionTitle ?? unpublished.mission ?? unpublished.session,
+			missionShortCode: null,
+			episodeNumber: unpublished.episodeNumber ?? 1,
+			world: unpublished.world,
+			startedAt: unpublished.startedAt,
+			publishedAt: '',
+			statsId: null,
+		};
+	}
+
+	const files = new Map(deps.repo.findFiles(record.segments).map((f) => [f.sha256, f]));
+	const segments = record.segments.map((sha256) => ({ sha256, size: files.get(sha256)?.size ?? 0 }));
+	const map = item.world ? deps.repo.findMap(item.world) : null;
+	return { ...item, segments, map: { relief: map?.reliefSha256 ?? null, topo: map?.topoSha256 ?? null } };
+}
+
+export type OpenedReplayFile = {
+	stored: StoredObject;
+	contentType: string;
+	/** The stored bytes are gzip and are sent as they are. */
+	gzip: boolean;
+	/** Public files never change, so anything may cache them for good. */
+	public: boolean;
+};
+
+// Only recording segments and map files are ever served; identity and statistics files
+// name player accounts and stay private.
+export async function openReplayFile(
+	deps: PublicReplaysDeps,
+	input: { sha256: string; viewerIsAdmin: () => boolean }
+): Promise<OpenedReplayFile | null> {
+	if (!deps.objects.isConfigured()) return null;
+
+	const file = deps.repo.findFile(input.sha256);
+	if (file) {
+		if (file.kind !== 'segment') return null;
+		const isPublic = deps.repo.isPublishedSegment(input.sha256);
+		if (!isPublic && !input.viewerIsAdmin()) return null;
+		const stored = await deps.objects.open(file.storageKey);
+		return stored ? { stored, contentType: 'text/plain; charset=utf-8', gzip: true, public: isPublic } : null;
+	}
+
+	const mapKind = deps.repo.findMapFileKind(input.sha256);
+	if (!mapKind) return null;
+	const stored = await deps.objects.open(mapStorageKey(mapKind, input.sha256));
+	if (!stored) return null;
+	return mapKind === 'relief'
+		? { stored, contentType: 'image/webp', gzip: false, public: true }
+		: { stored, contentType: 'application/octet-stream', gzip: true, public: true };
+}

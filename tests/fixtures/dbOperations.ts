@@ -23,6 +23,9 @@ export const dbOperations = {
 		const db = getDb();
 		try {
 			db.exec(
+				'DELETE FROM replay_game_players; ' +
+				'DELETE FROM replay_games; ' +
+				'DELETE FROM replay_files; ' +
 				'DELETE FROM stats_settings; ' +
 				'DELETE FROM game_stats_unit_scores; ' +
 				'DELETE FROM game_stats; ' +
