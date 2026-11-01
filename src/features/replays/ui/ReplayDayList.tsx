@@ -7,6 +7,7 @@ import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePrefer
 import type { PublicReplaySearchItem } from '../domain/api';
 import { dayKey, dayKeyDate, groupByDay, shiftDayKey } from './listDays';
 import { EYEBROW, FOCUS_RING } from './listStyles';
+import ChartIcon from './ChartIcon';
 import PlayIcon from './PlayIcon';
 import { terrainName } from '../domain/terrain';
 
@@ -21,14 +22,6 @@ const ROW = [
 ].join(' ');
 const WHEN_TIME = '[--when:48px]';
 const WHEN_DATE = '[--when:168px] lg:[--when:184px]';
-
-function ChartIcon() {
-	return (
-		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-			<path d="M5 20V11M12 20V5M19 20v-6" />
-		</svg>
-	);
-}
 
 type When = { iso: string | null; text: string };
 

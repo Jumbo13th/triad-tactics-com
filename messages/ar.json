@@ -190,6 +190,7 @@
     "adminErrInvalidSnapshot": "تعذرت قراءة ملف الإحصائيات.",
     "adminErrGeneric": "حدث خطأ ما",
     "publicTitle": "الإعادات",
+    "missionEpisodes": "الحلقات",
     "publicSubtitle": "شاهد مباريات المجتمع مجددًا بكل فرقة ومركبة واشتباك على الخريطة.",
     "publicEmpty": "لم تُنشر أي إعادة بعد.",
     "publicEpisode": "الحلقة {episode}",

@@ -190,6 +190,7 @@
     "adminErrInvalidSnapshot": "Не удалось прочитать файл статистики.",
     "adminErrGeneric": "Что-то пошло не так",
     "publicTitle": "Реплеи",
+    "missionEpisodes": "Эпизоды",
     "publicSubtitle": "Пересматривайте игры сообщества: все отряды, техника и бои на карте.",
     "publicEmpty": "Пока не опубликовано ни одного реплея.",
     "publicEpisode": "Эпизод {episode}",

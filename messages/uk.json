@@ -190,6 +190,7 @@
     "adminErrInvalidSnapshot": "Не вдалося прочитати файл статистики.",
     "adminErrGeneric": "Щось пішло не так",
     "publicTitle": "Реплеї",
+    "missionEpisodes": "Епізоди",
     "publicSubtitle": "Переглядайте ігри спільноти: усі загони, техніка й бої на мапі.",
     "publicEmpty": "Ще не опубліковано жодного реплею.",
     "publicEpisode": "Епізод {episode}",

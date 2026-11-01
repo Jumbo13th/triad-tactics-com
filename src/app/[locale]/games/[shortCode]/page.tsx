@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/routing';
 import GameMissionPage from '@/features/games/ui/GameMissionPage';
 import { statsDeps } from '@/features/stats/deps';
 import { getPublishedEpisodesForMission } from '@/features/stats/useCases/getPublishedEpisodesForMission';
@@ -15,7 +13,7 @@ import { getProtectedPageRedirect } from '@/features/steamAuth/useCases/userFlow
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
 import { publicReplaysDeps } from '@/features/replays/deps';
 import { listMissionReplays } from '@/features/replays/useCases/findEpisodeReplays';
-import { MissionReplays } from '@/features/replays/ui/root';
+import { MissionEpisodes, type MissionEpisode } from '@/features/replays/ui/root';
 
 export default async function GameMissionRoutePage({
 	params
@@ -49,53 +47,37 @@ export default async function GameMissionRoutePage({
 	}
 
 	const statsEpisodes = getPublishedEpisodesForMission(statsDeps, { shortCode: trimmedShortCode });
-	const tStats = await getTranslations('stats');
-
-	const statsSlot =
-		statsEpisodes.length > 0 ? (
-			<section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-sm shadow-black/20 sm:p-6">
-				<p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">{tStats('title')}</p>
-				<ul className="mt-3 divide-y divide-neutral-800/60">
-					{statsEpisodes.map((game) => (
-						<li key={game.id}>
-							<Link
-								href={`/stats/games/${game.id}`}
-								className="group flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5"
-							>
-								<span className="flex items-center gap-3">
-									<span className="whitespace-nowrap rounded-md border border-neutral-700 px-2 py-0.5 text-xs font-bold text-neutral-300 transition group-hover:border-[color:var(--accent)]/60 group-hover:text-[color:var(--accent)]">
-										{tStats('epLabel', { n: game.episodeNumber })}
-									</span>
-									{game.winnerSide && game.winnerSide !== 'draw' && (
-										<span className="text-xs font-semibold uppercase tracking-[0.15em] text-[color:var(--accent)]">
-											{tStats('resultWinner', { side: game.winnerSide })}
-										</span>
-									)}
-									{game.winnerSide === 'draw' && (
-										<span className="text-xs font-semibold uppercase tracking-[0.15em] text-neutral-400">
-											{tStats('resultDrawShort')}
-										</span>
-									)}
-								</span>
-								<span className="text-xs font-semibold text-neutral-500">{game.playedAt.split(' ')[0]}</span>
-							</Link>
-						</li>
-					))}
-				</ul>
-			</section>
-		) : null;
-
 	const replays = listMissionReplays(publicReplaysDeps, { shortCode: trimmedShortCode });
+
+	// An episode can have its statistics published before its replay or the other way round.
+	const byEpisode = new Map<number, MissionEpisode>();
+	const episodeOf = (n: number): MissionEpisode => {
+		const known = byEpisode.get(n);
+		if (known) return known;
+		const blank: MissionEpisode = { episodeNumber: n, statsId: null, winnerSide: null, replayId: null, world: null, startedAt: null, playedOn: null };
+		byEpisode.set(n, blank);
+		return blank;
+	};
+	for (const game of statsEpisodes) {
+		const episode = episodeOf(game.episodeNumber);
+		episode.statsId = game.id;
+		episode.winnerSide = game.winnerSide || null;
+		episode.playedOn = game.playedAt.split(' ')[0] || null;
+	}
+	// Replays come oldest first, so a replayed episode keeps its newest game.
+	for (const replay of replays) {
+		const episode = episodeOf(replay.episodeNumber);
+		episode.replayId = replay.id;
+		episode.world = replay.world;
+		episode.startedAt = replay.startedAt;
+		episode.statsId ??= replay.statsId;
+	}
+	const episodes = [...byEpisode.values()].sort((a, b) => a.episodeNumber - b.episodeNumber);
 
 	return (
 		<GameMissionPage
 			mission={mission.mission}
-			statsSlot={
-				<>
-					{statsSlot}
-					{replays.length > 0 ? <MissionReplays replays={replays} /> : null}
-				</>
-			}
+			statsSlot={episodes.length > 0 ? <MissionEpisodes episodes={episodes} /> : null}
 		/>
 	);
 }

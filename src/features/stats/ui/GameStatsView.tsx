@@ -95,9 +95,9 @@ export default function GameStatsView({
 						{replayHref && (
 							<Link
 								href={replayHref}
-								className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[color:var(--accent)] px-4 text-sm font-semibold text-neutral-950 transition hover:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+								className="inline-flex items-center gap-2 rounded-full border border-neutral-700 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-200 transition hover:border-[color:var(--accent)]/60 hover:text-[color:var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
 							>
-								<svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+								<svg className="h-3 w-3 text-[color:var(--accent)]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 									<path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" />
 								</svg>
 								{t('watchReplay')}

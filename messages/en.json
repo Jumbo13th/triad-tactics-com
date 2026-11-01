@@ -190,6 +190,7 @@
     "adminErrInvalidSnapshot": "The statistics file could not be read.",
     "adminErrGeneric": "Something went wrong",
     "publicTitle": "Replays",
+    "missionEpisodes": "Episodes",
     "publicSubtitle": "Watch the community's games again, with every squad, vehicle and engagement on the map.",
     "publicEmpty": "No replays published yet.",
     "publicEpisode": "Episode {episode}",
