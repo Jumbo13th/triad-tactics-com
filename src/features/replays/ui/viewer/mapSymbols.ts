@@ -283,8 +283,14 @@ export function drawPlate(
 }
 
 /** Marker text: bold ink on a white halo, as players write it on the in-game map. */
-export function drawMarkerText(ctx: Ctx, text: string, x: number, y: number) {
+/** Null when another label already holds the place; the text is then left out. */
+export function drawMarkerText(ctx: Ctx, text: string, x: number, y: number, taken: LabelBox[] | null = null): LabelBox | null {
 	ctx.font = '700 11px Inter, ui-sans-serif, system-ui, sans-serif';
+	const box = { x: x - 2, y: y - 8, w: Math.ceil(ctx.measureText(text).width) + 4, h: 16 };
+	if (taken) {
+		if (taken.some((o) => box.x < o.x + o.w && o.x < box.x + box.w && box.y < o.y + o.h && o.y < box.y + box.h)) return null;
+		taken.push(box);
+	}
 	ctx.textBaseline = 'middle';
 	ctx.lineJoin = 'round';
 	ctx.strokeStyle = 'rgba(255,255,255,0.95)';
@@ -293,6 +299,7 @@ export function drawMarkerText(ctx: Ctx, text: string, x: number, y: number) {
 	ctx.fillStyle = INK;
 	ctx.fillText(text, x, y);
 	ctx.textBaseline = 'alphabetic';
+	return box;
 }
 
 export function drawFallbackMarker(ctx: Ctx, x: number, y: number, color: string) {

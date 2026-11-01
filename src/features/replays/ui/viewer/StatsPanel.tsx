@@ -60,7 +60,7 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 			<thead>
 				<tr className="border-b border-[#2c2c2c] text-neutral-400">
 					{head.map((label, i) => (
-						<th key={label} scope="col" className={`${i === 0 ? 'w-[30%] px-[6px] py-[5px] text-left' : cell} truncate text-[10px] font-semibold uppercase tracking-[0.04em]`}>
+						<th key={label} scope="col" className={`${i === 0 ? 'w-[24%] px-[6px] py-[5px] text-left' : cell} hyphens-auto align-bottom text-[10px] font-semibold uppercase leading-[12px] tracking-[0.04em]`}>
 							{label}
 						</th>
 					))}
@@ -132,9 +132,10 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 									<span className="text-neutral-400">{t('statsNoResult')}</span>
 								)}
 							</p>
+							{/* Kills outside the zone and in it are counted apart, as on the statistics page. */}
 							<Table
 								head={[t('statsSide'), t('statsPlayers'), t('statsKills'), t('statsInTrigger'), t('statsTeamkills'), t('statsLosses'), t('statsPoints')]}
-								rows={stats.sides.map((side) => [sideLabel(side.side), side.participants, side.kills, side.zoneKills, side.teamkills, side.deaths, side.points])}
+								rows={stats.sides.map((side) => [sideLabel(side.side), side.participants, side.kills - side.zoneKills, side.zoneKills, side.teamkills, side.deaths, side.points])}
 							/>
 							{stats.units.length > 0 ? (
 								<div className="flex flex-col gap-[4px]">
@@ -157,7 +158,7 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 													<span className="text-[12px] leading-[16px] tabular-nums text-neutral-400">
 														{[
 															`${t('statsPlayers')} ${unit.participants}`,
-															`${t('statsKills')} ${unit.kills}`,
+															`${t('statsKills')} ${unit.kills - unit.zoneKills}`,
 															`${t('statsInTrigger')} ${unit.zoneKills}`,
 															unit.teamkills > 0 ? `${t('statsTeamkills')} ${unit.teamkills}` : null,
 															`${t('statsLosses')} ${unit.deaths}`,

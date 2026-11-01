@@ -149,7 +149,8 @@ function markerIcon(src: string, onLoad: () => void): HTMLImageElement | null {
 }
 
 // Lower ranks claim their place first when labels would overlap.
-type Plate = { text: string; anchor: number; y: number; rank: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone };
+// A marker's text is drawn as on the in-game map, not on a plate, but competes for room the same way.
+type Plate = { text: string; anchor: number; y: number; rank: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone; marker?: boolean };
 
 export default function MapCanvas(props: Props) {
 	const { model, t, relief, topo, layers, selected, following, sideStyle, nicknameOf, nameOf, callsignFor, contested, onSelect, onPan, handleRef, ariaLabel } = props;
@@ -263,7 +264,8 @@ export default function MapCanvas(props: Props) {
 
 		// Where everyone is, before anything is drawn: zones need it to tell who is inside.
 		const segment = segmentAt(model, t);
-		const crews = new Map<number, number>();
+		// Recordings give vehicles no side of their own; a crewed one wears the side most of its crew is on.
+		const crews = new Map<number, { count: number; sides: Map<string, number> }>();
 		const squads = new Map<string, { x: number; top: number; n: number; side: string | null }>();
 		const men: { entity: Entity; wx: number; wz: number; x: number; y: number; h: number; life: string }[] = [];
 		for (const entity of model.entities.values()) {
@@ -271,7 +273,10 @@ export default function MapCanvas(props: Props) {
 			const life = valueAt(entity.life, t, 'alive');
 			const seat = valueAt(entity.seats, t, null);
 			if (seat && life !== 'dead') {
-				crews.set(seat.vehicle, (crews.get(seat.vehicle) ?? 0) + 1);
+				const crew = crews.get(seat.vehicle) ?? { count: 0, sides: new Map<string, number>() };
+				crew.count++;
+				if (entity.side) crew.sides.set(entity.side, (crew.sides.get(entity.side) ?? 0) + 1);
+				crews.set(seat.vehicle, crew);
 				continue;
 			}
 			const at = positionAt(entity, t);
@@ -365,7 +370,7 @@ export default function MapCanvas(props: Props) {
 				const image = color && MARKER_ICONS.has(marker.icon) ? markerIcon(`/markers/icons/${marker.icon}-${color}.png`, redraw) : null;
 				if (image) ctx.drawImage(image, x - 14, y - 14, 28, 28);
 				else drawFallbackMarker(ctx, x, y, marker.color ? displayColor(marker.color) : '#ee322e');
-				if (layers.markerText && marker.text) drawMarkerText(ctx, marker.text, x + (image ? 17 : 10), y);
+				if (layers.markerText && marker.text) plates.push({ text: marker.text, anchor: x + (image ? 17 : 10), y, rank: 3.5, marker: true });
 			}
 		}
 
@@ -438,9 +443,10 @@ export default function MapCanvas(props: Props) {
 				ctx.lineWidth = 1.25;
 				ctx.stroke();
 			} else {
-				drawVehicle(ctx, x, y, sideStyle(entity.side), false, size);
 				const crew = crews.get(entity.eid);
-				if (crew) drawCrew(ctx, x, y, crew, size);
+				const crewSide = crew ? [...crew.sides].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null : null;
+				drawVehicle(ctx, x, y, sideStyle(entity.side ?? crewSide), false, size);
+				if (crew) drawCrew(ctx, x, y, crew.count, size);
 			}
 			hits.push({ eid: entity.eid, x, y });
 			if (layers.vehicleNames && view.scale >= NAMES_FROM && entity.eid !== selected) {
@@ -519,7 +525,8 @@ export default function MapCanvas(props: Props) {
 		const taken: LabelBox[] = [...frames];
 		plates.sort((a, b) => a.rank - b.rank);
 		for (const plate of plates) {
-			drawPlate(ctx, plate.text, plate.anchor, plate.y, { align: plate.align, outlined: plate.outlined, tone: plate.tone, taken, force: plate.rank === 0 });
+			if (plate.marker) drawMarkerText(ctx, plate.text, plate.anchor, plate.y, taken);
+			else drawPlate(ctx, plate.text, plate.anchor, plate.y, { align: plate.align, outlined: plate.outlined, tone: plate.tone, taken, force: plate.rank === 0 });
 		}
 
 		drawRulers(ctx, w, h, view.scale, sx, sy, left, right, bottom, top);
