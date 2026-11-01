@@ -44,7 +44,7 @@ const view: GameStatsView = {
 	factions: ['US', 'USSR'],
 	timeline: [],
 	scores: [
-		score({ unitId: 1, unitTag: 'AAA', side: 'US', kills: 5, deaths: 1, participants: 8, survivors: 7, finalPoints: 40, isWinnerSide: true }),
+		score({ unitId: 1, unitTag: 'AAA', side: 'US', kills: 5, zoneKills: 2, deaths: 1, participants: 8, survivors: 7, objectivePoints: 10, finalPoints: 40, isWinnerSide: true }),
 		score({ unitId: 2, unitTag: 'BBB', side: 'US', kills: 2, deaths: 3, teamkills: 1, participants: 4, survivors: 1, finalPoints: 55, isWinnerSide: true, isCommander: true }),
 		score({ unitId: 3, unitTag: 'CCC', side: 'USSR', kills: 4, deaths: 7, participants: 10, survivors: 3, finalPoints: 12 }),
 	],
@@ -55,8 +55,8 @@ describe('summarizeGameStats', () => {
 		const summary = summarizeGameStats(view, 5);
 		expect(summary.winnerSide).toBe('US');
 		expect(summary.sides).toEqual([
-			{ side: 'US', kills: 7, deaths: 4, teamkills: 1, participants: 12, survivors: 8, points: 95 },
-			{ side: 'USSR', kills: 4, deaths: 7, teamkills: 0, participants: 10, survivors: 3, points: 12 },
+			{ side: 'US', kills: 7, zoneKills: 2, deaths: 4, teamkills: 1, participants: 12, survivors: 8, points: 95 },
+			{ side: 'USSR', kills: 4, zoneKills: 0, deaths: 7, teamkills: 0, participants: 10, survivors: 3, points: 12 },
 		]);
 	});
 
@@ -64,6 +64,7 @@ describe('summarizeGameStats', () => {
 		const summary = summarizeGameStats(view, 2);
 		expect(summary.units.map((unit) => unit.unitTag)).toEqual(['BBB', 'AAA']);
 		expect(summary.units[0]).toMatchObject({ points: 55, winner: true, commander: true });
+		expect(summary.units[1]).toMatchObject({ kills: 5, zoneKills: 2, deaths: 1, participants: 8, survivors: 7, objectivePoints: 10 });
 		expect(summary.unitCount).toBe(3);
 	});
 });

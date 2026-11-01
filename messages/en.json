@@ -391,7 +391,9 @@
     "statsMoreUnits": "{count, plural, one {and # more unit} other {and # more units}}",
     "statsOpenFull": "Open full statistics",
     "statsNotPublished": "Official statistics for this game are not published yet. These totals come from the recording.",
-    "layersNamesHint": "Names appear as you zoom in. Point at a unit to see who it is."
+    "layersNamesHint": "Names appear as you zoom in. Point at a unit to see who it is.",
+    "statsInTrigger": "In trigger",
+    "statsObjectives": "Objectives"
   },
   "nav": {
     "aria": "Navigation",

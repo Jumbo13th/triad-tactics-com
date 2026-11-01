@@ -105,7 +105,7 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 				<div
 					role="dialog"
 					aria-label={t('statsTitle')}
-					className="fixed inset-x-[8px] top-[54px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[6px] sm:w-[420px]"
+					className="fixed inset-x-[8px] top-[54px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[6px] sm:w-[520px]"
 				>
 					<p className={`pb-[8px] text-neutral-400 ${eyebrow}`}>{t('statsTitle')}</p>
 					{stats ? (
@@ -123,26 +123,41 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 								)}
 							</p>
 							<Table
-								head={[t('statsSide'), t('statsPlayers'), t('statsKills'), t('statsLosses'), t('statsPoints')]}
-								rows={stats.sides.map((side) => [sideLabel(side.side), side.participants, side.kills, side.deaths, side.points])}
+								head={[t('statsSide'), t('statsPlayers'), t('statsKills'), t('statsInTrigger'), t('statsTeamkills'), t('statsLosses'), t('statsPoints')]}
+								rows={stats.sides.map((side) => [sideLabel(side.side), side.participants, side.kills, side.zoneKills, side.teamkills, side.deaths, side.points])}
 							/>
 							{stats.units.length > 0 ? (
 								<div className="flex flex-col gap-[4px]">
 									<p className={`text-neutral-400 ${eyebrow}`}>{t('statsTopUnits')}</p>
 									<ol className="flex flex-col">
 										{stats.units.map((unit, i) => (
-											<li key={`${unit.unitTag}-${unit.side}`} className="flex min-h-[32px] items-center gap-[8px] border-b border-[#1e1e1e] px-[6px] text-[13px] last:border-0">
-												<span className="w-[16px] shrink-0 text-right text-[12px] tabular-nums text-neutral-500">{i + 1}</span>
-												<DiamondGlyph style={sideStyle(unit.side)} />
-												<span className="min-w-0 flex-1 truncate">
-													<span className="font-semibold text-neutral-100">{unit.unitTag}</span>
-													<span className="text-neutral-400"> {unit.unitName}</span>
+											<li key={`${unit.unitTag}-${unit.side}`} className="flex items-start gap-[8px] border-b border-[#1e1e1e] px-[6px] py-[6px] text-[13px] last:border-0">
+												<span className="w-[16px] shrink-0 pt-px text-right text-[12px] tabular-nums text-neutral-500">{i + 1}</span>
+												<span className="flex pt-[4px]">
+													<DiamondGlyph style={sideStyle(unit.side)} />
 												</span>
-												{unit.commander ? <span className={`shrink-0 text-[color:var(--accent)] ${eyebrow}`}>{t('statsCommander')}</span> : null}
-												<span className="shrink-0 text-[12px] tabular-nums text-neutral-400">
-													{unit.kills}/{unit.deaths}
+												<span className="flex min-w-0 flex-1 flex-col">
+													<span className="flex min-w-0 items-center gap-[8px]">
+														<span className="min-w-0 truncate">
+															<span className="font-semibold text-neutral-100">{unit.unitTag}</span>
+															<span className="text-neutral-400"> {unit.unitName}</span>
+														</span>
+														{unit.commander ? <span className={`shrink-0 text-[color:var(--accent)] ${eyebrow}`}>{t('statsCommander')}</span> : null}
+													</span>
+													<span className="text-[12px] leading-[16px] tabular-nums text-neutral-400">
+														{[
+															`${t('statsPlayers')} ${unit.participants}`,
+															`${t('statsKills')} ${unit.kills}`,
+															`${t('statsInTrigger')} ${unit.zoneKills}`,
+															unit.teamkills > 0 ? `${t('statsTeamkills')} ${unit.teamkills}` : null,
+															`${t('statsLosses')} ${unit.deaths}`,
+															unit.objectivePoints > 0 ? `${t('statsObjectives')} ${unit.objectivePoints}` : null,
+														]
+															.filter(Boolean)
+															.join(' · ')}
+													</span>
 												</span>
-												<span className="w-[40px] shrink-0 text-right font-semibold tabular-nums text-neutral-100">{unit.points}</span>
+												<span className="w-[48px] shrink-0 text-right font-semibold tabular-nums text-neutral-100">{unit.points}</span>
 											</li>
 										))}
 									</ol>
