@@ -6,8 +6,7 @@ import { DEAD_STYLE, withAlpha, type SideStyle } from './sideStyle';
 export const ACCENT = '#d2b853';
 export const INK = '#141414';
 export const FIRE = '#c2410c';
-const HALO = 'rgba(255,255,255,0.85)';
-const LABEL_FONT = '600 11px Inter, ui-sans-serif, system-ui, sans-serif';
+export const LABEL_FONT = '600 11px Inter, ui-sans-serif, system-ui, sans-serif';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -107,9 +106,6 @@ export function drawSquad(ctx: Ctx, x: number, y: number, style: SideStyle, k: n
 	const r = 15;
 	const m = r / 2;
 	at(ctx, x, y, k, () => {
-		diamond(ctx, 0, 0, r + 2);
-		ctx.fillStyle = HALO;
-		ctx.fill();
 		diamond(ctx, 0, 0, r);
 		ctx.fillStyle = style.fill;
 		ctx.fill();
@@ -133,11 +129,6 @@ export function drawVehicle(ctx: Ctx, x: number, y: number, style: SideStyle, wr
 	const colors = wreck ? DEAD_STYLE : style;
 	at(ctx, x, y, k, () => {
 		if (wreck) ctx.globalAlpha = 0.9;
-		else {
-			diamond(ctx, 0, 0, r + 2);
-			ctx.fillStyle = HALO;
-			ctx.fill();
-		}
 		diamond(ctx, 0, 0, r);
 		ctx.fillStyle = colors.fill;
 		ctx.fill();

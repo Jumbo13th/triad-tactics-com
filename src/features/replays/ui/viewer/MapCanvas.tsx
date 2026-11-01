@@ -6,6 +6,7 @@ import { Icon } from './glyphs';
 import {
 	ACCENT,
 	INK,
+	LABEL_FONT,
 	contestedPattern,
 	drawBlast,
 	drawBrackets,
@@ -148,7 +149,7 @@ function markerIcon(src: string, onLoad: () => void): HTMLImageElement | null {
 }
 
 // Lower ranks claim their place first when labels would overlap.
-type Plate = { text: string; anchor: number; y: number; rank: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone; stack?: boolean };
+type Plate = { text: string; anchor: number; y: number; rank: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone };
 
 export default function MapCanvas(props: Props) {
 	const { model, t, relief, topo, layers, selected, following, sideStyle, nicknameOf, nameOf, callsignFor, contested, onSelect, onPan, handleRef, ariaLabel } = props;
@@ -288,6 +289,8 @@ export default function MapCanvas(props: Props) {
 		}
 
 		const plates: Plate[] = [];
+		// Symbols no label may be placed over.
+		const frames: LabelBox[] = [];
 		const hits: { eid: number; x: number; y: number }[] = [];
 
 		if (layers.areas) {
@@ -459,16 +462,31 @@ export default function MapCanvas(props: Props) {
 		}
 
 		if (layers.squads && view.scale < NAMES_FROM) {
-			// Squads standing together are set side by side, as on a paper map, rather than
-			// drawn over one another.
-			const placed: { x: number; y: number }[] = [];
-			const ordered = [...squads].map(([key, squad]) => ({ key, side: squad.side, x: squad.x / squad.n, y: squad.top - SYMBOL.squadAbove * size })).sort((a, b) => a.x - b.x);
+			// Squads standing together are stacked in a column above them, as on a paper map,
+			// so each callsign sits clear beside its own frame instead of over a neighbour's.
+			const spacing = SYMBOL.squadSpacing * size;
+			ctx.font = LABEL_FONT;
+			// A squad takes its frame plus its callsign: two squads clash when either would cover the other.
+			const ordered = [...squads]
+				.map(([key, squad]) => {
+					const callsign = callsignFor(key);
+					const reach = SYMBOL.squadLabel * size + ctx.measureText(callsign).width + 10;
+					return { key, callsign, side: squad.side, x: squad.x / squad.n, y: squad.top - SYMBOL.squadAbove * size, reach };
+				})
+				.sort((a, b) => b.y - a.y);
+			const placed: typeof ordered = [];
+			const left = 17 * size;
 			for (const squad of ordered) {
-				const spacing = SYMBOL.squadSpacing * size;
-				while (placed.some((p) => Math.abs(p.x - squad.x) < spacing - 2 && Math.abs(p.y - squad.y) < spacing - 2)) squad.x += spacing;
+				const clash = () =>
+					placed.find((p) => p.x - left < squad.x + squad.reach && squad.x - left < p.x + p.reach && Math.abs(p.y - squad.y) < spacing - 2);
+				for (let other = clash(); other; other = clash()) {
+					squad.x = other.x;
+					squad.y = other.y - spacing;
+				}
 				placed.push(squad);
 				drawSquad(ctx, squad.x, squad.y, sideStyle(squad.side), size);
-				plates.push({ text: callsignFor(squad.key), anchor: squad.x + SYMBOL.squadLabel * size, y: squad.y, rank: 3, stack: true });
+				plates.push({ text: squad.callsign, anchor: squad.x + SYMBOL.squadLabel * size, y: squad.y, rank: 3 });
+				frames.push({ x: squad.x - 16 * size, y: squad.y - 16 * size, w: 32 * size, h: 32 * size });
 			}
 		}
 
@@ -498,20 +516,10 @@ export default function MapCanvas(props: Props) {
 			const name = chosen.kind === 'man' ? (nicknameOf(chosen) ?? nameOf(chosen)) : nameOf(chosen);
 			plates.push({ text: name, anchor: x - (bracket + 5) * size, y, rank: 0, align: 'right', outlined: true });
 		}
-		const taken: LabelBox[] = [];
+		const taken: LabelBox[] = [...frames];
 		plates.sort((a, b) => a.rank - b.rank);
 		for (const plate of plates) {
-			// A callsign that would cover another tries the rows just below and above first.
-			for (const dy of plate.stack ? [0, 17, -17, 34] : [0]) {
-				const drawn = drawPlate(ctx, plate.text, plate.anchor, plate.y + dy, {
-					align: plate.align,
-					outlined: plate.outlined,
-					tone: plate.tone,
-					taken,
-					force: plate.rank === 0,
-				});
-				if (drawn) break;
-			}
+			drawPlate(ctx, plate.text, plate.anchor, plate.y, { align: plate.align, outlined: plate.outlined, tone: plate.tone, taken, force: plate.rank === 0 });
 		}
 
 		drawRulers(ctx, w, h, view.scale, sx, sy, left, right, bottom, top);
