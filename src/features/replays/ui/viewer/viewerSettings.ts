@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: ViewerSettings = {
 	eventsOpen: true,
 	unitsWidth: 288,
 	eventsWidth: 320,
-	speed: 16,
+	speed: 4,
 	layers: DEFAULT_LAYERS,
 };
 
