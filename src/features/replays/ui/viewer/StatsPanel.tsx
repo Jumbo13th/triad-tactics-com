@@ -81,6 +81,84 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 	);
 }
 
+/** Every unit under its side, as the statistics page lays them out, each side closed by its total. */
+function StatsSheet({ stats, sideStyle, sideName }: { stats: ReplayStatsSummary } & Pick<Props, 'sideStyle' | 'sideName'>) {
+	const t = useTranslations('replayViewer');
+	const locale = useLocale();
+	const tenths = (value: number) => value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	const count = (value: number) => <span className={value === 0 ? 'text-neutral-500' : undefined}>{value}</span>;
+	// Kills outside the zone and in it are counted apart, as on the statistics page.
+	const figures = (row: ReplayStatsSummary['sides'][number] | ReplayStatsSummary['units'][number]) => [
+		count(row.participants),
+		count(row.kills - row.zoneKills),
+		count(row.zoneKills),
+		<span key="tk" className={row.teamkills > 0 ? 'text-red-300' : 'text-neutral-500'}>{row.teamkills}</span>,
+		count(row.deaths),
+		row.objectivePoints > 0 ? tenths(row.objectivePoints) : <span className="text-neutral-500">{tenths(0)}</span>,
+		<span key="pts" className="font-semibold text-neutral-100">{tenths(row.points)}</span>,
+	];
+	const head = [t('statsUnit'), t('statsPlayers'), t('statsKills'), t('statsInTrigger'), t('statsTeamkills'), t('statsLosses'), t('statsObjectives'), t('statsPoints')];
+
+	return (
+		<div className="-mx-[6px] overflow-x-auto px-[6px]">
+			<table className="w-full min-w-[580px] table-fixed border-collapse text-[13px] leading-[18px]">
+				<thead>
+					<tr className="border-b border-[#2c2c2c] text-neutral-400">
+						{head.map((label, i) => (
+							<th key={label} scope="col" className={`${i === 0 ? 'w-[25%] px-[6px] py-[5px] text-left' : cell} hyphens-auto align-bottom text-[10px] font-semibold uppercase leading-[12px] tracking-[0.04em]`}>
+								{label}
+							</th>
+						))}
+					</tr>
+				</thead>
+				{stats.sides.map((side) => (
+					<tbody key={side.side}>
+						<tr>
+							<th scope="rowgroup" colSpan={head.length} className="px-[6px] pb-[4px] pt-[12px] text-left font-normal">
+								<span className="flex items-center gap-[8px]">
+									<DiamondGlyph style={sideStyle(side.side)} />
+									<span className="font-semibold text-neutral-100">{sideName(side.side)}</span>
+									{stats.winnerSide === side.side ? <span className={`text-[color:var(--accent)] ${eyebrow}`}>{t('statsWinner')}</span> : null}
+								</span>
+							</th>
+						</tr>
+						{stats.units
+							.filter((unit) => unit.side === side.side)
+							.map((unit) => (
+								<tr key={unit.unitTag} className="border-t border-[#1e1e1e]">
+									<td className="px-[6px] py-[5px] text-left">
+										<span className="flex min-w-0 items-center gap-[6px]">
+											<span className="font-semibold text-neutral-100">{unit.unitTag}</span>
+											<span className="min-w-0 truncate text-neutral-400">{unit.unitName}</span>
+											{unit.commander ? (
+												<span title={t('statsCommander')} className="shrink-0 text-[color:var(--accent)]">
+													★<span className="sr-only">{t('statsCommander')}</span>
+												</span>
+											) : null}
+										</span>
+									</td>
+									{figures(unit).map((value, i) => (
+										<td key={i} className={`${cell} text-neutral-200`}>
+											{value}
+										</td>
+									))}
+								</tr>
+							))}
+						<tr className="border-t border-[#2c2c2c] font-semibold">
+							<td className="px-[6px] py-[5px] text-left text-neutral-400">{t('statsTotal')}</td>
+							{figures(side).map((value, i) => (
+								<td key={i} className={`${cell} text-neutral-100`}>
+									{value}
+								</td>
+							))}
+						</tr>
+					</tbody>
+				))}
+			</table>
+		</div>
+	);
+}
+
 export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: Props) {
 	const t = useTranslations('replayViewer');
 	const locale = useLocale();
@@ -115,7 +193,7 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 				<div
 					role="dialog"
 					aria-label={t('statsTitle')}
-					className="fixed inset-x-[8px] top-[56px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[14px] sm:w-[520px]"
+					className="fixed inset-x-[8px] top-[56px] z-30 max-h-[calc(100dvh-64px)] overflow-y-auto rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-[14px] sm:w-[640px]"
 				>
 					<p className={`pb-[8px] text-neutral-400 ${eyebrow}`}>{t('statsTitle')}</p>
 					{stats ? (
@@ -132,51 +210,7 @@ export function StatsPanel({ stats, model, sideStyle, sideName, buttonClass }: P
 									<span className="text-neutral-400">{t('statsNoResult')}</span>
 								)}
 							</p>
-							{/* Kills outside the zone and in it are counted apart, as on the statistics page. */}
-							<Table
-								head={[t('statsSide'), t('statsPlayers'), t('statsKills'), t('statsInTrigger'), t('statsTeamkills'), t('statsLosses'), t('statsPoints')]}
-								rows={stats.sides.map((side) => [sideLabel(side.side), side.participants, side.kills - side.zoneKills, side.zoneKills, side.teamkills, side.deaths, side.points])}
-							/>
-							{stats.units.length > 0 ? (
-								<div className="flex flex-col gap-[4px]">
-									<p className={`text-neutral-400 ${eyebrow}`}>{t('statsTopUnits')}</p>
-									<ol className="flex flex-col">
-										{stats.units.map((unit, i) => (
-											<li key={`${unit.unitTag}-${unit.side}`} className="flex items-start gap-[8px] border-b border-[#1e1e1e] px-[6px] py-[6px] text-[13px] last:border-0">
-												<span className="w-[16px] shrink-0 pt-px text-right text-[12px] tabular-nums text-neutral-500">{i + 1}</span>
-												<span className="flex pt-[4px]">
-													<DiamondGlyph style={sideStyle(unit.side)} />
-												</span>
-												<span className="flex min-w-0 flex-1 flex-col">
-													<span className="flex min-w-0 items-center gap-[8px]">
-														<span className="min-w-0 truncate">
-															<span className="font-semibold text-neutral-100">{unit.unitTag}</span>
-															<span className="text-neutral-400"> {unit.unitName}</span>
-														</span>
-														{unit.commander ? <span className={`shrink-0 text-[color:var(--accent)] ${eyebrow}`}>{t('statsCommander')}</span> : null}
-													</span>
-													<span className="text-[12px] leading-[16px] tabular-nums text-neutral-400">
-														{[
-															`${t('statsPlayers')} ${unit.participants}`,
-															`${t('statsKills')} ${unit.kills - unit.zoneKills}`,
-															`${t('statsInTrigger')} ${unit.zoneKills}`,
-															unit.teamkills > 0 ? `${t('statsTeamkills')} ${unit.teamkills}` : null,
-															`${t('statsLosses')} ${unit.deaths}`,
-															unit.objectivePoints > 0 ? `${t('statsObjectives')} ${unit.objectivePoints}` : null,
-														]
-															.filter(Boolean)
-															.join(' · ')}
-													</span>
-												</span>
-												<span className="w-[48px] shrink-0 text-right font-semibold tabular-nums text-neutral-100">{unit.points}</span>
-											</li>
-										))}
-									</ol>
-									{stats.unitCount > stats.units.length ? (
-										<p className="px-[6px] text-[12px] text-neutral-500">{t('statsMoreUnits', { count: stats.unitCount - stats.units.length })}</p>
-									) : null}
-								</div>
-							) : null}
+							<StatsSheet stats={stats} sideStyle={sideStyle} sideName={sideName} />
 							<Link
 								href={`/stats/games/${stats.id}`}
 								locale={locale}

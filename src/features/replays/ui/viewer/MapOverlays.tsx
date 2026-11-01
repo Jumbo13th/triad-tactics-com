@@ -7,7 +7,7 @@ import { DeadGlyph, DotGlyph, Icon, UnconsciousGlyph, VehicleGlyph } from './gly
 import type { SelectionInfo } from './selection';
 import { DEAD_STYLE, NEUTRAL_STYLE, type SideStyle } from './sideStyle';
 import { useDismiss } from './useDismiss';
-import { DEFAULT_LAYERS, type MapLayers } from './viewerSettings';
+import { DEFAULT_LAYERS, TOGGLE_LAYERS, type MapLayers, type ToggleLayer } from './viewerSettings';
 
 const plate = 'rounded-[4px] border border-[#2c2c2c] bg-[rgba(10,10,10,0.9)]';
 const eyebrow = 'text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em]';
@@ -191,12 +191,16 @@ function Tile({ children }: { children: ReactNode }) {
 
 const diamond = (cx: number, cy: number, r: number) => `M${cx} ${cy - r}L${cx + r} ${cy}L${cx} ${cy + r}L${cx - r} ${cy}Z`;
 
-const MAP_LAYERS: (keyof MapLayers)[] = ['markers', 'areas', 'fire', 'dead'];
-const NAME_LAYERS: (keyof MapLayers)[] = ['nicknames', 'aiRoles', 'squads', 'vehicleNames', 'markerText', 'areaNames'];
+const MAP_LAYERS: ToggleLayer[] = ['areas', 'fire', 'dead'];
+const NAME_LAYERS: ToggleLayer[] = ['nicknames', 'aiRoles', 'squads', 'vehicleNames', 'markerText', 'areaNames'];
+
+/** A side whose markers the game has; a null style is the markers every side could see. */
+export type MarkerSide = { key: string; label: string; style: SideStyle | null };
 
 export function MapControls({
 	layers,
 	onLayers,
+	markerSides,
 	onZoomIn,
 	onZoomOut,
 	onFit,
@@ -204,6 +208,7 @@ export function MapControls({
 }: {
 	layers: MapLayers;
 	onLayers: (layers: MapLayers) => void;
+	markerSides: MarkerSide[];
 	onZoomIn: () => void;
 	onZoomOut: () => void;
 	onFit: () => void;
@@ -317,7 +322,7 @@ export function MapControls({
 		],
 	];
 
-	const toggleRow = (key: keyof MapLayers) => (
+	const toggleRow = (key: ToggleLayer) => (
 		<label key={key} className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
 			<input
 				type="checkbox"
@@ -329,7 +334,28 @@ export function MapControls({
 			{key === 'squads' || key === 'aiRoles' ? <span className="text-[12px] leading-[16px] text-neutral-500">{t(`layerHint_${key}`)}</span> : null}
 		</label>
 	);
-	const atDefaults = (Object.keys(DEFAULT_LAYERS) as (keyof MapLayers)[]).every((key) => layers[key] === DEFAULT_LAYERS[key]);
+	const markerRow = (side: MarkerSide) => (
+		<label key={`markers-${side.key}`} className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
+			<input
+				type="checkbox"
+				checked={layers.markerSides.includes(side.key)}
+				onChange={(e) =>
+					onLayers({
+						...layers,
+						markerSides: e.target.checked ? [...layers.markerSides, side.key] : layers.markerSides.filter((key) => key !== side.key),
+					})
+				}
+				className="size-[16px] accent-[color:var(--accent)]"
+			/>
+			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{side.label}</span>
+			{side.style ? (
+				<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+					<path d={diamond(5, 5, 4.5)} fill={side.style.fill} stroke={side.style.edge} strokeWidth="1" />
+				</svg>
+			) : null}
+		</label>
+	);
+	const atDefaults = TOGGLE_LAYERS.every((key) => layers[key] === DEFAULT_LAYERS[key]) && layers.markerSides.length === 0;
 
 	return (
 		<div ref={rootRef} className="absolute right-[12px] top-[32px] z-[3] flex flex-col items-end gap-[8px]">
@@ -361,6 +387,7 @@ export function MapControls({
 					{NAME_LAYERS.map(toggleRow)}
 					<p className="px-[8px] pb-[4px] pt-[2px] text-[12px] leading-[16px] text-neutral-400">{t('layersNamesHint')}</p>
 					<p className={`mt-[6px] border-t border-[#2c2c2c] px-[8px] pb-[4px] pt-[10px] text-neutral-400 ${eyebrow}`}>{t('layersMap')}</p>
+					{markerSides.map(markerRow)}
 					{MAP_LAYERS.map(toggleRow)}
 					<div className="mt-[6px] border-t border-[#2c2c2c] px-[4px] pt-[8px]">
 						<button

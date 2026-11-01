@@ -4,8 +4,18 @@ export type ReplayStatsSummary = {
 	id: number;
 	/** Faction key, 'draw', or '' when no result was declared. */
 	winnerSide: string;
-	sides: { side: string; kills: number; zoneKills: number; deaths: number; teamkills: number; participants: number; survivors: number; points: number }[];
-	/** The best units by points, best first. */
+	sides: {
+		side: string;
+		kills: number;
+		zoneKills: number;
+		deaths: number;
+		teamkills: number;
+		participants: number;
+		survivors: number;
+		objectivePoints: number;
+		points: number;
+	}[];
+	/** Every scored unit, best first. */
 	units: {
 		unitTag: string;
 		unitName: string;
@@ -21,5 +31,4 @@ export type ReplayStatsSummary = {
 		winner: boolean;
 		commander: boolean;
 	}[];
-	unitCount: number;
 };

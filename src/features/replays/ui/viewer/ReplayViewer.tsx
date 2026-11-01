@@ -13,7 +13,7 @@ import { formatMissionTime } from './format';
 import { gameName, loadGameNames, type GameNames } from './gameNames';
 import { Icon } from './glyphs';
 import MapCanvas, { carrier, centroid, type MapCanvasHandle, type MapPoint } from './MapCanvas';
-import { MapControls, SelectionCard } from './MapOverlays';
+import { MapControls, SelectionCard, type MarkerSide } from './MapOverlays';
 import { describeSelection } from './selection';
 import { StatsPanel } from './StatsPanel';
 import { NEUTRAL_STYLE, sideStyle as styleOf, type SideStyle } from './sideStyle';
@@ -404,6 +404,17 @@ export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; 
 		[sideColors]
 	);
 	const sideName = useCallback((key: string) => gameName(names, model?.sides.find((side) => side.key === key)?.name ?? key), [names, model]);
+	// The sides whose markers this game holds, in the recording's side order, then the markers every side could see.
+	const markerSides = useMemo<MarkerSide[]>(() => {
+		const seen = new Set<string>();
+		for (const marker of model?.markers.values() ?? []) for (const side of marker.sides.split(',')) if (side) seen.add(side);
+		const keys = (model?.sides ?? []).map((side) => side.key).filter((key) => seen.has(key));
+		for (const key of seen) if (key !== '*' && !keys.includes(key)) keys.push(key);
+		if (seen.has('*')) keys.push('*');
+		return keys.map((key) =>
+			key === '*' ? { key, label: t('layer_markersAll'), style: null } : { key, label: t('layer_markersSide', { side: sideName(key) }), style: sideStyle(key) }
+		);
+	}, [model, sideName, sideStyle, t]);
 	const callsignFor = useCallback(
 		(groupKey: string) => {
 			const callsign = model?.groups.get(groupKey)?.callsign;
@@ -759,6 +770,7 @@ export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; 
 							<MapControls
 								layers={settings.layers}
 								onLayers={(layers) => updateSettings({ layers })}
+								markerSides={markerSides}
 								onZoomIn={() => mapRef.current?.zoom(1.5)}
 								onZoomOut={() => mapRef.current?.zoom(1 / 1.5)}
 								onFit={() => {

@@ -11,13 +11,16 @@ export type MapLayers = {
 	aiRoles: boolean;
 	squads: boolean;
 	vehicleNames: boolean;
-	markers: boolean;
+	/** Sides whose markers are shown; '*' for markers every side could see. */
+	markerSides: string[];
 	markerText: boolean;
 	areas: boolean;
 	areaNames: boolean;
 	fire: boolean;
 	dead: boolean;
 };
+
+export type ToggleLayer = Exclude<keyof MapLayers, 'markerSides'>;
 
 export type ViewerSettings = {
 	unitsOpen: boolean;
@@ -33,19 +36,22 @@ export const PANEL_MAX = 520;
 export const SPEED_MIN = 0.1;
 export const SPEED_MAX = 300;
 
-// Only what is needed to follow a game is on by default; the rest is a toggle away.
+// Only what is needed to follow a game is on by default; the rest is a toggle away. Markers are
+// each side's own notes, so none are shown until the viewer picks whose to see.
 export const DEFAULT_LAYERS: MapLayers = {
 	nicknames: true,
 	aiRoles: false,
 	squads: false,
 	vehicleNames: false,
-	markers: true,
+	markerSides: [],
 	markerText: false,
 	areas: true,
 	areaNames: false,
 	fire: true,
 	dead: true,
 };
+
+export const TOGGLE_LAYERS = (Object.keys(DEFAULT_LAYERS) as (keyof MapLayers)[]).filter((key): key is ToggleLayer => key !== 'markerSides');
 
 export const DEFAULT_SETTINGS: ViewerSettings = {
 	unitsOpen: true,
@@ -68,9 +74,13 @@ function parse(raw: string | null): ViewerSettings {
 		const stored = JSON.parse(raw) as Partial<Record<keyof ViewerSettings, unknown>>;
 		const layers = { ...DEFAULT_LAYERS };
 		if (stored.layers && typeof stored.layers === 'object') {
-			for (const key of Object.keys(DEFAULT_LAYERS) as (keyof MapLayers)[]) {
-				const value = (stored.layers as Record<string, unknown>)[key];
+			const saved = stored.layers as Record<string, unknown>;
+			for (const key of TOGGLE_LAYERS) {
+				const value = saved[key];
 				if (typeof value === 'boolean') layers[key] = value;
+			}
+			if (Array.isArray(saved.markerSides)) {
+				layers.markerSides = saved.markerSides.filter((side): side is string => typeof side === 'string').slice(0, 16);
 			}
 		}
 		return {

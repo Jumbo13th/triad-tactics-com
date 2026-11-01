@@ -360,10 +360,12 @@ export default function MapCanvas(props: Props) {
 			}
 		}
 
-		if (layers.markers) {
+		if (layers.markerSides.length > 0) {
 			const redraw = () => drawRef.current();
+			const shown = new Set(layers.markerSides);
 			for (const marker of model.markers.values()) {
 				if (marker.placedAt > t || (marker.removedAt !== null && marker.removedAt <= t)) continue;
+				if (!marker.sides.split(',').some((side) => shown.has(side))) continue;
 				const x = sx(marker.x);
 				const y = sy(marker.z);
 				const color = markerColor(marker.color);

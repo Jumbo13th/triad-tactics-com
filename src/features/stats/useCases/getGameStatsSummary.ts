@@ -12,6 +12,7 @@ export type GameStatsSummarySide = {
 	teamkills: number;
 	participants: number;
 	survivors: number;
+	objectivePoints: number;
 	points: number;
 };
 
@@ -36,15 +37,14 @@ export type GameStatsSummary = {
 	/** Faction key, 'draw', or '' when no result was declared. */
 	winnerSide: string;
 	sides: GameStatsSummarySide[];
-	/** The best units by points, best first. */
+	/** Every scored unit, best first. */
 	units: GameStatsSummaryUnit[];
-	unitCount: number;
 };
 
-export function summarizeGameStats(view: GameStatsView, topUnits: number): GameStatsSummary {
+export function summarizeGameStats(view: GameStatsView): GameStatsSummary {
 	const sides = new Map<string, GameStatsSummarySide>();
 	// Factions in the snapshot's order first, so sides keep the order the game declared.
-	const empty = (side: string) => ({ side, kills: 0, zoneKills: 0, deaths: 0, teamkills: 0, participants: 0, survivors: 0, points: 0 });
+	const empty = (side: string) => ({ side, kills: 0, zoneKills: 0, deaths: 0, teamkills: 0, participants: 0, survivors: 0, objectivePoints: 0, points: 0 });
 	for (const side of view.factions) sides.set(side, empty(side));
 	for (const score of view.scores) {
 		const side = sides.get(score.side) ?? empty(score.side);
@@ -54,12 +54,12 @@ export function summarizeGameStats(view: GameStatsView, topUnits: number): GameS
 		side.teamkills += score.teamkills;
 		side.participants += score.participants;
 		side.survivors += score.survivors;
+		side.objectivePoints += score.objectivePoints;
 		side.points += score.finalPoints;
 		sides.set(score.side, side);
 	}
 	const units = [...view.scores]
 		.sort((a, b) => b.finalPoints - a.finalPoints || b.kills - a.kills || a.unitTag.localeCompare(b.unitTag))
-		.slice(0, Math.max(0, topUnits))
 		.map((score) => ({
 			unitTag: score.unitTag,
 			unitName: score.unitName,
@@ -80,12 +80,11 @@ export function summarizeGameStats(view: GameStatsView, topUnits: number): GameS
 		winnerSide: view.meta.winnerSide,
 		sides: [...sides.values()].filter((side) => side.participants > 0 || view.factions.includes(side.side)),
 		units,
-		unitCount: view.scores.length,
 	};
 }
 
 /** Published games only, like the full statistics page. */
-export function getGameStatsSummary(deps: StatsDeps, input: { gameStatsId: number; topUnits: number }): GameStatsSummary | null {
+export function getGameStatsSummary(deps: StatsDeps, input: { gameStatsId: number }): GameStatsSummary | null {
 	const view = getGameStatsView(deps, { gameStatsId: input.gameStatsId });
-	return view ? summarizeGameStats(view, input.topUnits) : null;
+	return view ? summarizeGameStats(view) : null;
 }

@@ -52,19 +52,18 @@ const view: GameStatsView = {
 
 describe('summarizeGameStats', () => {
 	it('totals each side in the order the game declared its factions', () => {
-		const summary = summarizeGameStats(view, 5);
+		const summary = summarizeGameStats(view);
 		expect(summary.winnerSide).toBe('US');
 		expect(summary.sides).toEqual([
-			{ side: 'US', kills: 7, zoneKills: 2, deaths: 4, teamkills: 1, participants: 12, survivors: 8, points: 95 },
-			{ side: 'USSR', kills: 4, zoneKills: 0, deaths: 7, teamkills: 0, participants: 10, survivors: 3, points: 12 },
+			{ side: 'US', kills: 7, zoneKills: 2, deaths: 4, teamkills: 1, participants: 12, survivors: 8, objectivePoints: 10, points: 95 },
+			{ side: 'USSR', kills: 4, zoneKills: 0, deaths: 7, teamkills: 0, participants: 10, survivors: 3, objectivePoints: 0, points: 12 },
 		]);
 	});
 
-	it('lists the best units by points, as many as asked for', () => {
-		const summary = summarizeGameStats(view, 2);
-		expect(summary.units.map((unit) => unit.unitTag)).toEqual(['BBB', 'AAA']);
+	it('lists every unit, the best by points first', () => {
+		const summary = summarizeGameStats(view);
+		expect(summary.units.map((unit) => unit.unitTag)).toEqual(['BBB', 'AAA', 'CCC']);
 		expect(summary.units[0]).toMatchObject({ points: 55, winner: true, commander: true });
 		expect(summary.units[1]).toMatchObject({ kills: 5, zoneKills: 2, deaths: 1, participants: 8, survivors: 7, objectivePoints: 10 });
-		expect(summary.unitCount).toBe(3);
 	});
 });
