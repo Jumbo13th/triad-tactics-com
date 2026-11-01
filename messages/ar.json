@@ -305,7 +305,7 @@
     "empty": "فارغة",
     "noUnitMatches": "لا توجد وحدة تطابق «{query}».",
     "noUnits": "لا توجد وحدات على الخريطة بعد.",
-    "showEvents": "عرض الأحداث",
+    "showEvents": "إظهار الأحداث (E)",
     "now": "الآن",
     "destroyed": "<killer></killer> دمّر <victim></victim>",
     "destroyedAlone": "دُمّرت <victim></victim>",
@@ -393,7 +393,8 @@
     "statsNotPublished": "لم تُنشر الإحصائيات الرسمية لهذه المباراة بعد. الأرقام أدناه من التسجيل.",
     "layersNamesHint": "تظهر الأسماء عند التكبير. أشر إلى وحدة لمعرفة هويتها.",
     "statsInTrigger": "في المنطقة",
-    "statsObjectives": "المهام"
+    "statsObjectives": "المهام",
+    "showUnits": "إظهار الوحدات (U)"
   },
   "nav": {
     "aria": "التنقل",

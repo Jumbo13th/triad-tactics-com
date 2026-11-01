@@ -305,7 +305,7 @@
     "empty": "Empty",
     "noUnitMatches": "No unit matches “{query}”.",
     "noUnits": "No units on the map yet.",
-    "showEvents": "Show events",
+    "showEvents": "Show events (E)",
     "now": "Now",
     "destroyed": "<killer></killer> destroyed <victim></victim>",
     "destroyedAlone": "<victim></victim> was destroyed",
@@ -393,7 +393,8 @@
     "statsNotPublished": "Official statistics for this game are not published yet. These totals come from the recording.",
     "layersNamesHint": "Names appear as you zoom in. Point at a unit to see who it is.",
     "statsInTrigger": "In trigger",
-    "statsObjectives": "Objectives"
+    "statsObjectives": "Objectives",
+    "showUnits": "Show units (U)"
   },
   "nav": {
     "aria": "Navigation",

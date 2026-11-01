@@ -91,7 +91,20 @@ function isDesktop(): boolean {
 	return window.matchMedia('(min-width: 1024px)').matches;
 }
 
-function BarButton({ label, pressed, onClick, children, className = '' }: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode; className?: string }) {
+function BarButton({
+	label,
+	text,
+	pressed,
+	onClick,
+	children,
+}: {
+	label: string;
+	/** Shown beside the icon on wide screens, where there is room to say what the button is. */
+	text?: string;
+	pressed?: boolean;
+	onClick: () => void;
+	children: ReactNode;
+}) {
 	return (
 		<button
 			type="button"
@@ -99,9 +112,30 @@ function BarButton({ label, pressed, onClick, children, className = '' }: { labe
 			aria-label={label}
 			title={label}
 			aria-pressed={pressed}
-			className={`${barButton} ${pressed ? 'bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]' : 'text-neutral-300 hover:bg-[#1a1a1a] hover:text-neutral-100'} ${className}`}
+			className={`${barButton} ${text ? 'xl:w-auto xl:gap-[6px] xl:px-[8px] xl:text-[13px] xl:font-semibold' : ''} ${pressed ? 'bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]' : 'text-neutral-300 hover:bg-[#1a1a1a] hover:text-neutral-100'}`}
 		>
 			{children}
+			{text ? <span className="hidden xl:inline">{text}</span> : null}
+		</button>
+	);
+}
+
+// A collapsed panel leaves a strip on its edge of the map, so the way back is in plain sight.
+function CollapsedRail({ side, label, title, onOpen }: { side: 'left' | 'right'; label: string; title: string; onOpen: () => void }) {
+	return (
+		<button
+			type="button"
+			onClick={onOpen}
+			aria-label={title}
+			title={title}
+			className={
+				'group hidden w-[36px] shrink-0 flex-col items-center gap-[10px] bg-[#121212] pt-[10px] text-neutral-200 hover:bg-[#1a1a1a] hover:text-[color:var(--accent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)] lg:flex ' +
+				(side === 'left' ? 'border-r border-[#2c2c2c]' : 'border-l border-[#2c2c2c]')
+			}
+		>
+			{side === 'left' ? <Icon.PanelLeft /> : <Icon.PanelRight />}
+			<span className={`[writing-mode:vertical-rl] ${eyebrow}`}>{label}</span>
+			<span className="text-neutral-500 group-hover:text-[color:var(--accent)]">{side === 'left' ? <Icon.ChevronRight /> : <Icon.ChevronLeft />}</span>
 		</button>
 	);
 }
@@ -636,10 +670,10 @@ export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; 
 					<p className="hidden min-w-0 truncate text-[12px] leading-[16px] tabular-nums text-neutral-400 md:block">{meta}</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-[2px]">
-					<BarButton label={t('toggleUnits')} pressed={unitsShown} onClick={() => togglePanel('units')}>
+					<BarButton label={t('toggleUnits')} text={t('units')} pressed={unitsShown} onClick={() => togglePanel('units')}>
 						<Icon.PanelLeft />
 					</BarButton>
-					<BarButton label={t('toggleEvents')} pressed={eventsShown} onClick={() => togglePanel('events')}>
+					<BarButton label={t('toggleEvents')} text={t('events')} pressed={eventsShown} onClick={() => togglePanel('events')}>
 						<Icon.PanelRight />
 					</BarButton>
 					<span aria-hidden="true" className="mx-[4px] hidden h-[20px] w-px bg-[#2c2c2c] sm:block" />
@@ -655,6 +689,9 @@ export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; 
 			</header>
 
 			<div className="relative flex min-h-0 flex-1">
+				{model && hydrated && !settings.unitsOpen ? (
+					<CollapsedRail side="left" label={t('units')} title={t('showUnits')} onOpen={() => togglePanel('units')} />
+				) : null}
 				{model ? (
 					<Panel
 						side="left"
@@ -831,6 +868,9 @@ export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; 
 							translate={translate}
 						/>
 					</Panel>
+				) : null}
+				{model && hydrated && !settings.eventsOpen ? (
+					<CollapsedRail side="right" label={t('events')} title={t('showEvents')} onOpen={() => togglePanel('events')} />
 				) : null}
 			</div>
 

@@ -305,7 +305,7 @@
     "empty": "Пустая",
     "noUnitMatches": "Никого не найдено по «{query}».",
     "noUnits": "На карте пока никого нет.",
-    "showEvents": "Показать события",
+    "showEvents": "Показать события (E)",
     "now": "Сейчас",
     "destroyed": "<killer></killer> уничтожил <victim></victim>",
     "destroyedAlone": "<victim></victim> уничтожена",
@@ -393,7 +393,8 @@
     "statsNotPublished": "Официальная статистика этой игры ещё не опубликована. Итоги ниже — по записи.",
     "layersNamesHint": "Подписи появляются при приближении. Наведите на бойца, чтобы узнать, кто это.",
     "statsInTrigger": "В триггере",
-    "statsObjectives": "Задачи"
+    "statsObjectives": "Задачи",
+    "showUnits": "Показать отряды (U)"
   },
   "nav": {
     "aria": "Навигация",

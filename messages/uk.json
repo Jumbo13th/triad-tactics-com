@@ -305,7 +305,7 @@
     "empty": "Порожня",
     "noUnitMatches": "Нікого не знайдено за «{query}».",
     "noUnits": "На мапі поки нікого немає.",
-    "showEvents": "Показати події",
+    "showEvents": "Показати події (E)",
     "now": "Зараз",
     "destroyed": "<killer></killer> знищив <victim></victim>",
     "destroyedAlone": "<victim></victim> знищена",
@@ -393,7 +393,8 @@
     "statsNotPublished": "Офіційну статистику цієї гри ще не опубліковано. Підсумки нижче — за записом.",
     "layersNamesHint": "Підписи з’являються при наближенні. Наведіть на бійця, щоб дізнатися, хто це.",
     "statsInTrigger": "У тригері",
-    "statsObjectives": "Завдання"
+    "statsObjectives": "Завдання",
+    "showUnits": "Показати загони (U)"
   },
   "nav": {
     "aria": "Навігація",
