@@ -7,7 +7,7 @@ import { AdminButton } from '@/features/admin/ui/root';
 import { parseDateTimeValue } from '@/platform/dateTime';
 import { adminReplayDetailResponseSchema, type ReplayGameDetail } from '../domain/api';
 import MapUpload from './MapUpload';
-import { terrainName } from './terrainName';
+import { terrainName } from '../domain/terrain';
 
 type Mission = { id: number; title: string; shortCode: string | null; startsAt: string | null };
 type Feedback = { tone: 'ok' | 'err'; text: string } | null;

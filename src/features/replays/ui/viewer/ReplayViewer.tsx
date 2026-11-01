@@ -1,22 +1,28 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import type { PublicReplayGame } from '../../domain/api';
-import { addSegment, emptyModel, positionAt, segmentAt, unixAt, valueAt, type Entity, type ReplayModel } from '../../domain/replayFormat';
+import { addSegment, emptyModel, positionAt, unixAt, valueAt, type Entity, type ReplayEvent, type ReplayModel } from '../../domain/replayFormat';
+import type { ReplayStatsSummary } from '../../domain/statsSummary';
+import { terrainName } from '../../domain/terrain';
 import { parseTopo, toLayers } from '../../domain/topo';
-import { terrainName } from '../terrainName';
 import EventsPanel, { type Who } from './EventsPanel';
 import { formatMissionTime } from './format';
 import { gameName, loadGameNames, type GameNames } from './gameNames';
 import { Icon } from './glyphs';
-import MapCanvas, { gridReference, type MapCanvasHandle, type MapLayers } from './MapCanvas';
-import { FollowChip, MapControls } from './MapOverlays';
+import MapCanvas, { carrier, centroid, type MapCanvasHandle, type MapPoint } from './MapCanvas';
+import { MapControls, SelectionCard } from './MapOverlays';
+import { describeSelection } from './selection';
+import { StatsPanel } from './StatsPanel';
 import { NEUTRAL_STYLE, sideStyle as styleOf, type SideStyle } from './sideStyle';
-import Timeline from './Timeline';
+import Timeline, { SPEED_PRESETS } from './Timeline';
 import { prepareTopo, type PreparedTopo } from './topoDraw';
 import UnitsPanel from './UnitsPanel';
+import { useDismiss } from './useDismiss';
+import { useHydrated } from './useHydrated';
+import { DEFAULT_SETTINGS, PANEL_MAX, PANEL_MIN, useViewerSettings } from './viewerSettings';
 
 const Units = memo(UnitsPanel);
 const Events = memo(EventsPanel);
@@ -26,10 +32,11 @@ type Load =
 	| { state: 'failed'; segment: number }
 	| { state: 'ready'; model: ReplayModel };
 
-const secondary =
-	'inline-flex min-h-[44px] items-center justify-center gap-[8px] rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] px-[14px] text-[13px] font-semibold leading-[18px] text-neutral-100 hover:border-[#666666] hover:bg-[#242424] active:bg-[#2e2e2e] disabled:text-[#6b6b6b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]';
-const iconOnPhone = 'max-sm:w-[44px] max-sm:border-0 max-sm:bg-transparent max-sm:px-0';
+type PanelKey = 'units' | 'events';
+
 const eyebrow = 'text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em]';
+const barButton =
+	'inline-flex size-[36px] shrink-0 items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--accent)]';
 
 function fileUrl(sha256: string): string {
 	return `/api/replays/files/${sha256}`;
@@ -80,9 +87,164 @@ function initialTime(): number {
 	return match ? Number(match[1]) * 10 : 0;
 }
 
-export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
+function isDesktop(): boolean {
+	return window.matchMedia('(min-width: 1024px)').matches;
+}
+
+function BarButton({ label, pressed, onClick, children, className = '' }: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode; className?: string }) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label={label}
+			title={label}
+			aria-pressed={pressed}
+			className={`${barButton} ${pressed ? 'bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]' : 'text-neutral-300 hover:bg-[#1a1a1a] hover:text-neutral-100'} ${className}`}
+		>
+			{children}
+		</button>
+	);
+}
+
+function ShortcutsButton() {
+	const t = useTranslations('replayViewer');
+	const [open, setOpen] = useState(false);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const close = useCallback(() => setOpen(false), []);
+	useDismiss(open, rootRef, close);
+	const rows: [string, string][] = [
+		['Space', t('keyPlay')],
+		['← →', t('keySeek')],
+		['Shift + ← →', t('keySeekLong')],
+		['[ ]', t('keySpeed')],
+		['U', t('keyUnits')],
+		['E', t('keyEvents')],
+		['F', t('keyFullscreen')],
+		['Esc', t('keyClear')],
+	];
+	return (
+		<div ref={rootRef} className="relative hidden lg:block">
+			<BarButton label={t('shortcuts')} pressed={open} onClick={() => setOpen((value) => !value)}>
+				<Icon.Keyboard />
+			</BarButton>
+			{open ? (
+				<div
+					role="dialog"
+					aria-label={t('shortcuts')}
+					className="absolute right-0 top-full z-30 mt-[6px] w-[260px] rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+				>
+					<p className={`pb-[6px] text-neutral-400 ${eyebrow}`}>{t('shortcuts')}</p>
+					<dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-[12px] gap-y-[6px] text-[13px] leading-[18px]">
+						{rows.map(([key, label]) => (
+							<div key={key} className="contents">
+								<dt>
+									<kbd className="rounded-[3px] border border-[#2c2c2c] bg-[#121212] px-[6px] py-[1px] font-sans text-[12px] font-semibold text-neutral-100">{key}</kbd>
+								</dt>
+								<dd className="text-neutral-300">{label}</dd>
+							</div>
+						))}
+					</dl>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function Panel({
+	side,
+	title,
+	open,
+	drawerOpen,
+	width,
+	closeLabel,
+	resizeLabel,
+	onClose,
+	onWidth,
+	onWidthDone,
+	children,
+}: {
+	side: 'left' | 'right';
+	title: string;
+	open: boolean;
+	drawerOpen: boolean;
+	width: number;
+	closeLabel: string;
+	resizeLabel: string;
+	onClose: () => void;
+	onWidth: (width: number) => void;
+	onWidthDone: (width: number) => void;
+	children: ReactNode;
+}) {
+	const drag = useRef<{ x: number; width: number } | null>(null);
+	const clamp = (value: number) => Math.round(Math.min(PANEL_MAX, Math.max(PANEL_MIN, value)));
+	const defaultWidth = side === 'left' ? DEFAULT_SETTINGS.unitsWidth : DEFAULT_SETTINGS.eventsWidth;
+	return (
+		<aside
+			aria-label={title}
+			className={
+				`${drawerOpen ? 'flex' : 'hidden'} ${open ? 'lg:flex' : 'lg:hidden'} absolute inset-y-0 ${side === 'left' ? 'left-0 border-r' : 'right-0 border-l'} ` +
+				'z-20 w-[min(88vw,360px)] flex-col border-[#2c2c2c] bg-[#121212] shadow-[0_8px_24px_rgba(0,0,0,0.45)] lg:relative lg:z-auto lg:w-[var(--panel-w)] lg:shrink-0 lg:shadow-none'
+			}
+			style={{ '--panel-w': `${width}px` } as CSSProperties}
+		>
+			<div className="flex h-[40px] shrink-0 items-center justify-between gap-[8px] border-b border-[#1e1e1e] pl-[12px] pr-[4px]">
+				<h2 className={`text-neutral-400 ${eyebrow}`}>{title}</h2>
+				<button
+					type="button"
+					onClick={onClose}
+					aria-label={closeLabel}
+					title={closeLabel}
+					className="inline-flex size-[32px] items-center justify-center rounded-[4px] text-neutral-400 hover:bg-[#1a1a1a] hover:text-neutral-100"
+				>
+					<span className="hidden lg:flex">{side === 'left' ? <Icon.ChevronLeft /> : <Icon.ChevronRight />}</span>
+					<span className="flex lg:hidden">
+						<Icon.Close />
+					</span>
+				</button>
+			</div>
+			<div className="min-h-0 flex-1">{children}</div>
+			<div
+				role="separator"
+				aria-orientation="vertical"
+				aria-label={resizeLabel}
+				aria-valuemin={PANEL_MIN}
+				aria-valuemax={PANEL_MAX}
+				aria-valuenow={width}
+				tabIndex={0}
+				onPointerDown={(e) => {
+					drag.current = { x: e.clientX, width };
+					e.currentTarget.setPointerCapture(e.pointerId);
+				}}
+				onPointerMove={(e) => {
+					if (!drag.current) return;
+					const dx = e.clientX - drag.current.x;
+					onWidth(clamp(drag.current.width + (side === 'left' ? dx : -dx)));
+				}}
+				onPointerUp={() => {
+					if (!drag.current) return;
+					drag.current = null;
+					onWidthDone(width);
+				}}
+				onDoubleClick={() => onWidthDone(defaultWidth)}
+				onKeyDown={(e) => {
+					if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+					e.preventDefault();
+					const grow = (e.key === 'ArrowRight') === (side === 'left');
+					onWidthDone(clamp(width + (grow ? 16 : -16)));
+				}}
+				className={`group absolute inset-y-0 z-10 hidden w-[7px] cursor-col-resize lg:block ${side === 'left' ? '-right-[4px]' : '-left-[4px]'}`}
+			>
+				<span className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-transparent group-hover:bg-[color:var(--accent)] group-focus-visible:bg-[color:var(--accent)]" />
+			</div>
+		</aside>
+	);
+}
+
+export default function ReplayViewer({ game, stats }: { game: PublicReplayGame; stats: ReplayStatsSummary | null }) {
 	const t = useTranslations('replayViewer');
 	const locale = useLocale();
+	const hydrated = useHydrated();
+	const [settings, updateSettings] = useViewerSettings();
 	const total = useMemo(() => game.segments.reduce((sum, s) => sum + s.size, 0), [game]);
 	const [load, setLoad] = useState<Load>({ state: 'loading', done: 0, total, segment: 1 });
 	const [attempt, setAttempt] = useState(0);
@@ -91,12 +253,18 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 	const [topo, setTopo] = useState<PreparedTopo | null>(null);
 	const [time, setTime] = useState(0);
 	const [playing, setPlaying] = useState(false);
-	const [speed, setSpeed] = useState(16);
-	const [follow, setFollow] = useState<number | null>(null);
-	const [layers, setLayers] = useState<MapLayers>({ names: true, fire: true, markers: true, areas: true, dead: true });
-	const [tab, setTab] = useState<'units' | 'events'>('events');
+	const [selected, setSelected] = useState<number | null>(null);
+	const [following, setFollowing] = useState(false);
+	const [drawer, setDrawer] = useState<PanelKey | null>(null);
+	const [dragWidth, setDragWidth] = useState<{ units?: number; events?: number }>({});
+	const [fullscreen, setFullscreen] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const mapRef = useRef<MapCanvasHandle>(null);
+	const rootRef = useRef<HTMLDivElement>(null);
+	const timeRef = useRef(0);
+	useEffect(() => {
+		timeRef.current = time;
+	}, [time]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -159,6 +327,7 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		};
 	}, [game.map.topo, model]);
 
+	const speed = settings.speed;
 	useEffect(() => {
 		if (!playing || !model) return;
 		let last = performance.now();
@@ -181,6 +350,12 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		return () => cancelAnimationFrame(frame);
 	}, [playing, speed, model]);
 
+	useEffect(() => {
+		const onChange = () => setFullscreen(document.fullscreenElement !== null);
+		document.addEventListener('fullscreenchange', onChange);
+		return () => document.removeEventListener('fullscreenchange', onChange);
+	}, []);
+
 	const second = Math.floor(time / 10);
 	// At high speed the lists would redraw dozens of times a second; a few times is enough.
 	const listStep = playing ? Math.max(1, Math.round(speed / 4)) : 1;
@@ -202,6 +377,23 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		},
 		[names, model]
 	);
+	const nameOf = useCallback((entity: Entity) => gameName(names, entity.name), [names]);
+	const vehicleName = useCallback(
+		(eid: number) => {
+			const vehicle = model?.entities.get(eid);
+			return vehicle ? gameName(names, vehicle.name) : '';
+		},
+		[names, model]
+	);
+	const weaponName = useCallback(
+		(wid: number | null) => {
+			const weapon = wid !== null ? model?.weapons.get(wid) : undefined;
+			return weapon ? gameName(names, weapon.name) : null;
+		},
+		[model, names]
+	);
+	const zoneName = useCallback((zid: number) => model?.zones.get(zid)?.label ?? String(zid), [model]);
+	const translate = useCallback((value: string) => gameName(names, value), [names]);
 
 	// Who controls which body: a player's name wins over the slot's role.
 	const playerName = useCallback(
@@ -214,14 +406,6 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		},
 		[model]
 	);
-	const roleName = useCallback((entity: Entity) => gameName(names, entity.name), [names]);
-	const vehicleName = useCallback(
-		(eid: number) => {
-			const vehicle = model?.entities.get(eid);
-			return vehicle ? gameName(names, vehicle.name) : '';
-		},
-		[names, model]
-	);
 	const who = useCallback<Who>(
 		(eid, at) => {
 			const entity = eid !== null ? model?.entities.get(eid) : undefined;
@@ -230,36 +414,177 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		},
 		[model, names, playerName]
 	);
-	const weaponName = useCallback(
-		(wid: number | null) => {
-			const weapon = wid !== null ? model?.weapons.get(wid) : undefined;
-			return weapon ? gameName(names, weapon.name) : null;
-		},
-		[model, names]
-	);
-	const zoneName = useCallback((zid: number) => model?.zones.get(zid)?.label ?? String(zid), [model]);
-	const translate = useCallback((value: string) => gameName(names, value), [names]);
 
+	// A body keeps the name of the last player in it, so the dead are still named.
+	const bodyNames = useMemo(() => {
+		const map = new Map<number, string>();
+		for (const player of model?.players.values() ?? []) {
+			for (const change of player.controls) {
+				const name = change.value !== null ? valueAt(player.names, change.t, '') : '';
+				if (change.value !== null && name) map.set(change.value, name);
+			}
+		}
+		return map;
+	}, [model]);
 	const controllers = useMemo(() => {
 		const map = new Map<number, string>();
-		if (!model) return map;
-		for (const player of model.players.values()) {
+		for (const player of model?.players.values() ?? []) {
 			const eid = valueAt(player.controls, second * 10, null);
 			const name = valueAt(player.names, second * 10, '');
 			if (eid !== null && name) map.set(eid, name);
 		}
 		return map;
 	}, [model, second]);
-	const labelFor = useCallback((entity: Entity) => controllers.get(entity.eid) ?? gameName(names, entity.name), [controllers, names]);
+	const nicknameOf = useCallback(
+		(entity: Entity) => {
+			if (entity.kind !== 'man') return null;
+			const current = controllers.get(entity.eid);
+			if (current) return current;
+			// Only the dead keep the name of the last player in them: a living body a player
+			// left behind belongs to nobody, or to the AI, again.
+			return valueAt(entity.life, second * 10, 'alive') === 'dead' ? (bodyNames.get(entity.eid) ?? null) : null;
+		},
+		[controllers, bodyNames, second]
+	);
 
-	const onFollow = useCallback((eid: number | null) => setFollow(eid), []);
-	const onFollowEntity = useCallback((eid: number) => setFollow((current) => (current === eid ? null : eid)), []);
+	const select = useCallback((eid: number | null) => {
+		setSelected(eid);
+		setFollowing(false);
+	}, []);
+	// From a list the camera goes along; picking the followed unit again lets it go.
+	const pick = useCallback(
+		(eid: number) => {
+			if (eid === selected && following) {
+				setFollowing(false);
+				return;
+			}
+			setSelected(eid);
+			setFollowing(true);
+		},
+		[selected, following]
+	);
+	const stopFollowing = useCallback(() => setFollowing(false), []);
 	const onSeek = useCallback((at: number) => setTime(at), []);
+
+	const pickEvent = useCallback(
+		(event: ReplayEvent) => {
+			if (!model) return;
+			setTime(Math.max(0, event.t - 50));
+			const points: MapPoint[] = [];
+			const place = (eid: number | null) => {
+				const unit = eid !== null ? model.entities.get(eid) : undefined;
+				const at = unit ? positionAt(carrier(model, unit, event.t), event.t) : null;
+				if (at) points.push({ x: at.x, z: at.z });
+			};
+			let subject: number | null = null;
+			switch (event.type) {
+				case 'kill':
+					place(event.victim);
+					place(event.killer);
+					subject = event.victim;
+					break;
+				case 'down':
+					place(event.victim);
+					place(event.attacker);
+					subject = event.victim;
+					break;
+				case 'up':
+					place(event.victim);
+					subject = event.victim;
+					break;
+				case 'capture': {
+					const zone = model.zones.get(event.zid);
+					if (zone && zone.points.length >= 6) {
+						const [x, z] = centroid(zone.points);
+						points.push({ x, z });
+					}
+					break;
+				}
+			}
+			if (subject !== null) select(subject);
+			if (points.length) mapRef.current?.focus(points);
+		},
+		[model, select]
+	);
+
+	const togglePlay = useCallback(() => {
+		if (!model) return;
+		if (!playing && timeRef.current >= model.duration) setTime(0);
+		setPlaying(!playing);
+	}, [model, playing]);
+	const setSpeed = useCallback((value: number) => updateSettings({ speed: value }), [updateSettings]);
+	const stepSpeed = useCallback(
+		(direction: 1 | -1) => {
+			const next =
+				direction > 0
+					? (SPEED_PRESETS.find((value) => value > speed + 1e-9) ?? SPEED_PRESETS[SPEED_PRESETS.length - 1])
+					: ([...SPEED_PRESETS].reverse().find((value) => value < speed - 1e-9) ?? SPEED_PRESETS[0]);
+			updateSettings({ speed: next });
+		},
+		[speed, updateSettings]
+	);
+	const togglePanel = useCallback(
+		(panel: PanelKey) => {
+			if (isDesktop()) updateSettings(panel === 'units' ? { unitsOpen: !settings.unitsOpen } : { eventsOpen: !settings.eventsOpen });
+			else setDrawer((current) => (current === panel ? null : panel));
+		},
+		[settings.unitsOpen, settings.eventsOpen, updateSettings]
+	);
+	const toggleFullscreen = useCallback(() => {
+		if (document.fullscreenElement) void document.exitFullscreen();
+		else void rootRef.current?.requestFullscreen?.();
+	}, []);
+
+	useEffect(() => {
+		if (!model) return;
+		const onKey = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+			const target = event.target as HTMLElement | null;
+			if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+			switch (event.key) {
+				case ' ':
+					// A focused button already answers Space with its own click.
+					if (target?.tagName === 'BUTTON') return;
+					event.preventDefault();
+					togglePlay();
+					break;
+				case 'ArrowLeft':
+				case 'ArrowRight': {
+					event.preventDefault();
+					const step = (event.shiftKey ? 600 : 100) * (event.key === 'ArrowLeft' ? -1 : 1);
+					setTime((value) => Math.min(model.duration, Math.max(0, value + step)));
+					break;
+				}
+				case '[':
+				case ']':
+					stepSpeed(event.key === ']' ? 1 : -1);
+					break;
+				case 'f':
+				case 'F':
+					toggleFullscreen();
+					break;
+				case 'u':
+				case 'U':
+					togglePanel('units');
+					break;
+				case 'e':
+				case 'E':
+					togglePanel('events');
+					break;
+				case 'Escape':
+					select(null);
+					setDrawer(null);
+					break;
+			}
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [model, togglePlay, stepSpeed, toggleFullscreen, togglePanel, select]);
 
 	const realTime = useMemo(() => {
 		if (!model) return null;
 		const unix = unixAt(model, second * 10);
-		return unix === null ? null : new Date(unix * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+		return unix === null ? null : new Date(unix * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 	}, [model, second, locale]);
 
 	const copyLink = async () => {
@@ -273,97 +598,96 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 		}
 	};
 
-	const followed = follow !== null ? model?.entities.get(follow) : undefined;
-	const followDetail = (() => {
-		if (!model || !followed) return '';
-		const at = second * 10;
-		const seat = valueAt(followed.seats, at, null);
-		const position = positionAt((seat && model.entities.get(seat.vehicle)) || followed, at);
-		const grid = position ? gridReference(position.x, position.z) : null;
-		if (followed.kind !== 'man') return [followed.side ? sideName(followed.side) : null, grid].filter(Boolean).join(' · ');
-		const group = followed.groups.get(segmentAt(model, at));
-		// Without a player the name already is the role.
-		const role = roleName(followed);
-		const parts = [role === labelFor(followed) ? null : role, group ? callsignFor(group) : null];
-		if (seat) parts.push(t('inVehicle', { vehicle: vehicleName(seat.vehicle), role: t(`seat_${seat.role}`) }));
-		parts.push(grid);
-		return parts.filter(Boolean).join(' · ');
-	})();
-
-	const terrain = terrainName(game.world);
-	const inGameDate =
-		model?.date && model.date.length >= 3
-			? new Date(Date.UTC(model.date[0], model.date[1] - 1, model.date[2], model.date[3] ?? 0, model.date[4] ?? 0)).toLocaleString(locale, {
-					dateStyle: 'medium',
-					timeStyle: 'short',
-					timeZone: 'UTC',
-				})
-			: null;
-	const meta = [t('episode', { episode: game.episodeNumber }), terrain, inGameDate ? t('inGame', { date: inGameDate }) : null].filter(Boolean) as string[];
+	const selection = useMemo(
+		() => (model && selected !== null ? describeSelection(model, selected, second * 10, { nicknameOf, nameOf, callsignFor, weaponName }) : null),
+		[model, selected, second, nicknameOf, nameOf, callsignFor, weaponName]
+	);
 	const sample = useMemo<[SideStyle, SideStyle]>(() => {
 		const styles = (model?.sides ?? []).map((side) => styleOf(side.color));
 		return [styles[0] ?? NEUTRAL_STYLE, styles[1] ?? styles[0] ?? NEUTRAL_STYLE];
 	}, [model]);
+
+	// When the game was played, in the viewer's own time zone, once the page runs in their browser.
+	const played =
+		hydrated && game.startedAt !== null ? new Date(game.startedAt * 1000).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' }) : null;
+	const meta = [t('episode', { episode: game.episodeNumber }), terrainName(game.world), played].filter(Boolean).join(' · ');
 	const progress = load.state === 'loading' && total > 0 ? Math.min(100, (load.done / total) * 100) : 0;
+	const unitsWidth = dragWidth.units ?? settings.unitsWidth;
+	const eventsWidth = dragWidth.events ?? settings.eventsWidth;
+	const unitsShown = hydrated && (drawer === 'units' || (settings.unitsOpen && isDesktop()));
+	const eventsShown = hydrated && (drawer === 'events' || (settings.eventsOpen && isDesktop()));
 
 	return (
-		<div className="flex min-h-0 flex-1 flex-col gap-[12px] text-[14px] leading-[20px]">
-			{/* On a phone this is the page's only bar, one row: back, title, and icon buttons. */}
-			<header className="flex min-h-[56px] items-center gap-x-[4px] gap-y-[8px] sm:flex-wrap sm:gap-x-[16px]">
+		<div ref={rootRef} className="flex h-dvh flex-col overflow-hidden bg-[#0a0a0a] text-[14px] leading-[20px] text-neutral-100">
+			<header className="flex h-[48px] shrink-0 items-center gap-[6px] border-b border-[#2c2c2c] bg-[#121212] px-[6px]">
 				<Link
 					href="/replays"
 					locale={locale}
 					aria-label={t('backToReplays')}
-					className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-[6px] rounded-[4px] text-[13px] font-semibold leading-[18px] text-neutral-300 hover:bg-[#1a1a1a] hover:text-neutral-100 sm:pl-[6px] sm:pr-[12px]"
+					title={t('backToReplays')}
+					className="inline-flex h-[36px] shrink-0 items-center gap-[4px] rounded-[4px] px-[8px] text-[13px] font-semibold text-neutral-300 hover:bg-[#1a1a1a] hover:text-neutral-100"
 				>
 					<Icon.ChevronLeft size={18} />
 					<span className="hidden sm:inline">{t('back')}</span>
 				</Link>
-				<span aria-hidden="true" className="hidden h-[32px] w-px bg-[#2c2c2c] sm:block" />
-				<div className="flex min-w-0 flex-1 flex-col gap-[2px] sm:flex-[1_1_320px]">
-					<h1 className="truncate text-[16px] font-semibold leading-[22px] tracking-[-0.01em] text-neutral-100 sm:text-[20px] sm:leading-[28px]">
-						{game.missionTitle}
-					</h1>
-					<p className="flex items-center gap-x-[8px] gap-y-[2px] overflow-hidden whitespace-nowrap text-[12px] leading-[16px] text-neutral-400 sm:flex-wrap sm:whitespace-normal sm:text-[13px] sm:leading-[18px]">
-						{meta.map((part, i) => (
-							<span key={i} className="flex items-center gap-x-[8px]">
-								{i > 0 ? (
-									<span aria-hidden="true" className="text-[#666666]">
-										·
-									</span>
-								) : null}
-								{part}
-							</span>
-						))}
-					</p>
+				<span aria-hidden="true" className="hidden h-[24px] w-px shrink-0 bg-[#2c2c2c] sm:block" />
+				<div className="flex min-w-0 flex-1 items-baseline gap-[10px] px-[6px]">
+					<h1 className="truncate text-[15px] font-semibold leading-[20px] text-neutral-100">{game.missionTitle}</h1>
+					<p className="hidden min-w-0 truncate text-[12px] leading-[16px] tabular-nums text-neutral-400 md:block">{meta}</p>
 				</div>
-				<div className="flex shrink-0 gap-[4px] sm:flex-wrap sm:gap-[8px]">
-					{game.statsId !== null ? (
-						<Link href={`/stats/games/${game.statsId}`} locale={locale} aria-label={t('statistics')} className={`${secondary} ${iconOnPhone}`}>
-							<span className="flex text-neutral-400">
-								<Icon.Chart size={18} />
-							</span>
-							<span className="hidden sm:inline">{t('statistics')}</span>
-						</Link>
-					) : null}
-					<button
-						type="button"
-						onClick={() => void copyLink()}
-						disabled={!model}
-						aria-label={copied ? t('linkCopied') : t('copyLink', { time: formatMissionTime(time) })}
-						className={`${secondary} ${iconOnPhone}`}
-					>
-						<span className="flex text-neutral-400">{copied ? <Icon.Check size={18} /> : <Icon.Link size={18} />}</span>
-						<span className="hidden tabular-nums sm:inline">{copied ? t('linkCopied') : t('copyLink', { time: formatMissionTime(time) })}</span>
-					</button>
+				<div className="flex shrink-0 items-center gap-[2px]">
+					<BarButton label={t('toggleUnits')} pressed={unitsShown} onClick={() => togglePanel('units')}>
+						<Icon.PanelLeft />
+					</BarButton>
+					<BarButton label={t('toggleEvents')} pressed={eventsShown} onClick={() => togglePanel('events')}>
+						<Icon.PanelRight />
+					</BarButton>
+					<span aria-hidden="true" className="mx-[4px] hidden h-[20px] w-px bg-[#2c2c2c] sm:block" />
+					<StatsPanel stats={stats} model={model} sideStyle={sideStyle} sideName={sideName} buttonClass={barButton} />
+					<BarButton label={copied ? t('linkCopied') : t('copyLink', { time: formatMissionTime(time) })} pressed={copied} onClick={() => void copyLink()}>
+						{copied ? <Icon.Check size={18} /> : <Icon.Link size={18} />}
+					</BarButton>
+					<ShortcutsButton />
+					<BarButton label={fullscreen ? t('exitFullscreen') : t('fullscreen')} onClick={toggleFullscreen}>
+						{fullscreen ? <Icon.Minimize /> : <Icon.Maximize />}
+					</BarButton>
 				</div>
 			</header>
 
-			<section
-				aria-label={t('replay')}
-				className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[8px] border border-[#2c2c2c] bg-[#121212] lg:min-h-[560px] lg:max-h-[1080px] lg:flex-1 lg:basis-0 lg:grid-cols-[288px_minmax(0,1fr)_320px] lg:grid-rows-[minmax(0,1fr)_auto]"
-			>
-				<section aria-label={t('mapLabel')} className="relative row-start-1 h-[62vh] min-h-[420px] min-w-0 overflow-hidden bg-[#c4e7ed] lg:col-start-2 lg:h-auto lg:min-h-0">
+			<div className="relative flex min-h-0 flex-1">
+				{model ? (
+					<Panel
+						side="left"
+						title={t('units')}
+						open={settings.unitsOpen}
+						drawerOpen={drawer === 'units'}
+						width={unitsWidth}
+						closeLabel={t('hideUnits')}
+						resizeLabel={t('resizeUnits')}
+						onClose={() => togglePanel('units')}
+						onWidth={(width) => setDragWidth((current) => ({ ...current, units: width }))}
+						onWidthDone={(width) => {
+							setDragWidth((current) => ({ ...current, units: undefined }));
+							updateSettings({ unitsWidth: width });
+						}}
+					>
+						<Units
+							model={model}
+							second={listSecond}
+							selected={selected}
+							following={following}
+							sideName={sideName}
+							sideStyle={sideStyle}
+							callsignFor={callsignFor}
+							nicknameOf={nicknameOf}
+							roleName={nameOf}
+							vehicleName={vehicleName}
+							onPick={pick}
+						/>
+					</Panel>
+				) : null}
+
+				<section aria-label={t('mapLabel')} className="relative min-w-0 flex-1 overflow-hidden bg-[#c4e7ed]">
 					{model ? (
 						<>
 							<MapCanvas
@@ -371,28 +695,44 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 								t={time}
 								relief={relief}
 								topo={topo}
-								follow={follow}
-								layers={layers}
+								layers={settings.layers}
+								selected={selected}
+								following={following}
 								sideStyle={sideStyle}
-								labelFor={labelFor}
+								nicknameOf={nicknameOf}
+								nameOf={nameOf}
 								callsignFor={callsignFor}
 								contested={t('contested')}
-								onFollow={onFollow}
+								onSelect={select}
+								onPan={stopFollowing}
 								handleRef={mapRef}
 								ariaLabel={t('mapLabel')}
 							/>
-							{followed ? <FollowChip name={labelFor(followed)} detail={followDetail} onStop={() => setFollow(null)} /> : null}
+							{selection ? (
+								<SelectionCard
+									info={selection}
+									following={following}
+									sideStyle={sideStyle}
+									sideName={sideName}
+									onSelect={select}
+									onFollow={() => setFollowing((value) => !value)}
+									onClose={() => select(null)}
+								/>
+							) : null}
 							<MapControls
-								layers={layers}
-								onLayers={setLayers}
+								layers={settings.layers}
+								onLayers={(layers) => updateSettings({ layers })}
 								onZoomIn={() => mapRef.current?.zoom(1.5)}
 								onZoomOut={() => mapRef.current?.zoom(1 / 1.5)}
 								onFit={() => {
-									setFollow(null);
+									setFollowing(false);
 									mapRef.current?.fit();
 								}}
 								sample={sample}
 							/>
+							{drawer ? (
+								<button type="button" aria-label={t('closePanel')} onClick={() => setDrawer(null)} className="absolute inset-0 z-10 bg-black/40 lg:hidden" />
+							) : null}
 						</>
 					) : load.state === 'failed' ? (
 						<div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-[12px] bg-[#121212] p-[24px] text-center">
@@ -415,7 +755,11 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 									<Icon.Retry />
 									{t('retry')}
 								</button>
-								<Link href="/replays" locale={locale} className={secondary}>
+								<Link
+									href="/replays"
+									locale={locale}
+									className="inline-flex min-h-[44px] items-center rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] px-[14px] text-[13px] font-semibold text-neutral-100 hover:border-[#666666] hover:bg-[#242424]"
+								>
 									{t('backToReplays')}
 								</Link>
 							</div>
@@ -457,96 +801,56 @@ export default function ReplayViewer({ game }: { game: PublicReplayGame }) {
 					)}
 				</section>
 
-				<div className="row-start-2 min-w-0 lg:col-span-3">
-					{model ? (
-						<Timeline
-							model={model}
-							time={time}
-							playing={playing}
-							speed={speed}
-							realTime={realTime}
-							sideStyle={sideStyle}
-							sideName={sideName}
-							zoneName={zoneName}
-							onTogglePlay={() => {
-								if (!playing && time >= model.duration) setTime(0);
-								setPlaying((value) => !value);
-							}}
-							onSpeed={setSpeed}
-							onSeek={onSeek}
-						/>
-					) : null}
-				</div>
-
 				{model ? (
-					<>
-						<div role="tablist" aria-label={t('lists')} className="row-start-3 grid grid-cols-2 gap-[4px] border-t border-[#2c2c2c] px-[16px] pt-[8px] lg:hidden">
-							{(['units', 'events'] as const).map((value) => (
-								<button
-									key={value}
-									type="button"
-									role="tab"
-									aria-selected={tab === value}
-									onClick={() => setTab(value)}
-									className={
-										'min-h-[44px] rounded-[4px] border px-[10px] text-[13px] font-semibold leading-[18px] ' +
-										(tab === value
-											? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
-											: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-300')
-									}
-								>
-									{t(value)}
-								</button>
-							))}
-						</div>
-						<aside
-							aria-label={t('units')}
-							className={
-								(tab === 'units' ? 'flex' : 'hidden') +
-								' row-start-4 h-[70vh] min-h-0 flex-col lg:col-start-1 lg:row-start-1 lg:flex lg:h-auto lg:border-r lg:border-[#2c2c2c]'
-							}
-						>
-							<Units
-								model={model}
-								second={listSecond}
-								follow={follow}
-								sideName={sideName}
-								sideStyle={sideStyle}
-								callsignFor={callsignFor}
-								playerName={playerName}
-								roleName={roleName}
-								vehicleName={vehicleName}
-								onFollow={onFollowEntity}
-							/>
-						</aside>
-						<aside
-							aria-label={t('events')}
-							className={
-								(tab === 'events' ? 'flex' : 'hidden') +
-								' row-start-4 h-[70vh] min-h-0 flex-col lg:col-start-3 lg:row-start-1 lg:flex lg:h-auto lg:border-l lg:border-[#2c2c2c]'
-							}
-						>
-							<Events
-								model={model}
-								second={listSecond}
-								playing={playing}
-								who={who}
-								weaponName={weaponName}
-								sideName={sideName}
-								sideStyle={sideStyle}
-								zoneName={zoneName}
-								translate={translate}
-								onSeek={onSeek}
-							/>
-						</aside>
-					</>
-				) : (
-					<>
-						<div aria-hidden="true" className="hidden lg:col-start-1 lg:row-start-1 lg:block lg:border-r lg:border-[#2c2c2c]" />
-						<div aria-hidden="true" className="hidden lg:col-start-3 lg:row-start-1 lg:block lg:border-l lg:border-[#2c2c2c]" />
-					</>
-				)}
-			</section>
+					<Panel
+						side="right"
+						title={t('events')}
+						open={settings.eventsOpen}
+						drawerOpen={drawer === 'events'}
+						width={eventsWidth}
+						closeLabel={t('hideEvents')}
+						resizeLabel={t('resizeEvents')}
+						onClose={() => togglePanel('events')}
+						onWidth={(width) => setDragWidth((current) => ({ ...current, events: width }))}
+						onWidthDone={(width) => {
+							setDragWidth((current) => ({ ...current, events: undefined }));
+							updateSettings({ eventsWidth: width });
+						}}
+					>
+						<Events
+							model={model}
+							second={listSecond}
+							playing={playing}
+							selected={selected}
+							onPick={pickEvent}
+							who={who}
+							weaponName={weaponName}
+							sideName={sideName}
+							sideStyle={sideStyle}
+							zoneName={zoneName}
+							translate={translate}
+						/>
+					</Panel>
+				) : null}
+			</div>
+
+			{model ? (
+				<Timeline
+					model={model}
+					time={time}
+					playing={playing}
+					speed={speed}
+					realTime={realTime}
+					sideStyle={sideStyle}
+					sideName={sideName}
+					zoneName={zoneName}
+					onTogglePlay={togglePlay}
+					onSpeed={setSpeed}
+					onSeek={onSeek}
+				/>
+			) : (
+				<div aria-hidden="true" className="h-[72px] shrink-0 border-t border-[#2c2c2c] bg-[#121212]" />
+			)}
 		</div>
 	);
 }

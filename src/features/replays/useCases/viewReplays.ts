@@ -1,29 +1,27 @@
 import { mapStorageKey } from '../domain/maps';
-import { parseReplaySearch } from '../domain/search';
-import type { PublicReplayGame, PublicReplayListItem, ReplaySearchPage } from '../domain/types';
+import { applicableFilters, sortFacets, toGameFilter, type ReplayListFilters } from '../domain/search';
+import type { PublicReplayGame, ReplaySearchPage } from '../domain/types';
 import type { PublicReplaysDeps, StoredObject } from '../ports';
 
-export const REPLAYS_PER_PAGE = 24;
-
-export function listPublishedReplays(
-	deps: Pick<PublicReplaysDeps, 'repo'>,
-	input: { limit: number; offset: number }
-): PublicReplayListItem[] {
-	return deps.repo.listPublishedGames(input);
-}
+export const REPLAYS_PER_PAGE = 20;
 
 /** A page past the last one shows the last, so a link kept from a longer list still lands. */
 export function searchPublishedReplays(
 	deps: Pick<PublicReplaysDeps, 'repo'>,
-	input: { query: string; page: number }
+	input: ReplayListFilters & { page: number; locale: string }
 ): ReplaySearchPage {
-	const search = parseReplaySearch(input.query);
-	const total = deps.repo.countPublishedGames(search);
+	const { page: requestedPage, locale, ...requested } = input;
+	const facets = sortFacets(deps.repo.listPublishedFacets(), locale);
+	const filters = applicableFilters(requested, facets);
+	const filter = toGameFilter(filters);
+	const total = deps.repo.countPublishedGames(filter);
 	const totalPages = Math.max(1, Math.ceil(total / REPLAYS_PER_PAGE));
-	const page = Math.min(Math.max(1, Math.floor(input.page)), totalPages);
+	const page = Math.min(Math.max(1, Math.floor(requestedPage)), totalPages);
 	const replays =
-		total === 0 ? [] : deps.repo.searchPublishedGames({ search, limit: REPLAYS_PER_PAGE, offset: (page - 1) * REPLAYS_PER_PAGE });
-	return { query: input.query, page, totalPages, total, replays };
+		total === 0
+			? []
+			: deps.repo.searchPublishedGames({ filter, sort: filters.sort, limit: REPLAYS_PER_PAGE, offset: (page - 1) * REPLAYS_PER_PAGE });
+	return { filters, facets, page, totalPages, total, replays };
 }
 
 // Admins open a game before publishing it, which is how they check what they approve.

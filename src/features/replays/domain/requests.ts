@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { REPLAY_SEARCH_MAX_LENGTH } from './search';
+import { DEFAULT_REPLAY_SORT, REPLAY_SEARCH_MAX_LENGTH, REPLAY_SORTS, isReplayDay } from './search';
 
 const gameId = z.number().int().positive();
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
@@ -38,12 +38,27 @@ export const mapCommitSchema = z.object({
 
 const firstValue = (value: unknown) => (Array.isArray(value) ? value[0] : value);
 
-// The address bar is free to edit, so a value that makes no sense falls back to the plain
-// list rather than an error page; the page number is clamped to the results later.
-export const replayListQuerySchema = z.object({
-	q: z
+// A terrain is a folder name under worlds/; short codes are capped where missions cap them.
+const TERRAIN_MAX_LENGTH = 100;
+const MISSION_MAX_LENGTH = 64;
+
+const boundedText = (max: number) =>
+	z
 		.preprocess(firstValue, z.string())
-		.transform((q) => q.trim().slice(0, REPLAY_SEARCH_MAX_LENGTH).trim())
-		.catch(''),
+		.transform((value) => value.trim().slice(0, max).trim())
+		.catch('');
+
+const day = z.preprocess(firstValue, z.string().trim().refine(isReplayDay)).catch('');
+
+// The address bar is free to edit, so a value that makes no sense falls back to the plain
+// list rather than an error page. The page number is clamped to the results later, and a
+// terrain or mission is checked against the published games before it filters.
+export const replayListQuerySchema = z.object({
+	q: boundedText(REPLAY_SEARCH_MAX_LENGTH),
+	terrain: boundedText(TERRAIN_MAX_LENGTH),
+	mission: boundedText(MISSION_MAX_LENGTH),
+	from: day,
+	to: day,
+	sort: z.preprocess(firstValue, z.enum(REPLAY_SORTS)).catch(DEFAULT_REPLAY_SORT),
 	page: z.preprocess(firstValue, z.coerce.number().int().min(1)).catch(1),
 });

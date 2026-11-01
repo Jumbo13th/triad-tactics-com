@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import type { ReplayEvent, ReplayModel } from '../../domain/replayFormat';
+import { valueAt, type ReplayEvent, type ReplayModel } from '../../domain/replayFormat';
 import { formatMissionTime } from './format';
 import { Icon } from './glyphs';
 import type { SideStyle } from './sideStyle';
@@ -25,7 +25,9 @@ type Props = Describe & {
 	model: ReplayModel;
 	second: number;
 	playing: boolean;
-	onSeek: (t: number) => void;
+	selected: number | null;
+	/** Takes the viewer to the event: its time, its place on the map, the unit it happened to. */
+	onPick: (event: ReplayEvent) => void;
 };
 
 const FILTERS: Filter[] = ['all', 'kills', 'objectives', 'phases'];
@@ -38,7 +40,21 @@ function inFilter(event: ReplayEvent, filter: Filter): boolean {
 	return event.type === 'flow' || event.type === 'resume';
 }
 
-const EventRow = memo(function EventRow({ event, future, describe, onSeek }: { event: ReplayEvent; future: boolean; describe: Describe; onSeek: (t: number) => void }) {
+/** The units an event is about, for "only the selected unit". */
+function actors(event: ReplayEvent): (number | null)[] {
+	switch (event.type) {
+		case 'kill':
+			return [event.victim, event.killer];
+		case 'down':
+			return [event.victim, event.attacker];
+		case 'up':
+			return [event.victim];
+		default:
+			return [];
+	}
+}
+
+const EventRow = memo(function EventRow({ event, future, describe, onPick }: { event: ReplayEvent; future: boolean; describe: Describe; onPick: (event: ReplayEvent) => void }) {
 	const t = useTranslations('replayViewer');
 	const { who, weaponName, sideName, sideStyle, zoneName, translate } = describe;
 	const tint = (side: string | null) => (future ? MUTED : sideStyle(side).text);
@@ -140,9 +156,9 @@ const EventRow = memo(function EventRow({ event, future, describe, onSeek }: { e
 		<li>
 			<button
 				type="button"
-				onClick={() => onSeek(Math.max(0, event.t - 50))}
+				onClick={() => onPick(event)}
 				className={
-					'grid min-h-[44px] w-full grid-cols-[58px_16px_minmax(0,1fr)] items-start gap-x-[8px] rounded-[4px] px-[8px] py-[6px] text-left hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)] ' +
+					'grid min-h-[40px] w-full grid-cols-[58px_16px_minmax(0,1fr)] items-start gap-x-[8px] rounded-[4px] px-[8px] py-[5px] text-left hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)] ' +
 					(future ? 'text-neutral-400' : 'text-neutral-300')
 				}
 			>
@@ -159,16 +175,56 @@ const EventRow = memo(function EventRow({ event, future, describe, onSeek }: { e
 	);
 });
 
-export default function EventsPanel({ model, second, playing, onSeek, who, weaponName, sideName, sideStyle, zoneName, translate }: Props) {
+export default function EventsPanel({ model, second, playing, selected, onPick, who, weaponName, sideName, sideStyle, zoneName, translate }: Props) {
 	const t = useTranslations('replayViewer');
 	const [filter, setFilter] = useState<Filter>('all');
+	const [query, setQuery] = useState('');
+	const [onlySelected, setOnlySelected] = useState(false);
 	const listRef = useRef<HTMLOListElement>(null);
 	const nowRef = useRef<HTMLLIElement>(null);
 	const lastSecond = useRef(second);
 	const now = second * 10;
+	const needle = query.trim().toLocaleLowerCase();
+	const selectedUnit = selected !== null ? model.entities.get(selected) : undefined;
 
 	const describe = useMemo(() => ({ who, weaponName, sideName, sideStyle, zoneName, translate }), [who, weaponName, sideName, sideStyle, zoneName, translate]);
-	const events = useMemo(() => model.events.filter((event) => inFilter(event, filter)), [model, filter]);
+
+	// What a search can find in each event: the names as the game showed them then, the
+	// weapon, the zone, and the event's own wording.
+	const searchable = useMemo(() => {
+		const name = (eid: number | null, at: number) => who(eid, at)?.name ?? '';
+		return model.events.map((event) => {
+			switch (event.type) {
+				case 'kill':
+					return [name(event.killer, event.t), name(event.victim, event.t), weaponName(event.weapon)].join(' ').toLocaleLowerCase();
+				case 'down':
+					return [name(event.attacker, event.t), name(event.victim, event.t), weaponName(event.weapon)].join(' ').toLocaleLowerCase();
+				case 'up':
+					return name(event.victim, event.t).toLocaleLowerCase();
+				case 'capture':
+					return `${sideName(event.side)} ${zoneName(event.zid)}`.toLocaleLowerCase();
+				case 'trigger':
+					return translate(event.label || event.key).toLocaleLowerCase();
+				case 'resume':
+					return t('resumed').toLocaleLowerCase();
+				case 'flow':
+					return (event.flow.startsWith('hardfreeze') ? t('hardFreeze') : event.flow === 'game' ? t('flowGame') : t('freeze')).toLocaleLowerCase();
+			}
+		});
+	}, [model, who, weaponName, sideName, zoneName, translate, t]);
+
+	const events = useMemo(() => {
+		const mine = onlySelected && selectedUnit ? selectedUnit.eid : null;
+		const out: ReplayEvent[] = [];
+		model.events.forEach((event, i) => {
+			if (!inFilter(event, filter)) return;
+			if (needle !== '' && !searchable[i].includes(needle)) return;
+			if (mine !== null && !involves(model, event, mine)) return;
+			out.push(event);
+		});
+		return out;
+	}, [model, filter, needle, searchable, onlySelected, selectedUnit]);
+
 	let split = events.length;
 	for (let i = 0; i < events.length; i++) {
 		if (events[i].t > now) {
@@ -193,30 +249,54 @@ export default function EventsPanel({ model, second, playing, onSeek, who, weapo
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div role="group" aria-label={t('showEvents')} className="grid grid-cols-4 gap-[4px] border-b border-[#1e1e1e] p-[12px]">
-				{FILTERS.map((value) => (
-					<button
-						key={value}
-						type="button"
-						aria-pressed={filter === value}
-						onClick={() => setFilter(value)}
-						className={
-							'min-h-[44px] min-w-0 truncate rounded-[4px] border px-[2px] text-[12px] font-semibold leading-[16px] ' +
-							(filter === value
-								? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
-								: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-300 hover:border-[#666666] hover:bg-[#242424] hover:text-neutral-100')
-						}
-					>
-						{t(`filter_${value}`)}
-					</button>
-				))}
+			<div className="flex flex-col gap-[8px] border-b border-[#1e1e1e] p-[10px]">
+				<label className="relative block">
+					<span className="sr-only">{t('searchEvents')}</span>
+					<span className="pointer-events-none absolute left-[10px] top-[12px] flex text-neutral-400">
+						<Icon.Search size={16} />
+					</span>
+					<input
+						type="search"
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						placeholder={t('searchEvents')}
+						className="block h-[40px] w-full rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] pl-[34px] pr-[10px] text-[13px] leading-[18px] text-neutral-100 placeholder:text-neutral-500 hover:border-[#666666] focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--accent)]"
+					/>
+				</label>
+				<div role="group" aria-label={t('showEvents')} className="grid grid-cols-4 rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] p-[2px]">
+					{FILTERS.map((value) => (
+						<button
+							key={value}
+							type="button"
+							aria-pressed={filter === value}
+							onClick={() => setFilter(value)}
+							className={
+								'min-h-[30px] min-w-0 truncate rounded-[3px] px-[2px] text-[12px] font-semibold leading-[16px] ' +
+								(filter === value ? 'bg-[#2e2e2e] text-neutral-100' : 'text-neutral-400 hover:text-neutral-100')
+							}
+						>
+							{t(`filter_${value}`)}
+						</button>
+					))}
+				</div>
+				{selectedUnit ? (
+					<label className="flex min-h-[28px] cursor-pointer items-center gap-[8px] text-[12px] leading-[16px] text-neutral-300">
+						<input
+							type="checkbox"
+							checked={onlySelected}
+							onChange={(e) => setOnlySelected(e.target.checked)}
+							className="size-[14px] accent-[color:var(--accent)]"
+						/>
+						{t('onlySelected')}
+					</label>
+				) : null}
 			</div>
 			{events.length === 0 ? (
-				<p className="px-[16px] py-[12px] text-[13px] leading-[18px] text-neutral-400">{t('noEvents')}</p>
+				<p className="px-[16px] py-[12px] text-[13px] leading-[18px] text-neutral-400">{needle !== '' || onlySelected ? t('noEventMatches') : t('noEvents')}</p>
 			) : (
-				<ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[8px] pb-[12px] pt-[4px]">
+				<ol ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[6px] pb-[12px] pt-[4px]">
 					{events.slice(0, split).map((event, i) => (
-						<EventRow key={i} event={event} future={false} describe={describe} onSeek={onSeek} />
+						<EventRow key={i} event={event} future={false} describe={describe} onPick={onPick} />
 					))}
 					<li ref={nowRef} aria-current="time" className="flex min-h-[28px] items-center gap-[8px] px-[8px]">
 						<span className="text-[12px] font-semibold leading-[16px] tabular-nums text-[color:var(--accent)]">{formatMissionTime(now)}</span>
@@ -224,10 +304,21 @@ export default function EventsPanel({ model, second, playing, onSeek, who, weapo
 						<span className="text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-[color:var(--accent)]">{t('now')}</span>
 					</li>
 					{events.slice(split).map((event, i) => (
-						<EventRow key={split + i} event={event} future describe={describe} onSeek={onSeek} />
+						<EventRow key={split + i} event={event} future describe={describe} onPick={onPick} />
 					))}
 				</ol>
 			)}
 		</div>
 	);
+}
+
+/** Whether an event is about this unit, or about someone riding in it when it is a vehicle. */
+function involves(model: ReplayModel, event: ReplayEvent, eid: number): boolean {
+	for (const actor of actors(event)) {
+		if (actor === null) continue;
+		if (actor === eid) return true;
+		const unit = model.entities.get(actor);
+		if (unit && valueAt(unit.seats, event.t, null)?.vehicle === eid) return true;
+	}
+	return false;
 }

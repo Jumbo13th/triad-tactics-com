@@ -1,6 +1,14 @@
-export function replaysListHref(query: string, page: number): string {
+import { DEFAULT_REPLAY_SORT, type ReplayListFilters } from '../domain/search';
+
+/** Filters left at their defaults stay out of the address, so a plain list keeps a plain link. */
+export function replaysListHref(filters: ReplayListFilters, page: number): string {
 	const params = new URLSearchParams();
-	if (query) params.set('q', query);
+	if (filters.query) params.set('q', filters.query);
+	if (filters.mission) params.set('mission', filters.mission);
+	if (filters.terrain) params.set('terrain', filters.terrain);
+	if (filters.from) params.set('from', filters.from);
+	if (filters.to) params.set('to', filters.to);
+	if (filters.sort !== DEFAULT_REPLAY_SORT) params.set('sort', filters.sort);
 	if (page > 1) params.set('page', String(page));
 	const search = params.toString();
 	return search ? `/replays?${search}` : '/replays';

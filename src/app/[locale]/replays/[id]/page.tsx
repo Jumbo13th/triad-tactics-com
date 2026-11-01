@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { publicReplaysDeps } from '@/features/replays/deps';
 import { getReplayForViewer } from '@/features/replays/useCases/viewReplays';
 import { ReplayViewer } from '@/features/replays/ui/root';
+import { statsDeps } from '@/features/stats/deps';
+import { getGameStatsSummary } from '@/features/stats/useCases/getGameStatsSummary';
 import { STEAM_SESSION_COOKIE } from '@/features/steamAuth/sessionCookie';
 import { steamAuthDeps } from '@/features/steamAuth/deps';
 import { getUserStatus } from '@/features/users/useCases/getUserStatus';
@@ -21,5 +23,8 @@ export default async function ReplayRoutePage({ params }: { params: Promise<{ lo
 	const game = getReplayForViewer(publicReplaysDeps, { gameId, viewerIsAdmin });
 	if (!game) notFound();
 
-	return <ReplayViewer game={game} />;
+	// The episode's statistics, once published, in brief for the viewer's summary.
+	const stats = game.statsId !== null ? getGameStatsSummary(statsDeps, { gameStatsId: game.statsId, topUnits: 8 }) : null;
+
+	return <ReplayViewer game={game} stats={stats} />;
 }

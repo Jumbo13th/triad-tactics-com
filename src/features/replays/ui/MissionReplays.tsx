@@ -6,7 +6,7 @@ import { formatLocalizedDateTime } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
 import type { PublicReplayListItem } from '../domain/api';
 import PlayIcon from './PlayIcon';
-import { terrainName } from './terrainName';
+import { terrainName } from '../domain/terrain';
 
 export default function MissionReplays({ replays }: { replays: PublicReplayListItem[] }) {
 	const t = useTranslations('replays');

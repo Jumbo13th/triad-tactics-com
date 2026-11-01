@@ -20,13 +20,20 @@ import {
 	drawUnconscious,
 	drawVehicle,
 	type LabelBox,
+	type PlateTone,
 } from './mapSymbols';
 import { MARKER_ICONS, NEUTRAL_STYLE, displayColor, markerColor, withAlpha, type SideStyle } from './sideStyle';
 import { drawTopo, type PreparedTopo } from './topoDraw';
+import type { MapLayers } from './viewerSettings';
 
-export type MapLayers = { names: boolean; fire: boolean; markers: boolean; areas: boolean; dead: boolean };
+export type MapPoint = { x: number; z: number };
 
-export type MapCanvasHandle = { fit: () => void; zoom: (factor: number) => void };
+export type MapCanvasHandle = {
+	fit: () => void;
+	zoom: (factor: number) => void;
+	/** Brings these points into view: centred on one, all of them framed for more. */
+	focus: (points: MapPoint[]) => void;
+};
 
 type View = { cx: number; cz: number; scale: number };
 
@@ -35,13 +42,18 @@ type Props = {
 	t: number;
 	relief: HTMLImageElement | null;
 	topo: PreparedTopo | null;
-	follow: number | null;
 	layers: MapLayers;
+	selected: number | null;
+	following: boolean;
 	sideStyle: (side: string | null) => SideStyle;
-	labelFor: (entity: Entity) => string;
+	/** The player who is or was this body, if any. */
+	nicknameOf: (entity: Entity) => string | null;
+	/** A role for a soldier, a type for a vehicle. */
+	nameOf: (entity: Entity) => string;
 	callsignFor: (groupKey: string) => string;
 	contested: string;
-	onFollow: (eid: number | null) => void;
+	onSelect: (eid: number | null) => void;
+	onPan: () => void;
 	handleRef?: Ref<MapCanvasHandle>;
 	ariaLabel: string;
 };
@@ -53,9 +65,13 @@ const SHOT = 10;
 const BLAST_RADIUS: Record<string, number> = { grenade: 12, rocket: 14, shell: 18 };
 const MIN_SCALE = 0.02;
 const MAX_SCALE = 12;
-// Squads are shown by their frame and callsign below this many pixels per metre, and
-// soldiers by name above it.
-const SQUADS_BELOW = 1.2;
+// Names follow the zoom, so a battle of 128 stays readable: none while the view is wide
+// (squad frames instead, if wanted), players' names once soldiers stand apart, and the
+// dead and the AI only up close. Pointing at a unit names it at any zoom.
+const NAMES_FROM = 1.2;
+const DETAIL_FROM = 2;
+// An event is shown close enough to see who was where.
+const FOCUS_SCALE = 0.6;
 const RULER_TOP = 20;
 const RULER_LEFT = 32;
 const RULER_STEPS = [100, 200, 500, 1000, 2000, 5000];
@@ -81,10 +97,16 @@ function activityBounds(model: ReplayModel): [number, number, number, number] {
 }
 
 /** The in-game grid reference: hundreds of metres, three digits per axis. */
-export function gridReference(x: number, z: number): string {
+function gridReference(x: number, z: number): string {
 	if (x < 0 || z < 0) return '— —';
 	const part = (v: number) => String(Math.floor(v / 100)).padStart(3, '0');
 	return `${part(x)} ${part(z)}`;
+}
+
+/** A seated character shoots, kills and is followed from where its vehicle is. */
+export function carrier(model: ReplayModel, entity: Entity, t: number): Entity {
+	const seat = valueAt(entity.seats, t, null);
+	return (seat && valueAt(entity.life, t, 'alive') !== 'dead' && model.entities.get(seat.vehicle)) || entity;
 }
 
 function inside(points: number[], x: number, z: number): boolean {
@@ -97,6 +119,17 @@ function inside(points: number[], x: number, z: number): boolean {
 		if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) hit = !hit;
 	}
 	return hit;
+}
+
+export function centroid(points: number[]): [number, number] {
+	let x = 0;
+	let z = 0;
+	const n = points.length / 2;
+	for (let i = 0; i < points.length; i += 2) {
+		x += points[i];
+		z += points[i + 1];
+	}
+	return [x / n, z / n];
 }
 
 const icons = new Map<string, HTMLImageElement>();
@@ -112,10 +145,11 @@ function markerIcon(src: string, onLoad: () => void): HTMLImageElement | null {
 	return image.complete && image.naturalWidth > 0 ? image : null;
 }
 
-type Plate = { text: string; anchor: number; y: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; muted?: boolean; stack?: boolean };
+// Lower ranks claim their place first when labels would overlap.
+type Plate = { text: string; anchor: number; y: number; rank: number; align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone; stack?: boolean };
 
 export default function MapCanvas(props: Props) {
-	const { model, t, relief, topo, follow, layers, sideStyle, labelFor, callsignFor, contested, onFollow, handleRef, ariaLabel } = props;
+	const { model, t, relief, topo, layers, selected, following, sideStyle, nicknameOf, nameOf, callsignFor, contested, onSelect, onPan, handleRef, ariaLabel } = props;
 	const wrapRef = useRef<HTMLDivElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const scaleBarRef = useRef<HTMLDivElement>(null);
@@ -133,6 +167,8 @@ export default function MapCanvas(props: Props) {
 		pinch: null,
 	});
 	const drawRef = useRef<() => void>(() => undefined);
+	const hoverRef = useRef<{ x: number; y: number } | null>(null);
+	const frameRef = useRef(0);
 
 	const fit = useCallback(() => {
 		const { w, h } = sizeRef.current;
@@ -150,7 +186,22 @@ export default function MapCanvas(props: Props) {
 		drawRef.current();
 	}, []);
 
-	useImperativeHandle(handleRef, () => ({ fit, zoom }), [fit, zoom]);
+	const focus = useCallback((points: MapPoint[]) => {
+		const view = viewRef.current;
+		const { w, h } = sizeRef.current;
+		if (!view || points.length === 0 || w === 0) return;
+		const xs = points.map((p) => p.x);
+		const zs = points.map((p) => p.z);
+		const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
+		// Close enough to read, but never so close that one of the points leaves the screen.
+		const fits = Math.min((w - RULER_LEFT - 160) / Math.max(1, maxX - minX), (h - RULER_TOP - 160) / Math.max(1, maxZ - minZ));
+		view.scale = Math.min(3, Math.max(MIN_SCALE, Math.min(Math.max(view.scale, FOCUS_SCALE), fits)));
+		view.cx = (minX + maxX) / 2;
+		view.cz = (minZ + maxZ) / 2;
+		drawRef.current();
+	}, []);
+
+	useImperativeHandle(handleRef, () => ({ fit, zoom, focus }), [fit, zoom, focus]);
 
 	const draw = useCallback(() => {
 		const canvas = canvasRef.current;
@@ -161,15 +212,12 @@ export default function MapCanvas(props: Props) {
 		const { w, h, dpr } = sizeRef.current;
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-		const followed = follow !== null ? model.entities.get(follow) : undefined;
-		const followedSeat = followed ? valueAt(followed.seats, t, null) : null;
-		const followedLife = followed ? valueAt(followed.life, t, 'alive') : 'alive';
-		// Someone aboard is followed through the vehicle they ride in.
-		const focusEntity = followed && followedSeat && followedLife !== 'dead' ? model.entities.get(followedSeat.vehicle) : followed;
-		const focus = focusEntity ? positionAt(focusEntity, t) : null;
-		if (focus) {
-			view.cx = focus.x;
-			view.cz = focus.z;
+		const chosen = selected !== null ? model.entities.get(selected) : undefined;
+		const shown = chosen ? carrier(model, chosen, t) : undefined;
+		const shownAt = shown ? positionAt(shown, t) : null;
+		if (following && shownAt) {
+			view.cx = shownAt.x;
+			view.cz = shownAt.z;
 		}
 
 		const sx = (x: number) => (x - view.cx) * view.scale + w / 2;
@@ -254,10 +302,10 @@ export default function MapCanvas(props: Props) {
 				ctx.strokeStyle = area.outline ? displayColor(area.outline) : INK;
 				ctx.lineWidth = area.outline ? Math.max(1, Math.min(4, area.width)) : 2;
 				ctx.stroke();
-				if (area.label) {
+				if (layers.areaNames && area.label) {
 					const mid = Math.floor(area.points.length / 4) * 2;
 					const at = area.open ? [area.points[mid], area.points[mid + 1]] : centroid(area.points);
-					plates.push({ text: area.label, anchor: sx(at[0]) + 8, y: sy(at[1]), muted: true });
+					plates.push({ text: area.label, anchor: sx(at[0]) + 8, y: sy(at[1]), rank: 6, tone: 'soft' });
 				}
 			}
 			for (const zone of model.zones.values()) {
@@ -291,11 +339,11 @@ export default function MapCanvas(props: Props) {
 				ctx.lineJoin = 'round';
 				ctx.stroke();
 				ctx.setLineDash([]);
-				if (zone.label) {
+				if (layers.areaNames && zone.label) {
 					const [cx] = centroid(zone.points);
 					let highest = -Infinity;
 					for (let i = 1; i < zone.points.length; i += 2) highest = Math.max(highest, zone.points[i]);
-					plates.push({ text: contesting ? `${zone.label} · ${contested}` : zone.label, anchor: sx(cx), y: sy(highest) - 12, align: 'center' });
+					plates.push({ text: contesting ? `${zone.label} · ${contested}` : zone.label, anchor: sx(cx), y: sy(highest) - 12, rank: 6, align: 'center' });
 				}
 			}
 		}
@@ -310,7 +358,7 @@ export default function MapCanvas(props: Props) {
 				const image = color && MARKER_ICONS.has(marker.icon) ? markerIcon(`/markers/icons/${marker.icon}-${color}.png`, redraw) : null;
 				if (image) ctx.drawImage(image, x - 12, y - 12, 24, 24);
 				else drawFallbackMarker(ctx, x, y, marker.color ? displayColor(marker.color) : '#ee322e');
-				if (marker.text) drawMarkerText(ctx, marker.text, x + (image ? 14 : 10), y);
+				if (layers.markerText && marker.text) drawMarkerText(ctx, marker.text, x + (image ? 14 : 10), y);
 			}
 		}
 
@@ -320,6 +368,8 @@ export default function MapCanvas(props: Props) {
 				if (man.life !== 'dead') continue;
 				drawCorpse(ctx, man.x, man.y);
 				hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
+				const nickname = layers.nicknames && view.scale >= DETAIL_FROM && man.entity.eid !== selected ? nicknameOf(man.entity) : null;
+				if (nickname) plates.push({ text: nickname, anchor: man.x + 8, y: man.y, rank: 4, tone: 'dim' });
 			}
 		}
 		const vehicles: { entity: Entity; x: number; y: number; wreck: boolean }[] = [];
@@ -375,6 +425,10 @@ export default function MapCanvas(props: Props) {
 			if (man.life === 'unconscious') drawUnconscious(ctx, man.x, man.y, style);
 			else drawSoldier(ctx, man.x, man.y, man.h, style);
 			hits.push({ eid: man.entity.eid, x: man.x, y: man.y });
+			if (man.entity.eid === selected || view.scale < NAMES_FROM) continue;
+			const nickname = layers.nicknames ? nicknameOf(man.entity) : null;
+			if (nickname) plates.push({ text: nickname, anchor: man.x + 10, y: man.y, rank: 1 });
+			else if (layers.aiRoles && view.scale >= DETAIL_FROM) plates.push({ text: nameOf(man.entity), anchor: man.x + 10, y: man.y, rank: 5, tone: 'soft' });
 		}
 
 		for (const vehicle of vehicles) {
@@ -388,18 +442,18 @@ export default function MapCanvas(props: Props) {
 				ctx.strokeStyle = '#5c5024';
 				ctx.lineWidth = 1.25;
 				ctx.stroke();
-				if (layers.names) plates.push({ text: labelFor(entity), anchor: x + 10, y });
 			} else {
 				drawVehicle(ctx, x, y, sideStyle(entity.side), false);
 				const crew = crews.get(entity.eid);
 				if (crew) drawCrew(ctx, x, y, crew);
-				if (layers.names) plates.push({ text: labelFor(entity), anchor: x + 19, y });
 			}
 			hits.push({ eid: entity.eid, x, y });
+			if (layers.vehicleNames && view.scale >= NAMES_FROM && entity.eid !== selected) {
+				plates.push({ text: nameOf(entity), anchor: x + (entity.kind === 'tracker' ? 10 : 19), y, rank: 2, tone: 'soft' });
+			}
 		}
 
-		const wide = view.scale < SQUADS_BELOW;
-		if (wide) {
+		if (layers.squads && view.scale < NAMES_FROM) {
 			// Squads standing together are set side by side, as on a paper map, rather than
 			// drawn over one another.
 			const placed: { x: number; y: number }[] = [];
@@ -408,31 +462,48 @@ export default function MapCanvas(props: Props) {
 				while (placed.some((p) => Math.abs(p.x - squad.x) < 24 && Math.abs(p.y - squad.y) < 24)) squad.x += 26;
 				placed.push(squad);
 				drawSquad(ctx, squad.x, squad.y, sideStyle(squad.side));
-			}
-			if (layers.names) {
-				for (const squad of ordered) plates.push({ text: callsignFor(squad.key), anchor: squad.x + 17, y: squad.y, stack: true });
-			}
-		} else if (layers.names) {
-			for (const man of men) {
-				if (man.life === 'dead' || man.entity.eid === follow) continue;
-				plates.push({ text: labelFor(man.entity), anchor: man.x + 10, y: man.y });
+				plates.push({ text: callsignFor(squad.key), anchor: squad.x + 17, y: squad.y, rank: 3, stack: true });
 			}
 		}
 
-		// The followed unit's name is always shown, to its left, and claims its place first.
-		let followedPlate: Plate | null = null;
-		if (focusEntity && focus) {
-			const x = sx(focus.x);
-			const y = sy(focus.z);
-			const onVehicle = focusEntity !== followed;
-			drawBrackets(ctx, x, y, onVehicle || focusEntity.kind !== 'man' ? 18 : 13);
-			if (followed) followedPlate = { text: labelFor(followed), anchor: x - (onVehicle || followed.kind !== 'man' ? 23 : 18), y, align: 'right', outlined: true };
+		// The unit under the pointer is named whatever the zoom, so names need not crowd the map.
+		const hover = hoverRef.current;
+		let hovered: { eid: number; x: number; y: number; d: number } | null = null;
+		if (hover) {
+			for (const hit of hits) {
+				const d = Math.hypot(hit.x - hover.x, hit.y - hover.y);
+				if (d <= 14 && (!hovered || d < hovered.d)) hovered = { ...hit, d };
+			}
+		}
+		const pointed = hovered && hovered.eid !== selected ? model.entities.get(hovered.eid) : undefined;
+		if (hovered && pointed) {
+			const name = pointed.kind === 'man' ? (nicknameOf(pointed) ?? nameOf(pointed)) : nameOf(pointed);
+			plates.push({ text: name, anchor: hovered.x + (pointed.kind === 'man' ? 12 : 21), y: hovered.y, rank: 0 });
+		}
+		canvas.style.cursor = hovered ? 'pointer' : 'grab';
+
+		// The selected unit is bracketed and always named, to its left, before any other label.
+		if (chosen && shown && shownAt) {
+			const x = sx(shownAt.x);
+			const y = sy(shownAt.z);
+			const framed = shown !== chosen || shown.kind !== 'man';
+			drawBrackets(ctx, x, y, framed ? 18 : 13);
+			const name = chosen.kind === 'man' ? (nicknameOf(chosen) ?? nameOf(chosen)) : nameOf(chosen);
+			plates.push({ text: name, anchor: x - (framed ? 23 : 18), y, rank: 0, align: 'right', outlined: true });
 		}
 		const taken: LabelBox[] = [];
-		for (const plate of followedPlate ? [followedPlate, ...plates] : plates) {
+		plates.sort((a, b) => a.rank - b.rank);
+		for (const plate of plates) {
 			// A callsign that would cover another tries the rows just below and above first.
 			for (const dy of plate.stack ? [0, 17, -17, 34] : [0]) {
-				if (drawPlate(ctx, plate.text, plate.anchor, plate.y + dy, { align: plate.align, outlined: plate.outlined, muted: plate.muted, taken })) break;
+				const drawn = drawPlate(ctx, plate.text, plate.anchor, plate.y + dy, {
+					align: plate.align,
+					outlined: plate.outlined,
+					tone: plate.tone,
+					taken,
+					force: plate.rank === 0,
+				});
+				if (drawn) break;
 			}
 		}
 
@@ -446,12 +517,14 @@ export default function MapCanvas(props: Props) {
 		if (scaleFullRef.current) scaleFullRef.current.textContent = unit(metres);
 
 		hitsRef.current = hits;
-	}, [model, t, relief, topo, follow, layers, sideStyle, labelFor, callsignFor, contested]);
+	}, [model, t, relief, topo, layers, selected, following, sideStyle, nicknameOf, nameOf, callsignFor, contested]);
 
 	useEffect(() => {
 		drawRef.current = draw;
 		draw();
 	}, [draw]);
+
+	useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
 
 	useEffect(() => {
 		const wrap = wrapRef.current;
@@ -513,11 +586,26 @@ export default function MapCanvas(props: Props) {
 		drag.pinch = null;
 	};
 
+	// Pointer moves redraw at most once a frame, however fast the events come.
+	const requestDraw = () => {
+		if (frameRef.current) return;
+		frameRef.current = requestAnimationFrame(() => {
+			frameRef.current = 0;
+			drawRef.current();
+		});
+	};
+
 	const onPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
 		showPointer(event.clientX, event.clientY, event.currentTarget);
 		const drag = dragRef.current;
 		const view = viewRef.current;
+		if (!drag.pointers.has(event.pointerId) && event.pointerType === 'mouse') {
+			const rect = event.currentTarget.getBoundingClientRect();
+			hoverRef.current = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+			requestDraw();
+		}
 		if (!drag.pointers.has(event.pointerId) || !view) return;
+		hoverRef.current = null;
 		drag.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
 		if (drag.pointers.size === 2) {
 			const [p, q] = [...drag.pointers.values()];
@@ -531,7 +619,7 @@ export default function MapCanvas(props: Props) {
 		const dx = event.clientX - drag.x;
 		const dy = event.clientY - drag.y;
 		if (!drag.moved && Math.hypot(dx, dy) < 4) return;
-		if (!drag.moved && follow !== null) onFollow(null);
+		if (!drag.moved) onPan();
 		drag.moved = true;
 		view.cx -= dx / view.scale;
 		view.cz += dy / view.scale;
@@ -552,9 +640,9 @@ export default function MapCanvas(props: Props) {
 		let best: { eid: number; d: number } | null = null;
 		for (const hit of hitsRef.current) {
 			const d = Math.hypot(hit.x - x, hit.y - y);
-			if (d <= 12 && (!best || d < best.d)) best = { eid: hit.eid, d };
+			if (d <= 14 && (!best || d < best.d)) best = { eid: hit.eid, d };
 		}
-		if (best) onFollow(best.eid);
+		onSelect(best ? best.eid : null);
 	};
 
 	return (
@@ -563,14 +651,15 @@ export default function MapCanvas(props: Props) {
 				ref={canvasRef}
 				role="img"
 				aria-label={ariaLabel}
-				className="block h-full w-full touch-none select-none"
-				style={{ cursor: 'grab' }}
+				className="block h-full w-full cursor-grab touch-none select-none"
 				onPointerDown={onPointerDown}
 				onPointerMove={onPointerMove}
 				onPointerUp={onPointerUp}
 				onPointerCancel={onPointerUp}
 				onPointerLeave={() => {
 					if (pointerRef.current) pointerRef.current.textContent = '— —';
+					hoverRef.current = null;
+					requestDraw();
 				}}
 			/>
 			<div
@@ -600,23 +689,6 @@ export default function MapCanvas(props: Props) {
 			</div>
 		</div>
 	);
-}
-
-function centroid(points: number[]): [number, number] {
-	let x = 0;
-	let z = 0;
-	const n = points.length / 2;
-	for (let i = 0; i < points.length; i += 2) {
-		x += points[i];
-		z += points[i + 1];
-	}
-	return [x / n, z / n];
-}
-
-/** A seated character shoots and kills from where its vehicle is. */
-function carrier(model: ReplayModel, entity: Entity, t: number): Entity {
-	const seat = valueAt(entity.seats, t, null);
-	return (seat && model.entities.get(seat.vehicle)) || entity;
 }
 
 // Rulers along the top and left edges, labelled like the in-game grid reference.

@@ -98,6 +98,11 @@ export const Icon = {
 			<path d="M6 9l6 6 6-6" />
 		</Stroke>
 	),
+	ChevronUp: ({ size = 16 }: IconProps) => (
+		<Stroke size={size}>
+			<path d="M6 15l6-6 6 6" />
+		</Stroke>
+	),
 	ChevronRight: ({ size = 16 }: IconProps) => (
 		<Stroke size={size}>
 			<path d="M9 6l6 6-6 6" />
@@ -191,6 +196,34 @@ export const Icon = {
 		<Stroke size={size}>
 			<path d="M12 3l9.5 17h-19z" />
 			<path d="M12 10v4.5M12 17.5v.5" />
+		</Stroke>
+	),
+	PanelLeft: ({ size = 18 }: IconProps) => (
+		<Stroke size={size}>
+			<rect x="3" y="4" width="18" height="16" rx="2" />
+			<path d="M9 4v16" />
+		</Stroke>
+	),
+	PanelRight: ({ size = 18 }: IconProps) => (
+		<Stroke size={size}>
+			<rect x="3" y="4" width="18" height="16" rx="2" />
+			<path d="M15 4v16" />
+		</Stroke>
+	),
+	Maximize: ({ size = 18 }: IconProps) => (
+		<Stroke size={size}>
+			<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+		</Stroke>
+	),
+	Minimize: ({ size = 18 }: IconProps) => (
+		<Stroke size={size}>
+			<path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" />
+		</Stroke>
+	),
+	Keyboard: ({ size = 18 }: IconProps) => (
+		<Stroke size={size}>
+			<rect x="2.5" y="6" width="19" height="12" rx="2" />
+			<path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9" />
 		</Stroke>
 	),
 	Kill: ({ size = 16 }: IconProps) => (

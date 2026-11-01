@@ -1,5 +1,5 @@
 import type { ReplayPlayer } from './domain/players';
-import type { ReplaySearch } from './domain/search';
+import type { ReplayFacets, ReplayGameFilter, ReplaySort } from './domain/search';
 import type {
 	EpisodeReplay,
 	PublicReplayListItem,
@@ -29,10 +29,11 @@ export type ReplayRepo = {
 	setPublished: (id: number, publishedBySteamid64: string | null) => void;
 	markAnnounced: (id: number) => void;
 	findEpisodeStats: (missionId: number, episodeNumber: number) => ReplayEpisodeStats | null;
-	listPublishedGames: (input: { limit: number; offset: number }) => PublicReplayListItem[];
-	/** Newest game first, by when it was played. */
-	searchPublishedGames: (input: { search: ReplaySearch; limit: number; offset: number }) => PublicReplaySearchItem[];
-	countPublishedGames: (search: ReplaySearch) => number;
+	/** Ordered by when the games were played, or by player count with the newest first among equals. */
+	searchPublishedGames: (input: { filter: ReplayGameFilter; sort: ReplaySort; limit: number; offset: number }) => PublicReplaySearchItem[];
+	countPublishedGames: (filter: ReplayGameFilter) => number;
+	/** Each terrain once, however mission worlds spell its folder; in no particular order. */
+	listPublishedFacets: () => ReplayFacets;
 	findPublishedGame: (id: number) => PublicReplayListItem | null;
 	/** One per episode that has a published game: the newest when there are several. */
 	findEpisodeReplays: (episodes: { missionId: number; episodeNumber: number }[]) => EpisodeReplay[];
@@ -104,9 +105,9 @@ export type AdminReplaysDeps = {
 export type PublicReplaysDeps = {
 	repo: Pick<
 		ReplayRepo,
-		| 'listPublishedGames'
 		| 'searchPublishedGames'
 		| 'countPublishedGames'
+		| 'listPublishedFacets'
 		| 'findPublishedGame'
 		| 'findEpisodeReplays'
 		| 'listMissionReplays'

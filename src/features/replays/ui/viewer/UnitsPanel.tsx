@@ -9,24 +9,26 @@ import { DEAD_STYLE, type SideStyle } from './sideStyle';
 
 type Props = {
 	model: ReplayModel;
-	/** Whole seconds of mission time, so the list redraws once a second. */
+	/** Whole seconds of mission time, so the list redraws at most once a second. */
 	second: number;
-	follow: number | null;
+	selected: number | null;
+	following: boolean;
 	sideName: (key: string) => string;
 	sideStyle: (side: string | null) => SideStyle;
 	callsignFor: (groupKey: string) => string;
-	playerName: (eid: number, t: number) => string | null;
+	nicknameOf: (entity: Entity) => string | null;
 	roleName: (entity: Entity) => string;
 	vehicleName: (eid: number) => string;
-	onFollow: (eid: number) => void;
+	onPick: (eid: number) => void;
 };
 
-type Member = { entity: Entity; life: Life; player: string | null; role: string };
-type Squad = { key: string; side: string; callsign: string; members: Member[]; matched: Member[] };
+type Member = { entity: Entity; life: Life; nickname: string | null; role: string };
+type Squad = { key: string; callsign: string; members: Member[]; matched: Member[] };
 type Vehicle = { entity: Entity; name: string; wreck: boolean; crew: number };
 type SideView = { key: string; alive: number; total: number; squads: Squad[]; vehicles: Vehicle[] };
 
 const eyebrow = 'text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em]';
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)]';
 
 function present(entity: Entity, now: number): boolean {
 	if (entity.appearedAt > now) return false;
@@ -35,13 +37,13 @@ function present(entity: Entity, now: number): boolean {
 }
 
 export default function UnitsPanel(props: Props) {
-	const { model, second, follow, sideName, sideStyle, callsignFor, playerName, roleName, vehicleName, onFollow } = props;
+	const { model, second, selected, following, sideName, sideStyle, callsignFor, nicknameOf, roleName, vehicleName, onPick } = props;
 	const t = useTranslations('replayViewer');
 	const [query, setQuery] = useState('');
-	const [sideFilter, setSideFilter] = useState<string | null>(null);
-	const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+	const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
+	const [closedSides, setClosedSides] = useState<ReadonlySet<string>>(() => new Set());
 	const listRef = useRef<HTMLDivElement>(null);
-	const followedRef = useRef<HTMLButtonElement>(null);
+	const pickedRef = useRef<HTMLButtonElement>(null);
 	const now = second * 10;
 	const needle = query.trim().toLocaleLowerCase();
 
@@ -66,13 +68,13 @@ export default function UnitsPanel(props: Props) {
 			if (!group) continue;
 			let squad = squads.get(group.key);
 			if (!squad) {
-				squad = { key: group.key, side: side.key, callsign: callsignFor(group.key), members: [], matched: [] };
+				squad = { key: group.key, callsign: callsignFor(group.key), members: [], matched: [] };
 				squads.set(group.key, squad);
 				side.squads.push(squad);
 			}
-			const member = { entity, life, player: playerName(entity.eid, now), role: roleName(entity) };
+			const member = { entity, life, nickname: nicknameOf(entity), role: roleName(entity) };
 			squad.members.push(member);
-			if (matches(member.player) || matches(member.role)) squad.matched.push(member);
+			if (matches(member.nickname) || matches(member.role)) squad.matched.push(member);
 		}
 		for (const entity of model.entities.values()) {
 			if (entity.kind === 'man' || entity.kind === 'tracker' || !present(entity, now)) continue;
@@ -87,44 +89,42 @@ export default function UnitsPanel(props: Props) {
 			if (needle !== '') side.squads = side.squads.filter((squad) => matches(squad.callsign) || squad.matched.length > 0);
 		}
 		return [...bySide.values()].filter((side) => side.total > 0 || side.vehicles.length > 0);
-	}, [model, now, needle, callsignFor, playerName, roleName, vehicleName]);
+	}, [model, now, needle, callsignFor, nicknameOf, roleName, vehicleName]);
 
-	const followedGroup = useMemo(() => {
-		const entity = follow !== null ? model.entities.get(follow) : undefined;
+	const pickedGroup = useMemo(() => {
+		const entity = selected !== null ? model.entities.get(selected) : undefined;
 		if (!entity) return null;
 		if (entity.kind !== 'man') return `vehicles:${entity.side ?? ''}`;
 		return entity.groups.get(segmentAt(model, now)) ?? null;
-	}, [model, follow, now]);
+	}, [model, selected, now]);
+	const pickedSide = selected !== null ? (model.entities.get(selected)?.side ?? null) : null;
 
-	// The list follows the followed unit, without moving the page around it.
+	// The list keeps the picked unit in view, without moving the page around it.
 	useEffect(() => {
 		const list = listRef.current;
-		const row = followedRef.current;
+		const row = pickedRef.current;
 		if (!list || !row) return;
 		// The list is positioned, so offsets inside it are measured from its top.
 		const top = row.offsetTop;
-		if (top < list.scrollTop + 40 || top + row.offsetHeight > list.scrollTop + list.clientHeight) {
-			list.scrollTop = top - list.clientHeight / 3;
-		}
-	}, [follow]);
+		if (top < list.scrollTop + 40 || top + row.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = top - list.clientHeight / 3;
+	}, [selected]);
 
-	const toggle = (key: string) =>
-		setExpanded((current) => {
-			const next = new Set(current);
-			if (next.has(key)) next.delete(key);
-			else next.add(key);
-			return next;
-		});
-	const isOpen = (key: string) => needle !== '' || expanded.has(key) || key === followedGroup;
-	const shown = sides.filter((side) => sideFilter === null || side.key === sideFilter);
-	const columns = Math.min(3, Math.max(1, sides.length));
+	const flip = (set: ReadonlySet<string>, key: string) => {
+		const next = new Set(set);
+		if (next.has(key)) next.delete(key);
+		else next.add(key);
+		return next;
+	};
+	const isOpen = (key: string) => needle !== '' || open.has(key) || key === pickedGroup;
+	const sideOpen = (key: string) => needle !== '' || !closedSides.has(key) || key === pickedSide;
+	const empty = sides.every((side) => side.squads.length === 0 && side.vehicles.length === 0);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="flex flex-col gap-[8px] border-b border-[#1e1e1e] p-[12px]">
+			<div className="border-b border-[#1e1e1e] p-[10px]">
 				<label className="relative block">
 					<span className="sr-only">{t('searchUnits')}</span>
-					<span className="pointer-events-none absolute left-[12px] top-[14px] flex text-neutral-400">
+					<span className="pointer-events-none absolute left-[10px] top-[12px] flex text-neutral-400">
 						<Icon.Search size={16} />
 					</span>
 					<input
@@ -132,141 +132,135 @@ export default function UnitsPanel(props: Props) {
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder={t('searchUnits')}
-						className="block h-[44px] w-full rounded-[4px] border border-[#666666] bg-[#1a1a1a] pl-[36px] pr-[12px] text-[13px] leading-[18px] text-neutral-100 placeholder:text-neutral-400 focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--accent)]"
+						className="block h-[40px] w-full rounded-[4px] border border-[#2c2c2c] bg-[#1a1a1a] pl-[34px] pr-[10px] text-[13px] leading-[18px] text-neutral-100 placeholder:text-neutral-500 hover:border-[#666666] focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--accent)]"
 					/>
 				</label>
-				<div role="group" aria-label={t('filterSides')} className="grid gap-[6px]" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-					{sides.map((side) => {
-						const style = sideStyle(side.key);
-						const active = sideFilter === side.key;
-						const name = sideName(side.key);
-						return (
-							<button
-								key={side.key}
-								type="button"
-								aria-pressed={active}
-								aria-label={t('sideAlive', { side: name, alive: side.alive, total: side.total })}
-								onClick={() => setSideFilter(active ? null : side.key)}
-								className={
-									'flex min-h-[56px] min-w-0 flex-col items-stretch gap-[2px] rounded-[4px] border px-[8px] py-[7px] text-left ' +
-									(active ? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)]' : 'border-[#2c2c2c] bg-[#1a1a1a] hover:border-[#666666] hover:bg-[#242424]')
-								}
-							>
-								<span className={'truncate text-[11px] font-semibold leading-[14px] ' + (active ? 'text-[color:var(--accent)]' : 'text-neutral-300')}>{name}</span>
-								<span className="text-[13px] font-semibold leading-[18px] tabular-nums text-neutral-100">
-									{side.alive}
-									<span className="font-medium text-neutral-400">/{side.total}</span>
-								</span>
-								<span className="block h-[3px] overflow-hidden rounded-[2px] bg-[#2c2c2c]">
-									<span className="block h-[3px]" style={{ width: `${side.total ? (side.alive / side.total) * 100 : 0}%`, background: style.fill }} />
-								</span>
-							</button>
-						);
-					})}
-				</div>
 			</div>
 
-			<div ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[8px] pb-[12px]">
-				{shown.every((side) => side.squads.length === 0 && side.vehicles.length === 0) ? (
-					<p className="px-[8px] py-[16px] text-[13px] leading-[18px] text-neutral-400">
-						{needle !== '' ? t('noUnitMatches', { query: query.trim() }) : t('noUnits')}
-					</p>
+			<div ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto px-[6px] pb-[12px]">
+				{empty ? (
+					<p className="px-[8px] py-[16px] text-[13px] leading-[18px] text-neutral-400">{needle !== '' ? t('noUnitMatches', { query: query.trim() }) : t('noUnits')}</p>
 				) : null}
-				{shown.map((side) => {
-					const style = sideStyle(side.key);
+				{sides.map((side) => {
 					if (side.squads.length === 0 && side.vehicles.length === 0) return null;
+					const style = sideStyle(side.key);
+					const expanded = sideOpen(side.key);
 					const vehiclesKey = `vehicles:${side.key}`;
 					return (
 						<section key={side.key} aria-label={sideName(side.key)}>
-							<h3 className={`sticky top-0 z-[1] flex items-center justify-between gap-[8px] bg-[#121212] px-[8px] pb-[6px] pt-[12px] text-neutral-400 ${eyebrow}`}>
-								<span className="flex min-w-0 items-center gap-[6px] text-neutral-300">
+							<h3 className="sticky top-0 z-[1] bg-[#121212] pt-[6px]">
+								<button
+									type="button"
+									aria-expanded={expanded}
+									onClick={() => setClosedSides((current) => flip(current, side.key))}
+									className={`flex min-h-[36px] w-full items-center gap-[6px] rounded-[4px] px-[6px] text-left hover:bg-[#1a1a1a] ${focusRing}`}
+								>
+									<span className="flex text-neutral-500">{expanded ? <Icon.ChevronDown size={14} /> : <Icon.ChevronRight size={14} />}</span>
 									<DiamondGlyph style={style} />
-									<span className="truncate">{sideName(side.key)}</span>
-								</span>
-								<span className="shrink-0 tabular-nums">{t('aliveOf', { alive: side.alive, total: side.total })}</span>
+									<span className={`min-w-0 flex-1 truncate text-neutral-300 ${eyebrow}`}>{sideName(side.key)}</span>
+									<span className="shrink-0 text-[12px] font-semibold tabular-nums text-neutral-400">
+										{side.alive}/{side.total}
+										<span className="sr-only"> {t('alive')}</span>
+									</span>
+								</button>
 							</h3>
-							{side.squads.map((squad) => {
-								const open = isOpen(squad.key);
-								const members = needle !== '' && squad.matched.length > 0 && !squad.callsign.toLocaleLowerCase().includes(needle) ? squad.matched : squad.members;
-								return (
-									<div key={squad.key}>
-										<GroupRow
-											name={squad.callsign}
-											open={open}
-											states={squad.members.map((member) => member.life)}
-											style={style}
-											glyph="squad"
-											onToggle={() => toggle(squad.key)}
-										/>
-										{open ? (
-											<ul>
-												{members.map((member) => {
-													const seat = valueAt(member.entity.seats, now, null);
-													const died = member.life === 'dead' ? member.entity.life[member.entity.life.length - 1]?.t : null;
-													const detail = [member.role];
-													if (member.life === 'unconscious') detail.push(t('unconscious'));
-													if (member.life === 'dead') detail.push(t('killedAt', { time: formatMissionTime(died ?? now) }));
-													else if (seat) detail.push(t('inVehicle', { vehicle: vehicleName(seat.vehicle), role: t(`seat_${seat.role}`) }));
-													const followed = member.entity.eid === follow;
-													return (
-														<li key={member.entity.eid}>
-															<UnitRow
-																ref={followed ? followedRef : undefined}
-																glyph={member.life === 'dead' ? <DeadGlyph /> : member.life === 'unconscious' ? <UnconsciousGlyph style={style} /> : <DotGlyph style={style} />}
-																name={member.player ?? t('ai')}
-																muted={member.life === 'dead' || member.player === null}
-																detail={detail.join(' · ')}
-																followed={followed}
-																followingLabel={t('following')}
-																onClick={() => onFollow(member.entity.eid)}
-															/>
-														</li>
-													);
-												})}
-											</ul>
-										) : null}
-									</div>
-								);
-							})}
-							{side.vehicles.length > 0 ? (
-								<div>
-									<GroupRow
-										name={t('vehicles')}
-										open={isOpen(vehiclesKey)}
-										states={side.vehicles.map((vehicle) => (vehicle.wreck ? 'dead' : 'alive'))}
-										style={style}
-										glyph="vehicle"
-										onToggle={() => toggle(vehiclesKey)}
-									/>
-									{isOpen(vehiclesKey) ? (
-										<ul>
-											{side.vehicles.map((vehicle) => {
-												const destroyed = vehicle.wreck ? vehicle.entity.life[vehicle.entity.life.length - 1]?.t : null;
-												const followed = vehicle.entity.eid === follow;
-												return (
-													<li key={vehicle.entity.eid}>
-														<UnitRow
-															ref={followed ? followedRef : undefined}
-															glyph={<VehicleGlyph style={vehicle.wreck ? DEAD_STYLE : style} size={14} />}
-															name={vehicle.name}
-															muted={vehicle.wreck}
-															detail={
-																vehicle.wreck
-																	? t('destroyedAt', { time: formatMissionTime(destroyed ?? now) })
-																	: vehicle.crew > 0
-																		? t('aboard', { count: vehicle.crew })
-																		: t('empty')
-															}
-															followed={followed}
-															followingLabel={t('following')}
-															onClick={() => onFollow(vehicle.entity.eid)}
-														/>
-													</li>
-												);
-											})}
-										</ul>
+							{expanded ? (
+								<>
+									{side.squads.map((squad) => {
+										const squadOpen = isOpen(squad.key);
+										const members = needle !== '' && squad.matched.length > 0 && !squad.callsign.toLocaleLowerCase().includes(needle) ? squad.matched : squad.members;
+										const alive = squad.members.filter((member) => member.life !== 'dead').length;
+										return (
+											<div key={squad.key}>
+												<GroupRow
+													name={squad.callsign}
+													open={squadOpen}
+													alive={alive}
+													total={squad.members.length}
+													glyph={<SquadGlyph style={style} size={14} />}
+													onToggle={() => setOpen((current) => flip(current, squad.key))}
+												/>
+												{squadOpen ? (
+													<ul>
+														{members.map((member) => {
+															const seat = valueAt(member.entity.seats, now, null);
+															const died = member.life === 'dead' ? member.entity.life[member.entity.life.length - 1]?.t : null;
+															const detail = member.nickname ? [member.role] : [];
+															if (member.life === 'unconscious') detail.push(t('unconscious'));
+															if (member.life === 'dead') detail.push(t('killedAt', { time: formatMissionTime(died ?? now) }));
+															else if (seat) detail.push(t('inVehicle', { vehicle: vehicleName(seat.vehicle), role: t(`seat_${seat.role}`) }));
+															const picked = member.entity.eid === selected;
+															return (
+																<li key={member.entity.eid}>
+																	<UnitRow
+																		ref={picked ? pickedRef : undefined}
+																		glyph={
+																			member.life === 'dead' ? (
+																				<DeadGlyph size={10} />
+																			) : member.life === 'unconscious' ? (
+																				<UnconsciousGlyph style={style} size={10} />
+																			) : (
+																				<DotGlyph style={style} size={10} />
+																			)
+																		}
+																		name={member.nickname ?? member.role}
+																		muted={member.life === 'dead' || member.nickname === null}
+																		detail={detail.join(' · ')}
+																		picked={picked}
+																		following={picked && following}
+																		followingLabel={t('following')}
+																		onClick={() => onPick(member.entity.eid)}
+																	/>
+																</li>
+															);
+														})}
+													</ul>
+												) : null}
+											</div>
+										);
+									})}
+									{side.vehicles.length > 0 ? (
+										<div>
+											<GroupRow
+												name={t('vehicles')}
+												open={isOpen(vehiclesKey)}
+												alive={side.vehicles.filter((vehicle) => !vehicle.wreck).length}
+												total={side.vehicles.length}
+												glyph={<VehicleGlyph style={style} size={14} />}
+												onToggle={() => setOpen((current) => flip(current, vehiclesKey))}
+											/>
+											{isOpen(vehiclesKey) ? (
+												<ul>
+													{side.vehicles.map((vehicle) => {
+														const destroyed = vehicle.wreck ? vehicle.entity.life[vehicle.entity.life.length - 1]?.t : null;
+														const picked = vehicle.entity.eid === selected;
+														return (
+															<li key={vehicle.entity.eid}>
+																<UnitRow
+																	ref={picked ? pickedRef : undefined}
+																	glyph={<VehicleGlyph style={vehicle.wreck ? DEAD_STYLE : style} size={12} />}
+																	name={vehicle.name}
+																	muted={vehicle.wreck}
+																	detail={
+																		vehicle.wreck
+																			? t('destroyedAt', { time: formatMissionTime(destroyed ?? now) })
+																			: vehicle.crew > 0
+																				? t('aboard', { count: vehicle.crew })
+																				: t('empty')
+																	}
+																	picked={picked}
+																	following={picked && following}
+																	followingLabel={t('following')}
+																	onClick={() => onPick(vehicle.entity.eid)}
+																/>
+															</li>
+														);
+													})}
+												</ul>
+											) : null}
+										</div>
 									) : null}
-								</div>
+								</>
 							) : null}
 						</section>
 					);
@@ -276,52 +270,15 @@ export default function UnitsPanel(props: Props) {
 	);
 }
 
-function GroupRow({
-	name,
-	open,
-	states,
-	style,
-	glyph,
-	onToggle,
-}: {
-	name: string;
-	open: boolean;
-	states: Life[];
-	style: SideStyle;
-	glyph: 'squad' | 'vehicle';
-	onToggle: () => void;
-}) {
+function GroupRow({ name, open, alive, total, glyph, onToggle }: { name: string; open: boolean; alive: number; total: number; glyph: ReactNode; onToggle: () => void }) {
 	const t = useTranslations('replayViewer');
-	const alive = states.filter((state) => state !== 'dead').length;
 	return (
-		<button
-			type="button"
-			aria-expanded={open}
-			onClick={onToggle}
-			className="flex min-h-[44px] w-full items-center gap-[8px] rounded-[4px] px-[8px] py-[4px] text-left hover:bg-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)]"
-		>
-			<span className="flex text-neutral-400">{open ? <Icon.ChevronDown size={16} /> : <Icon.ChevronRight size={16} />}</span>
-			{glyph === 'vehicle' ? <VehicleGlyph style={style} /> : <SquadGlyph style={style} />}
+		<button type="button" aria-expanded={open} onClick={onToggle} className={`flex min-h-[36px] w-full items-center gap-[8px] rounded-[4px] pl-[18px] pr-[6px] text-left hover:bg-[#1a1a1a] ${focusRing}`}>
+			<span className="flex text-neutral-500">{open ? <Icon.ChevronDown size={14} /> : <Icon.ChevronRight size={14} />}</span>
+			{glyph}
 			<span className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-[18px] text-neutral-100">{name}</span>
-			{states.length <= 10 ? (
-				<span aria-hidden="true" className="flex gap-[3px]">
-					{states.map((state, i) => (
-						<span
-							key={i}
-							className="size-[6px] rounded-full"
-							style={
-								state === 'dead'
-									? { background: '#4d4d4d' }
-									: state === 'unconscious'
-										? { background: '#ffffff', boxShadow: `inset 0 0 0 1.5px ${style.fill}` }
-										: { background: style.fill }
-							}
-						/>
-					))}
-				</span>
-			) : null}
-			<span className="min-w-[28px] text-right text-[12px] font-semibold leading-[16px] tabular-nums text-neutral-300">
-				{alive}/{states.length}
+			<span className={'shrink-0 text-[12px] font-semibold tabular-nums ' + (alive === 0 ? 'text-neutral-500' : alive < total ? 'text-neutral-300' : 'text-neutral-400')}>
+				{alive}/{total}
 				<span className="sr-only"> {t('alive')}</span>
 			</span>
 		</button>
@@ -334,7 +291,8 @@ function UnitRow({
 	name,
 	muted,
 	detail,
-	followed,
+	picked,
+	following,
 	followingLabel,
 	onClick,
 }: {
@@ -343,7 +301,8 @@ function UnitRow({
 	name: string;
 	muted: boolean;
 	detail: string;
-	followed: boolean;
+	picked: boolean;
+	following: boolean;
 	followingLabel: string;
 	onClick: () => void;
 }) {
@@ -351,19 +310,19 @@ function UnitRow({
 		<button
 			ref={ref}
 			type="button"
-			aria-pressed={followed}
+			aria-pressed={picked}
 			onClick={onClick}
 			className={
-				'flex min-h-[44px] w-full items-center gap-[10px] rounded-[4px] py-[4px] pl-[34px] pr-[8px] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--accent)] ' +
-				(followed ? 'bg-[rgba(210,184,83,0.12)] shadow-[inset_0_0_0_1px_rgba(210,184,83,0.5)]' : 'hover:bg-[#1a1a1a]')
+				`flex min-h-[36px] w-full items-center gap-[8px] rounded-[4px] py-[3px] pl-[44px] pr-[6px] text-left ${focusRing} ` +
+				(picked ? 'bg-[rgba(210,184,83,0.12)] shadow-[inset_0_0_0_1px_rgba(210,184,83,0.5)]' : 'hover:bg-[#1a1a1a]')
 			}
 		>
 			{glyph}
 			<span className="flex min-w-0 flex-1 flex-col">
-				<span className={'truncate text-[13px] font-semibold leading-[18px] ' + (muted ? 'text-neutral-400' : 'text-neutral-100')}>{name}</span>
-				<span className="truncate text-[12px] leading-[16px] text-neutral-400">{detail}</span>
+				<span className={'truncate text-[13px] font-semibold leading-[17px] ' + (muted ? 'text-neutral-400' : 'text-neutral-100')}>{name}</span>
+				{detail ? <span className="truncate text-[12px] leading-[15px] text-neutral-500">{detail}</span> : null}
 			</span>
-			{followed ? <span className={`shrink-0 text-[color:var(--accent)] ${eyebrow}`}>{followingLabel}</span> : null}
+			{following ? <span className={`shrink-0 text-[color:var(--accent)] ${eyebrow}`}>{followingLabel}</span> : null}
 		</button>
 	);
 }

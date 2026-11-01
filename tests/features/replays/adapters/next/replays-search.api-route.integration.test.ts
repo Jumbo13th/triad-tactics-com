@@ -129,7 +129,7 @@ describe('replay search, player index and episode links (handler integration)', 
 	}
 
 	function search(h: Harness, query: string, page = 1) {
-		return h.searchPublishedReplays(h.publicReplaysDeps, { query, page });
+		return h.searchPublishedReplays(h.publicReplaysDeps, { query, terrain: '', mission: '', from: '', to: '', sort: 'newest', page, locale: 'en' });
 	}
 
 	function ids(h: Harness, query: string): number[] {
@@ -282,7 +282,7 @@ describe('replay search, player index and episode links (handler integration)', 
 		const h = await loadHarness();
 		expect(ids(h, 'eden двойка')).toEqual([edenGame]);
 		expect(ids(h, 'arland двойка')).toEqual([]);
-		expect(search(h, 'arland двойка')).toMatchObject({ query: 'arland двойка', total: 0, page: 1, totalPages: 1, replays: [] });
+		expect(search(h, 'arland двойка')).toMatchObject({ filters: { query: 'arland двойка' }, total: 0, page: 1, totalPages: 1, replays: [] });
 	});
 
 	it('lists published games only, newest played first, with their player counts', async () => {
@@ -296,7 +296,7 @@ describe('replay search, player index and episode links (handler integration)', 
 		expect(all.replays[1]).toMatchObject({ missionTitle: 'Operation Example', episodeNumber: 2, world: EDEN, startedAt: 1793563200 });
 	});
 
-	it('pages through the results 24 at a time, keeping the search', async () => {
+	it('pages through the results 20 at a time, keeping the search', async () => {
 		const h = await loadHarness();
 		const db = h.getDb();
 		const bulkId = Number(
@@ -319,18 +319,18 @@ describe('replay search, player index and episode links (handler integration)', 
 		}
 
 		const first = search(h, 'bulk');
-		expect(first).toMatchObject({ query: 'bulk', total: 30, page: 1, totalPages: 2 });
-		expect(first.replays).toHaveLength(24);
+		expect(first).toMatchObject({ filters: { query: 'bulk' }, total: 30, page: 1, totalPages: 2 });
+		expect(first.replays).toHaveLength(20);
 		expect(first.replays[0].episodeNumber).toBe(30);
 
 		const second = search(h, 'bulk', 2);
 		expect(second).toMatchObject({ page: 2, totalPages: 2 });
-		expect(second.replays.map((replay) => replay.episodeNumber)).toEqual([6, 5, 4, 3, 2, 1]);
+		expect(second.replays.map((replay) => replay.episodeNumber)).toEqual([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 		expect(search(h, 'bulk', 9)).toMatchObject({ page: 2 });
 
 		const everything = search(h, '', 2);
 		expect(everything).toMatchObject({ total: 32, page: 2, totalPages: 2 });
-		expect(everything.replays).toHaveLength(8);
+		expect(everything.replays).toHaveLength(12);
 	});
 
 	it('finds the published replay of a mission episode for the other pages', async () => {

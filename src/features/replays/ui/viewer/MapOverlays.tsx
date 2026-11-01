@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { Icon } from './glyphs';
-import type { MapLayers } from './MapCanvas';
+import { formatMissionTime } from './format';
+import { DeadGlyph, DotGlyph, Icon, UnconsciousGlyph, VehicleGlyph } from './glyphs';
+import type { SelectionInfo } from './selection';
 import { DEAD_STYLE, NEUTRAL_STYLE, type SideStyle } from './sideStyle';
+import { useDismiss } from './useDismiss';
+import type { MapLayers } from './viewerSettings';
 
 const plate = 'rounded-[4px] border border-[#2c2c2c] bg-[rgba(10,10,10,0.9)]';
 const eyebrow = 'text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em]';
@@ -13,27 +16,148 @@ const popover =
 const INK = '#141414';
 const FIRE = '#c2410c';
 
-export function FollowChip({ name, detail, onStop }: { name: string; detail: string; onStop: () => void }) {
+export function SelectionCard({
+	info,
+	following,
+	sideStyle,
+	sideName,
+	onSelect,
+	onFollow,
+	onClose,
+}: {
+	info: SelectionInfo;
+	following: boolean;
+	sideStyle: (side: string | null) => SideStyle;
+	sideName: (key: string) => string;
+	onSelect: (eid: number) => void;
+	onFollow: () => void;
+	onClose: () => void;
+}) {
 	const t = useTranslations('replayViewer');
+	const style = sideStyle(info.side);
+	const glyph =
+		info.kind === 'vehicle' ? (
+			<VehicleGlyph style={info.wreck ? DEAD_STYLE : style} />
+		) : info.life === 'dead' ? (
+			<DeadGlyph size={14} />
+		) : info.life === 'unconscious' ? (
+			<UnconsciousGlyph style={style} size={14} />
+		) : (
+			<DotGlyph style={style} size={14} />
+		);
+	const seat = (role: string) => t(`seat_${role}`);
+	const killer = info.kind === 'man' ? info.killer : null;
+	const link = 'font-semibold text-neutral-100 underline decoration-[#666666] underline-offset-2 hover:decoration-neutral-100';
+
 	return (
-		<div className={`absolute left-[44px] top-[32px] z-[3] flex max-w-[calc(100%-116px)] items-center gap-[10px] py-[6px] pl-[12px] pr-[6px] ${plate}`}>
-			<span className="flex text-[color:var(--accent)]">
-				<Icon.Follow />
-			</span>
-			<div className="flex min-w-0 flex-col">
-				<span className={`text-[color:var(--accent)] ${eyebrow}`}>{t('following')}</span>
-				<span className="truncate text-[13px] font-semibold leading-[18px] text-neutral-100">{name}</span>
-				<span className="truncate text-[12px] leading-[16px] tabular-nums text-neutral-400">{detail}</span>
+		<section
+			aria-label={info.name}
+			className="absolute left-[44px] top-[32px] z-[3] w-[288px] max-w-[calc(100%-116px)] rounded-[8px] border border-[#2c2c2c] bg-[rgba(10,10,10,0.94)] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+		>
+			<div className="flex items-start gap-[10px] py-[10px] pl-[12px] pr-[6px]">
+				<span className="mt-[18px] flex">{glyph}</span>
+				<div className="flex min-w-0 flex-1 flex-col">
+					<span className={`truncate text-neutral-400 ${eyebrow}`}>
+						{info.side ? sideName(info.side) : t('noSide')}
+						{following ? <span className="text-[color:var(--accent)]"> · {t('following')}</span> : null}
+					</span>
+					<span className={'line-clamp-2 break-words text-[15px] font-semibold leading-[20px] ' + (info.kind === 'man' && !info.player ? 'text-neutral-300' : 'text-neutral-100')}>
+						{info.name}
+					</span>
+					{info.kind === 'man' && (info.role || info.squad) ? (
+						<span className="truncate text-[12px] leading-[16px] text-neutral-400">{[info.role, info.squad].filter(Boolean).join(' · ')}</span>
+					) : null}
+				</div>
+				<button
+					type="button"
+					onClick={onClose}
+					aria-label={t('closeCard')}
+					className="inline-flex size-[32px] shrink-0 items-center justify-center rounded-[4px] text-neutral-400 hover:bg-[#242424] hover:text-neutral-100"
+				>
+					<Icon.Close />
+				</button>
 			</div>
-			<button
-				type="button"
-				onClick={onStop}
-				aria-label={t('stopFollowing')}
-				className="inline-flex size-[44px] shrink-0 items-center justify-center rounded-[4px] bg-[#1a1a1a] text-neutral-300 hover:bg-[#242424] hover:text-neutral-100"
-			>
-				<Icon.Close />
-			</button>
-		</div>
+
+			<div className="flex flex-col gap-[4px] px-[12px] pb-[10px] text-[12px] leading-[16px] text-neutral-300">
+				{info.kind === 'man' ? (
+					<>
+						{info.life === 'dead' ? (
+							<span>
+								{t('killedAt', { time: formatMissionTime(info.diedAt ?? 0) })}
+								{killer ? (
+									<span className="block">
+										{t.rich('killerLine', {
+											who: () => (
+												<button type="button" onClick={() => onSelect(killer.eid)} className={link} style={{ color: sideStyle(killer.side).text }}>
+													{killer.name}
+												</button>
+											),
+										})}
+									</span>
+								) : null}
+								{info.weapon || info.distance !== null ? (
+									<span className="block text-neutral-400">
+										{[info.weapon, info.distance !== null ? t('metres', { distance: info.distance }) : null].filter(Boolean).join(' · ')}
+									</span>
+								) : null}
+							</span>
+						) : info.life === 'unconscious' ? (
+							<span>{t('unconscious')}</span>
+						) : null}
+						{info.vehicle ? (
+							<span>
+								<button type="button" onClick={() => info.vehicle && onSelect(info.vehicle.eid)} className={link}>
+									{info.vehicle.name}
+								</button>
+								{', '}
+								{seat(info.vehicle.seat)}
+							</span>
+						) : null}
+						{info.kills > 0 ? <span className="tabular-nums">{t('killsSoFar', { count: info.kills })}</span> : null}
+					</>
+				) : info.wreck ? (
+					<span>{t('destroyedAt', { time: formatMissionTime(info.destroyedAt ?? 0) })}</span>
+				) : info.crew.length === 0 ? (
+					<span className="text-neutral-400">{t('empty')}</span>
+				) : (
+					<>
+						<span className={`text-neutral-400 ${eyebrow}`}>{t('crew', { count: info.crew.length })}</span>
+						<ul className="-mx-[6px] flex flex-col">
+							{info.crew.map((member) => (
+								<li key={member.eid}>
+									<button
+										type="button"
+										onClick={() => onSelect(member.eid)}
+										className="flex min-h-[32px] w-full items-center gap-[8px] rounded-[4px] px-[6px] text-left hover:bg-[#1a1a1a]"
+									>
+										<DotGlyph style={style} size={10} />
+										<span className={'min-w-0 flex-1 truncate text-[13px] font-semibold ' + (member.player ? 'text-neutral-100' : 'text-neutral-400')}>{member.name}</span>
+										<span className="shrink-0 text-[12px] text-neutral-400">{seat(member.seat)}</span>
+									</button>
+								</li>
+							))}
+						</ul>
+					</>
+				)}
+			</div>
+
+			<div className="border-t border-[#2c2c2c] p-[8px]">
+				<button
+					type="button"
+					onClick={onFollow}
+					aria-pressed={following}
+					className={
+						'inline-flex min-h-[36px] w-full items-center justify-center gap-[8px] rounded-[4px] border text-[13px] font-semibold ' +
+						(following
+							? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
+							: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-100 hover:border-[#666666] hover:bg-[#242424]')
+					}
+				>
+					<Icon.Follow size={16} />
+					{following ? t('stopFollowing') : t('follow')}
+				</button>
+			</div>
+		</section>
 	);
 }
 
@@ -43,9 +167,10 @@ function MapButton({ label, onClick, children, pressed, extra = '' }: { label: s
 			type="button"
 			onClick={onClick}
 			aria-label={label}
+			title={label}
 			aria-expanded={pressed}
 			className={
-				'inline-flex size-[44px] items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)] ' +
+				'inline-flex size-[40px] items-center justify-center focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)] ' +
 				(pressed ? 'text-[color:var(--accent)]' : 'text-neutral-100 hover:bg-[#262626]') +
 				' ' +
 				extra
@@ -66,6 +191,9 @@ function Tile({ children }: { children: ReactNode }) {
 
 const diamond = (cx: number, cy: number, r: number) => `M${cx} ${cy - r}L${cx + r} ${cy}L${cx} ${cy + r}L${cx - r} ${cy}Z`;
 
+const MAP_LAYERS: (keyof MapLayers)[] = ['markers', 'areas', 'fire', 'dead'];
+const NAME_LAYERS: (keyof MapLayers)[] = ['nicknames', 'aiRoles', 'squads', 'vehicleNames', 'markerText', 'areaNames'];
+
 export function MapControls({
 	layers,
 	onLayers,
@@ -85,49 +213,10 @@ export function MapControls({
 	const t = useTranslations('replayViewer');
 	const [open, setOpen] = useState<'layers' | 'legend' | null>(null);
 	const rootRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (!open) return;
-		const onKey = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') setOpen(null);
-		};
-		const onDown = (event: PointerEvent) => {
-			if (!rootRef.current?.contains(event.target as Node)) setOpen(null);
-		};
-		window.addEventListener('keydown', onKey);
-		window.addEventListener('pointerdown', onDown);
-		return () => {
-			window.removeEventListener('keydown', onKey);
-			window.removeEventListener('pointerdown', onDown);
-		};
-	}, [open]);
+	const close = useCallback(() => setOpen(null), []);
+	useDismiss(open !== null, rootRef, close);
 
 	const [a, b] = sample;
-	const previews: Record<keyof MapLayers, ReactNode> = {
-		names: <span className="rounded-[2px] bg-[rgba(10,10,10,0.86)] px-[3px] text-[9px] font-semibold leading-[12px] text-neutral-100">Aa</span>,
-		fire: (
-			<svg width="22" height="14" viewBox="0 0 22 14">
-				<line x1="2" y1="11" x2="11" y2="5" stroke={FIRE} strokeWidth="1.5" strokeLinecap="round" />
-				<circle cx="16" cy="7" r="4" fill={FIRE} fillOpacity="0.18" stroke={FIRE} strokeWidth="1.5" />
-			</svg>
-		),
-		markers: (
-			// eslint-disable-next-line @next/next/no-img-element
-			<img src="/markers/icons/exclamation-yellow.png" alt="" width={18} height={18} />
-		),
-		areas: (
-			<svg width="22" height="14" viewBox="0 0 22 14">
-				<rect x="2" y="2" width="18" height="10" fill="none" stroke={INK} strokeWidth="1.5" strokeDasharray="4 2.5" />
-			</svg>
-		),
-		dead: (
-			<svg width="22" height="14" viewBox="0 0 22 14">
-				<circle cx="6" cy="7" r="3" fill={DEAD_STYLE.fill} stroke={DEAD_STYLE.edge} strokeWidth="1" />
-				<path d={diamond(15, 7, 5)} fill={DEAD_STYLE.fill} stroke={DEAD_STYLE.edge} strokeWidth="1" />
-			</svg>
-		),
-	};
-
 	const soldier = (style: SideStyle) => {
 		const r = 4.5;
 		const d = 8.5;
@@ -177,7 +266,7 @@ export function MapControls({
 			</svg>,
 		],
 		[
-			t('legend_followed'),
+			t('legend_selected'),
 			<svg key="f" width="28" height="20" viewBox="0 0 28 20">
 				<path d="M7 7V3h4M17 3h4v4M21 13v4h-4M11 17H7v-4" fill="none" stroke="#0a0a0a" strokeWidth="3.5" strokeLinecap="square" />
 				<path d="M7 7V3h4M17 3h4v4M21 13v4h-4M11 17H7v-4" fill="none" stroke="#d2b853" strokeWidth="1.5" strokeLinecap="square" />
@@ -220,7 +309,25 @@ export function MapControls({
 				<path d="M4 6L14 3L24 6L22 16L6 16Z" fill={NEUTRAL_STYLE.fill} fillOpacity="0.16" stroke={NEUTRAL_STYLE.edge} strokeWidth="1.5" strokeDasharray="3 2" />
 			</svg>,
 		],
+		[
+			t('legend_area'),
+			<svg key="ar" width="28" height="20" viewBox="0 0 28 20">
+				<rect x="4" y="4" width="20" height="12" fill="none" stroke={INK} strokeWidth="1.5" strokeDasharray="4 2.5" />
+			</svg>,
+		],
 	];
+
+	const toggleRow = (key: keyof MapLayers) => (
+		<label key={key} className="flex min-h-[36px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
+			<input
+				type="checkbox"
+				checked={layers[key]}
+				onChange={(e) => onLayers({ ...layers, [key]: e.target.checked })}
+				className="size-[16px] accent-[color:var(--accent)]"
+			/>
+			<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{t(`layer_${key}`)}</span>
+		</label>
+	);
 
 	return (
 		<div ref={rootRef} className="absolute right-[12px] top-[32px] z-[3] flex flex-col items-end gap-[8px]">
@@ -235,36 +342,28 @@ export function MapControls({
 					<Icon.Fit />
 				</MapButton>
 			</div>
-			<div className={open === 'layers' ? 'rounded-[4px] border border-[rgba(210,184,83,0.5)] bg-[#29261a]' : plate}>
+			<div className={`flex flex-col overflow-hidden ${open ? 'rounded-[4px] border border-[#2c2c2c] bg-[rgba(10,10,10,0.9)]' : plate}`}>
 				<MapButton label={t('layers')} pressed={open === 'layers'} onClick={() => setOpen(open === 'layers' ? null : 'layers')}>
 					<Icon.Layers />
 				</MapButton>
-			</div>
-			<div className={open === 'legend' ? 'rounded-[4px] border border-[rgba(210,184,83,0.5)] bg-[#29261a]' : plate}>
-				<MapButton label={t('legend')} pressed={open === 'legend'} onClick={() => setOpen(open === 'legend' ? null : 'legend')}>
+				<MapButton label={t('legend')} pressed={open === 'legend'} onClick={() => setOpen(open === 'legend' ? null : 'legend')} extra="border-t border-[#2c2c2c]">
 					<Icon.Legend />
 				</MapButton>
 			</div>
 
 			{open === 'layers' ? (
-				<fieldset className={`${popover} top-[144px]`}>
-					<legend className={`float-left w-full px-[8px] pb-[6px] pt-[4px] text-neutral-400 ${eyebrow}`}>{t('layers')}</legend>
-					{(Object.keys(previews) as (keyof MapLayers)[]).map((key) => (
-						<label key={key} className="clear-left flex min-h-[44px] cursor-pointer items-center gap-[10px] rounded-[4px] px-[8px] hover:bg-[#242424]">
-							<input
-								type="checkbox"
-								checked={layers[key]}
-								onChange={(e) => onLayers({ ...layers, [key]: e.target.checked })}
-								className="size-[16px] accent-[color:var(--accent)]"
-							/>
-							<span className="flex-1 text-[13px] leading-[18px] text-neutral-100">{t(`layer_${key}`)}</span>
-							<Tile>{previews[key]}</Tile>
-						</label>
-					))}
-				</fieldset>
+				<div role="group" aria-labelledby="rv-layers-title" className={`${popover} top-[130px]`}>
+					<p id="rv-layers-title" className={`px-[8px] pb-[4px] pt-[4px] text-neutral-400 ${eyebrow}`}>
+						{t('layersNames')}
+					</p>
+					{NAME_LAYERS.map(toggleRow)}
+					<p className="px-[8px] pb-[4px] pt-[2px] text-[12px] leading-[16px] text-neutral-400">{t('layersNamesHint')}</p>
+					<p className={`mt-[6px] border-t border-[#2c2c2c] px-[8px] pb-[4px] pt-[10px] text-neutral-400 ${eyebrow}`}>{t('layersMap')}</p>
+					{MAP_LAYERS.map(toggleRow)}
+				</div>
 			) : null}
 			{open === 'legend' ? (
-				<div role="group" aria-labelledby="rv-legend-title" className={`${popover} top-[196px] max-h-[calc(100vh-320px)] overflow-y-auto`}>
+				<div role="group" aria-labelledby="rv-legend-title" className={`${popover} top-[130px] max-h-[calc(100vh-280px)] overflow-y-auto`}>
 					<p id="rv-legend-title" className={`px-[8px] pb-[6px] pt-[4px] text-neutral-400 ${eyebrow}`}>
 						{t('legend')}
 					</p>

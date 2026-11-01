@@ -32,7 +32,7 @@ async function loadHarness() {
 	const mapPieces = await import('@/app/api/admin/replays/maps/pieces/route');
 	const { getDb } = await import('../../../../fixtures/dbOperations');
 	const { publicReplaysDeps } = await import('@/features/replays/deps');
-	const { listPublishedReplays, getReplayForViewer } = await import('@/features/replays/useCases/viewReplays');
+	const { searchPublishedReplays, getReplayForViewer } = await import('@/features/replays/useCases/viewReplays');
 	const { NextRequest } = await import('next/server');
 	return {
 		commit: files.POST,
@@ -45,13 +45,18 @@ async function loadHarness() {
 		putMapPiece: mapPieces.PUT,
 		getDb,
 		publicReplaysDeps,
-		listPublishedReplays,
+		searchPublishedReplays,
 		getReplayForViewer,
 		NextRequest,
 	};
 }
 
 type Harness = Awaited<ReturnType<typeof loadHarness>>;
+
+function publicList(h: Harness) {
+	const unfiltered = { query: '', terrain: '', mission: '', from: '', to: '', sort: 'newest' } as const;
+	return h.searchPublishedReplays(h.publicReplaysDeps, { ...unfiltered, page: 1, locale: 'en' }).replays;
+}
 
 function signed(h: Harness, method: 'PUT' | 'POST', urlPath: string, body: Buffer) {
 	return signedRequest(h.NextRequest, method, urlPath, body);
@@ -198,7 +203,7 @@ describe('replay approval and viewing (handler integration)', () => {
 		const relink = await h.adminPost(admin(h, 'POST', '', { action: 'link', gameId, missionId, episodeNumber: 3 }));
 		expect(await relink.json()).toEqual({ error: 'published' });
 
-		const list = h.listPublishedReplays(h.publicReplaysDeps, { limit: 10, offset: 0 });
+		const list = publicList(h);
 		expect(list).toHaveLength(1);
 		expect(list[0]).toMatchObject({ id: gameId, missionTitle: 'Operation Example', missionShortCode: 'opex', episodeNumber: 2, statsId: null });
 	});
@@ -278,6 +283,6 @@ describe('replay approval and viewing (handler integration)', () => {
 		const res = await h.adminPost(admin(h, 'POST', '', { action: 'unpublish', gameId }));
 		expect(res.status).toBe(200);
 		expect((await view(h, segment.sha256)).status).toBe(404);
-		expect(h.listPublishedReplays(h.publicReplaysDeps, { limit: 10, offset: 0 })).toHaveLength(0);
+		expect(publicList(h)).toHaveLength(0);
 	});
 });

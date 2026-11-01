@@ -1,13 +1,16 @@
 'use client';
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ReplayModel } from '../../domain/replayFormat';
 import { formatMissionTime } from './format';
 import { Icon } from './glyphs';
+import { useDismiss } from './useDismiss';
 import type { SideStyle } from './sideStyle';
+import { SPEED_MAX, SPEED_MIN } from './viewerSettings';
 
-export const SPEEDS = [1, 4, 16, 60] as const;
+/** The speeds offered, and the steps the [ and ] keys move through. */
+export const SPEED_PRESETS = [0.5, 1, 2, 4, 8, 16, 30, 60, 120];
 
 type Props = {
 	model: ReplayModel;
@@ -43,6 +46,10 @@ const HEIGHT = 60;
 const MAX_LANES = 3;
 const AXIS_STEPS = [5, 10, 15, 30, 60, 120].map((minutes) => minutes * 600);
 const HATCH = 'repeating-linear-gradient(135deg,rgba(163,163,163,0.6) 0 1px,transparent 1px 4px)';
+
+function formatSpeed(speed: number): string {
+	return `${Number(speed.toFixed(2))}×`;
+}
 
 function collectMarks(model: ReplayModel): Marks {
 	const lanes = model.sides.slice(0, MAX_LANES).map((side) => side.key);
@@ -162,6 +169,102 @@ const StaticMarks = memo(function StaticMarks({
 	);
 });
 
+function SpeedControl({ speed, onSpeed }: { speed: number; onSpeed: (speed: number) => void }) {
+	const t = useTranslations('replayViewer');
+	const [open, setOpen] = useState(false);
+	const [custom, setCustom] = useState('');
+	const rootRef = useRef<HTMLDivElement>(null);
+	const close = useCallback(() => setOpen(false), []);
+	useDismiss(open, rootRef, close);
+
+	const applyCustom = () => {
+		const value = Number(custom.replace(',', '.'));
+		if (!Number.isFinite(value) || value <= 0) return;
+		onSpeed(Math.min(SPEED_MAX, Math.max(SPEED_MIN, value)));
+		setCustom('');
+		setOpen(false);
+	};
+
+	return (
+		<div ref={rootRef} className="relative shrink-0">
+			<button
+				type="button"
+				onClick={() => setOpen((value) => !value)}
+				aria-haspopup="dialog"
+				aria-expanded={open}
+				aria-label={t('speedButton', { speed: formatSpeed(speed) })}
+				title={t('speedHint')}
+				className={
+					'inline-flex min-h-[40px] min-w-[72px] items-center justify-center gap-[6px] rounded-[4px] border px-[10px] text-[13px] font-semibold leading-[18px] tabular-nums ' +
+					(open ? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]' : 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-100 hover:border-[#666666]')
+				}
+			>
+				{formatSpeed(speed)}
+				<span className="flex text-neutral-400">
+					<Icon.ChevronUp size={14} />
+				</span>
+			</button>
+			{open ? (
+				<div
+					role="dialog"
+					aria-label={t('speed')}
+					className="absolute bottom-full right-0 z-20 mb-[8px] w-[232px] rounded-[8px] border border-[#2c2c2c] bg-[#1a1a1a] p-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+				>
+					<p className="pb-[8px] text-[11px] font-semibold uppercase leading-[14px] tracking-[0.08em] text-neutral-400">{t('speed')}</p>
+					<div className="grid grid-cols-3 gap-[4px]">
+						{SPEED_PRESETS.map((value) => (
+							<button
+								key={value}
+								type="button"
+								aria-pressed={speed === value}
+								onClick={() => {
+									onSpeed(value);
+									setOpen(false);
+								}}
+								className={
+									'min-h-[36px] rounded-[4px] border text-[13px] font-semibold tabular-nums ' +
+									(speed === value
+										? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
+										: 'border-[#2c2c2c] bg-[#121212] text-neutral-300 hover:border-[#666666] hover:text-neutral-100')
+								}
+							>
+								{formatSpeed(value)}
+							</button>
+						))}
+					</div>
+					<form
+						className="mt-[8px] flex items-center gap-[6px]"
+						onSubmit={(e) => {
+							e.preventDefault();
+							applyCustom();
+						}}
+					>
+						<label className="flex min-w-0 flex-1 items-center gap-[6px] rounded-[4px] border border-[#666666] bg-[#121212] px-[8px] focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-[color:var(--accent)]">
+							<span className="sr-only">{t('customSpeed')}</span>
+							<input
+								type="number"
+								inputMode="decimal"
+								min={SPEED_MIN}
+								max={SPEED_MAX}
+								step="any"
+								value={custom}
+								onChange={(e) => setCustom(e.target.value)}
+								placeholder={t('customSpeed')}
+								className="h-[34px] min-w-0 flex-1 bg-transparent text-[13px] tabular-nums text-neutral-100 outline-none placeholder:text-neutral-500"
+							/>
+							<span className="text-[13px] text-neutral-400">×</span>
+						</label>
+						<button type="submit" className="min-h-[36px] rounded-[4px] bg-[color:var(--accent)] px-[12px] text-[13px] font-semibold text-[#0a0a0a] hover:bg-[#dcc56c]">
+							{t('setSpeed')}
+						</button>
+					</form>
+					<p className="pt-[8px] text-[12px] leading-[16px] text-neutral-400">{t('speedHint')}</p>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
 export default function Timeline(props: Props) {
 	const { model, time, playing, speed, realTime, sideStyle, sideName, zoneName, onTogglePlay, onSpeed, onSeek } = props;
 	const t = useTranslations('replayViewer');
@@ -190,23 +293,20 @@ export default function Timeline(props: Props) {
 	})();
 
 	return (
-		<div
-			role="group"
-			aria-label={t('playback')}
-			className="flex flex-wrap items-center gap-x-[16px] gap-y-[8px] border-t border-[#2c2c2c] bg-[#121212] px-[16px] py-[8px] lg:flex-nowrap"
-		>
+		<div role="group" aria-label={t('playback')} className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px] border-t border-[#2c2c2c] bg-[#121212] px-[12px] py-[6px] lg:flex-nowrap">
 			<button
 				type="button"
 				onClick={onTogglePlay}
 				aria-label={playing ? t('pause') : t('play')}
-				className="inline-flex size-[44px] shrink-0 items-center justify-center rounded-[4px] bg-[color:var(--accent)] text-[#0a0a0a] hover:bg-[#dcc56c] active:bg-[#bca243] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
+				title={t('playHint')}
+				className="inline-flex size-[40px] shrink-0 items-center justify-center rounded-[4px] bg-[color:var(--accent)] text-[#0a0a0a] hover:bg-[#dcc56c] active:bg-[#bca243] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
 			>
 				{playing ? <Icon.Pause /> : <Icon.Play />}
 			</button>
 
-			<div className="flex min-w-[140px] flex-1 flex-col lg:flex-none">
-				<span className="text-[16px] font-semibold leading-[22px] tabular-nums text-neutral-100">
-					{formatMissionTime(time)} <span className="text-[13px] font-medium text-neutral-400">/ {formatMissionTime(model.duration)}</span>
+			<div className="flex min-w-[128px] flex-1 flex-col lg:flex-none">
+				<span className="text-[15px] font-semibold leading-[20px] tabular-nums text-neutral-100">
+					{formatMissionTime(time)} <span className="text-[12px] font-medium text-neutral-400">/ {formatMissionTime(model.duration)}</span>
 				</span>
 				{realTime ? <span className="text-[12px] leading-[16px] text-neutral-400">{t('realTime', { time: realTime })}</span> : null}
 			</div>
@@ -259,24 +359,7 @@ export default function Timeline(props: Props) {
 				/>
 			</div>
 
-			<div role="group" aria-label={t('speed')} className="flex shrink-0 gap-[4px]">
-				{SPEEDS.map((value) => (
-					<button
-						key={value}
-						type="button"
-						onClick={() => onSpeed(value)}
-						aria-pressed={speed === value}
-						className={
-							'min-h-[44px] min-w-[44px] rounded-[4px] border px-[10px] text-[13px] font-semibold leading-[18px] tabular-nums ' +
-							(speed === value
-								? 'border-[rgba(210,184,83,0.5)] bg-[rgba(210,184,83,0.12)] text-[color:var(--accent)]'
-								: 'border-[#2c2c2c] bg-[#1a1a1a] text-neutral-300 hover:border-[#666666] hover:bg-[#242424] hover:text-neutral-100')
-						}
-					>
-						{value}×
-					</button>
-				))}
-			</div>
+			<SpeedControl speed={speed} onSpeed={onSpeed} />
 		</div>
 	);
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ReplayFacets, ReplayListFilters } from './search';
 
 // Shapes of the replay API answers. Kept apart from the protocol module, which needs
 // node:crypto, so pages can parse the answers in the browser.
@@ -77,8 +78,9 @@ export type PublicReplaySearchItem = PublicReplayListItem & {
 };
 
 export type ReplaySearchPage = {
-	/** The search as typed, for the form and for page links. */
-	query: string;
+	/** The filters as applied, for the form and for page links. */
+	filters: ReplayListFilters;
+	facets: ReplayFacets;
 	page: number;
 	totalPages: number;
 	total: number;

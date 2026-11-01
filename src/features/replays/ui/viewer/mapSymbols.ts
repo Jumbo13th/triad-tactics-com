@@ -192,25 +192,42 @@ export function drawBlast(ctx: Ctx, x: number, y: number, radius: number, opacit
 
 export type LabelBox = { x: number; y: number; w: number; h: number };
 
+/** strong: a living player's name; soft: secondary names; dim: the dead. */
+export type PlateTone = 'strong' | 'soft' | 'dim';
+
+const TONES: Record<PlateTone, { font: string; color: string }> = {
+	strong: { font: LABEL_FONT, color: '#f5f5f5' },
+	soft: { font: '500 11px Inter, ui-sans-serif, system-ui, sans-serif', color: '#d4d4d4' },
+	dim: { font: '500 11px Inter, ui-sans-serif, system-ui, sans-serif', color: '#a3a3a3' },
+};
+
 /**
  * A name plate: 11 px type on a dark plate. `anchor` is where the plate starts (left) or
  * ends (right) or its middle (center); y is its vertical middle. Returns the box drawn,
- * or null when `taken` already holds an overlapping one.
+ * or null when `taken` already holds an overlapping one; `force` draws it regardless and
+ * still claims its place.
  */
 export function drawPlate(
 	ctx: Ctx,
 	text: string,
 	anchor: number,
 	y: number,
-	{ align = 'left', outlined = false, muted = false, taken = null }: { align?: 'left' | 'right' | 'center'; outlined?: boolean; muted?: boolean; taken?: LabelBox[] | null } = {}
+	{
+		align = 'left',
+		outlined = false,
+		tone = 'strong',
+		taken = null,
+		force = false,
+	}: { align?: 'left' | 'right' | 'center'; outlined?: boolean; tone?: PlateTone; taken?: LabelBox[] | null; force?: boolean } = {}
 ): LabelBox | null {
-	ctx.font = muted ? '500 11px Inter, ui-sans-serif, system-ui, sans-serif' : LABEL_FONT;
+	const style = TONES[tone];
+	ctx.font = style.font;
 	const w = Math.ceil(ctx.measureText(text).width) + 10;
 	const h = 16;
 	const x = align === 'right' ? anchor - w : align === 'center' ? anchor - w / 2 : anchor;
 	const box = { x, y: y - h / 2, w, h };
 	if (taken) {
-		if (taken.some((o) => box.x < o.x + o.w && o.x < box.x + box.w && box.y < o.y + o.h && o.y < box.y + box.h)) return null;
+		if (!force && taken.some((o) => box.x < o.x + o.w && o.x < box.x + box.w && box.y < o.y + o.h && o.y < box.y + box.h)) return null;
 		taken.push(box);
 	}
 	ctx.beginPath();
@@ -224,7 +241,7 @@ export function drawPlate(
 		ctx.roundRect(box.x + 0.5, box.y + 0.5, w - 1, h - 1, 2);
 		ctx.stroke();
 	}
-	ctx.fillStyle = muted ? '#d4d4d4' : '#f5f5f5';
+	ctx.fillStyle = style.color;
 	ctx.textBaseline = 'middle';
 	ctx.fillText(text, box.x + 5, y + 0.5);
 	ctx.textBaseline = 'alphabetic';
