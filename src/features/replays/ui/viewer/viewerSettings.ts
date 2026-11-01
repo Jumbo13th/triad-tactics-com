@@ -97,11 +97,13 @@ function parse(raw: string | null): ViewerSettings {
 }
 
 let cache: { raw: string | null; value: ViewerSettings } | null = null;
-// Where settings live when the browser refuses storage (private windows, blocked site data).
+// Where settings live when the browser refuses to store them (private windows, blocked site data,
+// a full quota). Reading may still work then, so once set this wins over what storage holds.
 let memory: ViewerSettings | null = null;
 const listeners = new Set<() => void>();
 
 function snapshot(): ViewerSettings {
+	if (memory) return memory;
 	let raw: string | null;
 	try {
 		raw = window.localStorage.getItem(KEY);
@@ -133,6 +135,7 @@ export function useViewerSettings(): [ViewerSettings, (patch: Partial<ViewerSett
 		try {
 			window.localStorage.setItem(KEY, raw);
 			cache = { raw, value: next };
+			memory = null;
 		} catch {
 			memory = next;
 		}

@@ -62,15 +62,10 @@ export default function AdminReplaysPage() {
 		}
 	}, []);
 
-	// The review panel changes a game's link and status; the list shows both.
-	const refreshList = useCallback(async () => {
-		try {
-			const page = await fetchReplayPage(0);
-			setGames(page.games);
-			setHasMore(page.hasMore);
-		} catch {
-			setFailed(true);
-		}
+	// A review changes its game's link and status; the row shows both, and the rest of the list,
+	// pages loaded included, stays as it is.
+	const updateGame = useCallback((changed: ReplayGameListItem) => {
+		setGames((current) => current?.map((game) => (game.id === changed.id ? changed : game)) ?? current);
 	}, []);
 
 	const formatTime = (value: string | null) => formatLocalizedDateTime(value, { locale, timeZone, hourCycle }) ?? '—';
@@ -149,7 +144,7 @@ export default function AdminReplaysPage() {
 											{open ? (
 												<tr>
 													<td colSpan={COLUMNS} className="border-t border-neutral-800 px-0 pb-4 pt-2">
-														<ReplayReviewPanel key={game.id} gameId={game.id} onChanged={() => void refreshList()} />
+														<ReplayReviewPanel key={game.id} gameId={game.id} onChanged={updateGame} />
 													</td>
 												</tr>
 											) : null}

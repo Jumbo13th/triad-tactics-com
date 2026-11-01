@@ -21,6 +21,7 @@ export type ReplayRepo = {
 	saveGame: (game: ReplayGameInput) => { id: number; created: boolean };
 	listGames: (input: { limit: number; offset: number }) => ReplayGameListItem[];
 	findGame: (id: number) => ReplayGameRecord | null;
+	findGameBySession: (serverId: string, session: string) => ReplayGameRecord | null;
 	findGameListItem: (id: number) => ReplayGameListItem | null;
 	listMissions: () => ReplayMission[];
 	findMission: (id: number) => ReplayMission | null;

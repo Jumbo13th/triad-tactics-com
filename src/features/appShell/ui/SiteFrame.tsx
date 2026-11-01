@@ -4,12 +4,14 @@ import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from '@/features/language/ui/root';
+import { useStatsLinkVisible } from '@/features/stats/ui/root';
 import { Link, usePathname } from '@/i18n/routing';
 
 // The replay list uses the full width with its own slim bar: a list of games and its
 // filters need more room than the site's narrow reading column.
 function ReplaysBar() {
 	const t = useTranslations('nav');
+	const statsLinkVisible = useStatsLinkVisible();
 	const link = (href: string, label: string, active: boolean) => (
 		<Link
 			href={href}
@@ -30,7 +32,7 @@ function ReplaysBar() {
 			</Link>
 			<nav aria-label={t('aria')} className="flex flex-1 flex-wrap items-center gap-1">
 				{link('/replays', t('replays'), true)}
-				{link('/stats', t('stats'), false)}
+				{statsLinkVisible ? link('/stats', t('stats'), false) : null}
 				{link('/games', t('missions'), false)}
 			</nav>
 			<LanguageSwitcher />

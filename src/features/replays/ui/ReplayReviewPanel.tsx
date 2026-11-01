@@ -6,7 +6,7 @@ import { Link } from '@/i18n/routing';
 import { AdminButton } from '@/features/admin/ui/root';
 import { formatLocalizedDateTime, parseDateTimeValue } from '@/platform/dateTime';
 import { useViewerDateTimePreferences } from '@/platform/useViewerDateTimePreferences';
-import { adminReplayDetailResponseSchema, type ReplayGameDetail } from '../domain/api';
+import { adminReplayDetailResponseSchema, type ReplayGameDetail, type ReplayGameListItem } from '../domain/api';
 import { formatSize } from './formatSize';
 import MapUpload from './MapUpload';
 import { terrainName } from '../domain/terrain';
@@ -47,7 +47,7 @@ function nearestMission(missions: Mission[], startedAt: number | null): number |
 	return best?.id ?? null;
 }
 
-export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: number; onChanged: () => void }) {
+export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: number; onChanged: (game: ReplayGameListItem) => void }) {
 	const t = useTranslations('replays');
 	const locale = useLocale();
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
@@ -117,8 +117,9 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 					return;
 				}
 				setFeedback({ tone: 'ok', text: success(json) });
-				applyDetail(await fetchDetail(gameId));
-				onChanged();
+				const detail = await fetchDetail(gameId);
+				applyDetail(detail);
+				onChanged(detail.game);
 			} catch {
 				setFeedback({ tone: 'err', text: t('adminErrGeneric') });
 			} finally {
@@ -283,10 +284,7 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 					<MapUpload
 						world={game.world}
 						map={game.map}
-						onSaved={() => {
-							void fetchDetail(gameId).then(applyDetail);
-							onChanged();
-						}}
+						onSaved={() => void fetchDetail(gameId).then(applyDetail)}
 					/>
 				</section>
 			) : null}

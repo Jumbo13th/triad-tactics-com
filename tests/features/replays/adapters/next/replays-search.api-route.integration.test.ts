@@ -347,6 +347,8 @@ describe('replay search, player index and episode links (handler integration)', 
 		expect(h.findEpisodeReplayIds(h.publicReplaysDeps, [])).toEqual([]);
 
 		expect(h.listMissionReplays(h.publicReplaysDeps, { shortCode: 'opex' }).map((replay) => replay.id)).toEqual([edenGame]);
+		// Mission pages open whatever case the address uses, as the games feature matches short codes.
+		expect(h.listMissionReplays(h.publicReplaysDeps, { shortCode: 'OpEx' }).map((replay) => replay.id)).toEqual([edenGame]);
 		expect(h.listMissionReplays(h.publicReplaysDeps, { shortCode: 'nope' })).toEqual([]);
 	});
 

@@ -161,6 +161,7 @@ export async function postReplayGameRoute(request: NextRequest, context: GameCon
 						segments: post.segments.length,
 						stats: post.stats !== null,
 						repeat: outcome.result === 'replaced',
+						withdrawn: outcome.result === 'replaced' && outcome.withdrawn,
 					},
 					'replay_game_recorded'
 				);

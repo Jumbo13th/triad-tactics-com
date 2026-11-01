@@ -262,12 +262,27 @@ function rollBack(model: ReplayModel, t: number): void {
 		cut(player.connected, t);
 		cut(player.controls, t);
 	}
+	// Marker numbers are local to a segment, and the resumed segment restates every marker still
+	// on the map under its own; the earlier copies end where it takes over.
 	for (const [key, marker] of model.markers) {
 		if (marker.placedAt > t) model.markers.delete(key);
-		else if (marker.removedAt !== null && marker.removedAt > t) marker.removedAt = null;
+		else if (marker.removedAt === null || marker.removedAt > t) marker.removedAt = t;
 	}
 	for (const area of model.areas.values()) cut(area.shown, t);
 	for (const zone of model.zones.values()) cut(zone.holders, t);
+}
+
+const FLOW_END: Partial<Record<string, string>> = { freeze: 'freeze-end', hardfreeze: 'hardfreeze-end' };
+
+/** Whether the latest flow events leave this freeze (or the game) under way. */
+function running(events: ReplayEvent[], flow: string): boolean {
+	for (let i = events.length - 1; i >= 0; i--) {
+		const event = events[i];
+		if (event.type !== 'flow') continue;
+		if (event.flow === flow) return true;
+		if (event.flow === FLOW_END[flow]) return false;
+	}
+	return false;
 }
 
 function player(model: ReplayModel, pref: number): Player {
@@ -294,6 +309,7 @@ export function addSegment(model: ReplayModel, text: string): void {
 	let segmentNumber = segmentIndex + 1;
 	let startedUnix: number | null = null;
 	let resumedAt: number | null = null;
+	let inSnapshot = false;
 	const headerSides: Side[] = [];
 
 	for (const raw of lines) {
@@ -374,6 +390,12 @@ export function addSegment(model: ReplayModel, text: string): void {
 		}
 
 		switch (f[0]) {
+			case 'SNAP':
+				inSnapshot = true;
+				break;
+			case 'SNAP-END':
+				inSnapshot = false;
+				break;
 			case 'T': {
 				const value = int(f[1]);
 				if (value !== null) t = value;
@@ -622,11 +644,9 @@ export function addSegment(model: ReplayModel, text: string): void {
 			case 'FLOW': {
 				const flow = f[1];
 				if (flow === 'game' || flow === 'freeze' || flow === 'freeze-end' || flow === 'hardfreeze' || flow === 'hardfreeze-end') {
-					const last = model.events[model.events.length - 1];
-					const seconds = int(f[2]);
-					// Snapshots restate a running freeze; keep the first statement of each.
-					const repeat = last && last.type === 'flow' && last.flow === flow && last.t === t;
-					if (!repeat) model.events.push({ t, type: 'flow', flow, seconds });
+					// Every snapshot restates a running freeze; only a live record starts or changes one,
+					// such as an admin extending it.
+					if (!(inSnapshot && running(model.events, flow))) model.events.push({ t, type: 'flow', flow, seconds: int(f[2]) });
 				}
 				break;
 			}

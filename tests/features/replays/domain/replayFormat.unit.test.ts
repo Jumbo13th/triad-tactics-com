@@ -128,6 +128,47 @@ describe('addSegment', () => {
 		expect(segmentAt(model, 120)).toBe(1);
 		expect(unixAt(model, 130)).toBe(1793563802);
 	});
+
+	it('keeps one copy of a marker the resumed segment restates under its own number', () => {
+		const model = emptyModel();
+		addSegment(model, SEGMENT_1.replace('T 100\n', 'T 50\nM+ g7 custom 400 400 0 1 US "flag" 3070ff "Rally"\nT 100\n'));
+		addSegment(model, SEGMENT_2.replace('SNAP-END', 'M+ g3 custom 400 400 0 1 US "flag" 3070ff "Rally"\nSNAP-END'));
+		const shownAt = (t: number) => [...model.markers.values()].filter((m) => m.placedAt <= t && (m.removedAt === null || m.removedAt > t));
+		expect(shownAt(100).map((m) => m.key)).toEqual(['0:g7']);
+		expect(shownAt(150).map((m) => m.key)).toEqual(['1:g3']);
+	});
+
+	it('counts a running freeze once however many snapshots restate it', () => {
+		const model = emptyModel();
+		const header = SEGMENT_2.split('\n').slice(0, SEGMENT_2.split('\n').indexOf('H end') + 1).filter((line) => !line.startsWith('H resumed'));
+		addSegment(
+			model,
+			[
+				...header,
+				'T 0',
+				'FLOW freeze 600',
+				'T 1000',
+				// An admin extends the freeze: a real change, outside any snapshot.
+				'FLOW freeze 800',
+				'T 3000',
+				'SNAP',
+				'FLOW freeze 600',
+				'SNAP-END',
+				'T 6000',
+				'SNAP',
+				'FLOW freeze 300',
+				'SNAP-END',
+				'T 9000',
+				'FLOW freeze-end',
+				'',
+			].join('\n')
+		);
+		expect(model.events.filter((e) => e.type === 'flow').map((e) => [e.t, e.type === 'flow' ? e.flow : ''])).toEqual([
+			[0, 'freeze'],
+			[1000, 'freeze'],
+			[9000, 'freeze-end'],
+		]);
+	});
 });
 
 describe('positionAt', () => {

@@ -322,14 +322,19 @@ export function findGameListItem(id: number): ReplayGameListItem | null {
 	return row ? toListItem(row) : null;
 }
 
+const GAME_SELECT = `SELECT id, server_id, session, over, segments_json, identity_sha256, stats_sha256,
+	mission_id, episode_number, published_at, announced_at
+FROM replay_games`;
+
 export function findGame(id: number): ReplayGameRecord | null {
-	const row = getDb()
-		.prepare(
-			`SELECT id, server_id, session, over, segments_json, identity_sha256, stats_sha256,
-				mission_id, episode_number, published_at, announced_at
-			FROM replay_games WHERE id = ?`
-		)
-		.get(id) as GameRow | undefined;
+	return toGameRecord(getDb().prepare(`${GAME_SELECT} WHERE id = ?`).get(id) as GameRow | undefined);
+}
+
+export function findGameBySession(serverId: string, session: string): ReplayGameRecord | null {
+	return toGameRecord(getDb().prepare(`${GAME_SELECT} WHERE server_id = ? AND session = ?`).get(serverId, session) as GameRow | undefined);
+}
+
+function toGameRecord(row: GameRow | undefined): ReplayGameRecord | null {
 	if (!row) return null;
 	return {
 		id: row.id,
@@ -514,7 +519,7 @@ export function findEpisodeReplays(episodes: { missionId: number; episodeNumber:
 
 export function listMissionReplays(missionShortCode: string): PublicReplayListItem[] {
 	const rows = getDb()
-		.prepare(`${PUBLISHED_SELECT} AND m.short_code = ? ORDER BY g.episode_number ASC, g.id ASC`)
+		.prepare(`${PUBLISHED_SELECT} AND LOWER(m.short_code) = LOWER(?) ORDER BY g.episode_number ASC, g.id ASC`)
 		.all(missionShortCode) as PublishedRow[];
 	return rows.map(toPublished);
 }

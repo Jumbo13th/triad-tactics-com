@@ -285,4 +285,24 @@ describe('replay approval and viewing (handler integration)', () => {
 		expect((await view(h, segment.sha256)).status).toBe(404);
 		expect(publicList(h)).toHaveLength(0);
 	});
+
+	it('sends a published game back to review when its server reports a changed recording', async () => {
+		const h = await loadHarness();
+		expect((await h.adminPost(admin(h, 'POST', '', { action: 'publish', gameId }))).status).toBe(200);
+		const post = (segments: string[]) =>
+			h.postGame(signed(h, 'POST', `/games/${SESSION}`, gameBody({ segments, identity: identity.sha256, stats: stats.sha256 })), {
+				params: Promise.resolve({ session: SESSION }),
+			});
+		const published = () => (h.getDb().prepare('SELECT published_at FROM replay_games WHERE id = ?').get(gameId) as { published_at: string | null }).published_at;
+
+		expect((await post([segment.sha256])).status).toBe(200);
+		expect(published()).not.toBeNull();
+
+		const resumed = buildFile(segmentContent(2), 1);
+		await upload(h, resumed, 'segment', `${SESSION}-2.llr`);
+		expect((await post([segment.sha256, resumed.sha256])).status).toBe(200);
+		expect(published()).toBeNull();
+		expect(publicList(h)).toHaveLength(0);
+		expect((await view(h, resumed.sha256)).status).toBe(404);
+	});
 });
