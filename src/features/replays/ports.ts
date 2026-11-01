@@ -48,6 +48,8 @@ export type ReplayRepo = {
 	listMissionReplays: (missionShortCode: string) => PublicReplayListItem[];
 	replaceGamePlayers: (gameId: number, players: ReplayPlayer[]) => void;
 	findMap: (world: string) => ReplayMap | null;
+	/** Maps with both their relief and their geometry, which another world can take as they are. */
+	listCompleteMaps: () => ReplayMap[];
 	isPublishedSegment: (sha256: string) => boolean;
 	findMapFileKind: (sha256: string) => 'relief' | 'topo' | null;
 	saveMap: (map: ReplayMap, updatedBySteamid64: string) => void;

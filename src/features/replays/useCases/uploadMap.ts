@@ -52,6 +52,20 @@ export async function commitMapFile(deps: Pick<ReceiverDeps, 'pieces' | 'objects
 }
 
 /** Several mission worlds on one terrain point at the same stored files. */
+/**
+ * Gives a world the map stored for another, file for file. Maps stay per mission world, since
+ * the terrain a world stands on cannot be told reliably from its path; an admin who knows says so.
+ */
+export function reuseReplayMap(
+	deps: { repo: Pick<ReplayRepo, 'findMap' | 'saveMap'> },
+	input: { world: string; from: string; updatedBySteamid64: string }
+): 'reused' | 'not_found' {
+	const source = deps.repo.findMap(input.from);
+	if (!source?.reliefSha256 || !source.topoSha256) return 'not_found';
+	deps.repo.saveMap({ world: input.world, reliefSha256: source.reliefSha256, topoSha256: source.topoSha256 }, input.updatedBySteamid64);
+	return 'reused';
+}
+
 export function setReplayMap(
 	deps: { repo: Pick<ReplayRepo, 'findMap' | 'saveMap'> },
 	input: { world: string; relief: string | null; topo: string | null; updatedBySteamid64: string }

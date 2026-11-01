@@ -11,7 +11,7 @@ import {
 	publishReplayGame,
 	unpublishReplayGame,
 } from '../../useCases/reviewReplayGame';
-import { setReplayMap } from '../../useCases/uploadMap';
+import { reuseReplayMap, setReplayMap } from '../../useCases/uploadMap';
 
 const GAMES_PAGE_SIZE = 50;
 
@@ -99,6 +99,12 @@ export async function postAdminReplaysRoute(request: NextRequest): Promise<NextR
 					updatedBySteamid64: steamid64,
 				});
 				logger.info({ world: input.world, relief: input.relief, topo: input.topo }, 'replay_map_set');
+				return NextResponse.json({ ok: true });
+			}
+			case 'reuseMap': {
+				const result = reuseReplayMap(adminReplaysDeps, { world: input.world, from: input.from, updatedBySteamid64: steamid64 });
+				if (result !== 'reused') return NextResponse.json({ error: result }, { status: 404 });
+				logger.info({ world: input.world, from: input.from }, 'replay_map_reused');
 				return NextResponse.json({ ok: true });
 			}
 			default: {

@@ -55,6 +55,8 @@ const missionOptionSchema = z.object({
 export const adminReplayDetailResponseSchema = z.object({
 	game: replayGameDetailSchema,
 	missions: z.array(missionOptionSchema),
+	/** Other worlds' complete maps, which this game's world can reuse. */
+	storedMaps: z.array(z.object({ world: z.string() })),
 });
 
 export type PublicReplayListItem = {

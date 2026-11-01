@@ -541,6 +541,13 @@ export function findMap(world: string): ReplayMap | null {
 	return row ? { world: row.world, reliefSha256: row.relief_sha256, topoSha256: row.topo_sha256 } : null;
 }
 
+export function listCompleteMaps(): ReplayMap[] {
+	const rows = getDb()
+		.prepare(`SELECT world, relief_sha256, topo_sha256 FROM replay_maps WHERE relief_sha256 IS NOT NULL AND topo_sha256 IS NOT NULL`)
+		.all() as { world: string; relief_sha256: string; topo_sha256: string }[];
+	return rows.map((row) => ({ world: row.world, reliefSha256: row.relief_sha256, topoSha256: row.topo_sha256 }));
+}
+
 export function isPublishedSegment(sha256: string): boolean {
 	const row = getDb()
 		.prepare(

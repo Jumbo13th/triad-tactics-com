@@ -278,6 +278,25 @@ describe('replay approval and viewing (handler integration)', () => {
 		});
 	});
 
+	it('lets another mission world reuse a stored map without uploading it again', async () => {
+		const h = await loadHarness();
+		const eden = '{853E92315D1D9EFE}worlds/Eden/Eden.ent';
+		const other = '$Missions:worlds/Eden/NorthernGate.ent';
+		const storedMaps = async () =>
+			((await (await h.adminGet(admin(h, 'GET', `?gameId=${gameId}`))).json()) as { storedMaps: { world: string }[] }).storedMaps;
+
+		// The game's own world is not offered to itself.
+		expect(await storedMaps()).toEqual([]);
+
+		expect((await h.adminPost(admin(h, 'POST', '', { action: 'reuseMap', world: other, from: eden }))).status).toBe(200);
+		const files = (world: string) => h.getDb().prepare('SELECT relief_sha256, topo_sha256 FROM replay_maps WHERE world = ?').get(world);
+		expect(files(other)).toEqual(files(eden));
+		expect(await storedMaps()).toEqual([{ world: other }]);
+
+		const missing = await h.adminPost(admin(h, 'POST', '', { action: 'reuseMap', world: other, from: '$Nope:worlds/Nowhere/Nothing.ent' }));
+		expect(missing.status).toBe(404);
+	});
+
 	it('hides the game again when unpublished', async () => {
 		const h = await loadHarness();
 		const res = await h.adminPost(admin(h, 'POST', '', { action: 'unpublish', gameId }));

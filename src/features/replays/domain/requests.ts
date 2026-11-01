@@ -20,6 +20,11 @@ export const adminReplayRequestSchema = z.discriminatedUnion('action', [
 		relief: sha256.nullable(),
 		topo: sha256.nullable(),
 	}),
+	z.object({
+		action: z.literal('reuseMap'),
+		world: z.string().min(1).max(300),
+		from: z.string().min(1).max(300),
+	}),
 ]);
 
 export type AdminReplayRequest = z.infer<typeof adminReplayRequestSchema>;

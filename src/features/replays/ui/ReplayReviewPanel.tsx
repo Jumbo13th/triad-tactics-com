@@ -53,6 +53,7 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 	const { timeZone, hourCycle } = useViewerDateTimePreferences();
 	const [game, setGame] = useState<ReplayGameDetail | null>(null);
 	const [missions, setMissions] = useState<Mission[]>([]);
+	const [storedMaps, setStoredMaps] = useState<{ world: string }[]>([]);
 	const [missionId, setMissionId] = useState('');
 	const [episode, setEpisode] = useState('1');
 	const [busy, setBusy] = useState(false);
@@ -79,6 +80,7 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 	const applyDetail = useCallback((detail: Awaited<ReturnType<typeof fetchDetail>>) => {
 		setGame(detail.game);
 		setMissions(detail.missions);
+		setStoredMaps(detail.storedMaps);
 		const preset = detail.game.missionId ?? nearestMission(detail.missions, detail.game.startedAt);
 		setMissionId(preset === null ? '' : String(preset));
 		setEpisode(String(detail.game.episodeNumber ?? 1));
@@ -284,6 +286,7 @@ export default function ReplayReviewPanel({ gameId, onChanged }: { gameId: numbe
 					<MapUpload
 						world={game.world}
 						map={game.map}
+						storedMaps={storedMaps}
 						onSaved={() => void fetchDetail(gameId).then(applyDetail)}
 					/>
 				</section>

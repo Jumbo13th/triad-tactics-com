@@ -6,7 +6,7 @@ import type { AdminReplaysDeps, StatsImportResult } from '../ports';
 export function getReplayGameDetail(
 	deps: Pick<AdminReplaysDeps, 'repo'>,
 	gameId: number
-): { game: ReplayGameDetail; missions: ReplayMission[] } | null {
+): { game: ReplayGameDetail; missions: ReplayMission[]; storedMaps: { world: string }[] } | null {
 	const item = deps.repo.findGameListItem(gameId);
 	const record = deps.repo.findGame(gameId);
 	if (!item || !record) return null;
@@ -25,6 +25,10 @@ export function getReplayGameDetail(
 			map: { relief: Boolean(map?.reliefSha256), topo: Boolean(map?.topoSha256) },
 		},
 		missions: deps.repo.listMissions(),
+		storedMaps: deps.repo
+			.listCompleteMaps()
+			.filter((stored) => stored.world !== item.world)
+			.map((stored) => ({ world: stored.world })),
 	};
 }
 
