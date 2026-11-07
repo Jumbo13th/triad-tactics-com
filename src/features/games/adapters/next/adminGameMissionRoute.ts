@@ -6,6 +6,7 @@ import {
 	cancelGameRequestSchema,
 	createMissionUpdateRequestSchema,
 	deleteArchivedMissionRequestSchema,
+	deleteEpisodeRequestSchema,
 	publishGameRequestSchema,
 	shortCodeSchema,
 	updateMissionUpdateRequestSchema,
@@ -328,10 +329,7 @@ export async function deleteAdminGameEpisodeRoute(
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
 
-		const parsed = z.object({
-			episodeNumber: z.number().int().min(1),
-			confirmOccupied: z.boolean().optional().default(false)
-		}).safeParse(body);
+		const parsed = deleteEpisodeRequestSchema.safeParse(body);
 		if (!parsed.success) {
 			return NextResponse.json({ error: 'validation_error' }, { status: 400 });
 		}
@@ -1008,7 +1006,7 @@ export async function putAdminGameUnitAssignmentsRoute(
 const ALLOWED_IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const MAX_IMAGE_BASE64_SIZE = 2_000_000;
 
-const uploadImageRequestSchema = z.object({
+export const uploadImageRequestSchema = z.object({
 	data: z.string().min(1),
 	mime: z.enum(['image/png', 'image/jpeg', 'image/webp'])
 });

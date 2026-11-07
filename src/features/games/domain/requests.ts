@@ -119,6 +119,11 @@ export const deleteArchivedMissionRequestSchema = z.object({
 	titleConfirmation: z.string().trim().min(1).max(200)
 });
 
+export const deleteEpisodeRequestSchema = z.object({
+	episodeNumber: z.number().int().min(1),
+	confirmOccupied: z.boolean().optional().default(false)
+});
+
 export const createMissionUpdateRequestSchema = z.object({
 	kind: z.enum([
 		'units_slotting_started',

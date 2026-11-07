@@ -1181,5 +1181,27 @@ export const migrations: Migration[] = [
 				PRIMARY KEY (game_id, player_ref, name)
 			);
 		`
+	},
+	{
+		id: 32,
+		name: 'admin_mcp_tokens',
+		up: `
+			-- Personal access tokens for the admin MCP endpoint. Only a SHA-256 of the
+			-- token is kept; token_hint is the visible prefix so an admin can tell their
+			-- tokens apart. The owner must still be in ADMIN_STEAM_IDS on every call.
+			CREATE TABLE IF NOT EXISTS admin_mcp_tokens (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				steamid64 TEXT NOT NULL,
+				label TEXT NOT NULL,
+				token_hash TEXT NOT NULL UNIQUE,
+				token_hint TEXT NOT NULL,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				expires_at DATETIME NOT NULL,
+				last_used_at DATETIME,
+				revoked_at DATETIME,
+				revoked_by_steamid64 TEXT
+			);
+			CREATE INDEX IF NOT EXISTS idx_admin_mcp_tokens_steamid64 ON admin_mcp_tokens(steamid64);
+		`
 	}
 ];
