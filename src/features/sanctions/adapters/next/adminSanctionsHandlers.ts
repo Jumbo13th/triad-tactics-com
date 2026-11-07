@@ -12,18 +12,18 @@ import { notifySanctionInDiscord } from '@/features/sanctions/useCases/notifySan
 import { DISCORD_BOT_TOKEN } from '@/platform/env';
 import { getDb } from '@/platform/db/connection';
 
-const createSanctionSchema = z.object({
+export const createSanctionSchema = z.object({
 	userId: z.number().int().min(1),
 	type: z.enum(['site_ban', 'server_ban', 'strike']),
 	reason: z.string(),
 	durationMinutes: z.number().nullable().optional()
 });
 
-const cancelSanctionSchema = z.object({
+export const cancelSanctionSchema = z.object({
 	reason: z.string().min(1)
 });
 
-const updateExpirySchema = z.object({
+export const updateExpirySchema = z.object({
 	expiresAt: z.string().nullable()
 });
 

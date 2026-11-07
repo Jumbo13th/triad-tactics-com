@@ -61,6 +61,7 @@ src/app/**
 ### Key Features
 
 - **admin**: Admin panel functionality (Steam ID allowlist-based)
+- **adminMcp**: Admin MCP endpoint (`/api/mcp`) with personal access tokens; every tool runs an existing admin route handler in-process as the token owner
 - **apply**: Application submission system
 - **steamAuth**: Steam OpenID authentication
 - **discordAuth**: Discord OAuth integration
@@ -210,6 +211,7 @@ See `DEPLOYMENT.md` for complete deployment instructions.
 - **Logging**: Structured JSON logs via Pino (pretty-printed in dev with `LOG_PRETTY=true`)
 - **Rate limiting**: Configured in `platform/rateLimit.ts`, disabled via `DISABLE_RATE_LIMITS`
 - **Admin access**: Protected by Steam login + `ADMIN_STEAM_IDS` allowlist
+- **Admin MCP parity**: a new or changed admin route needs its tool in `src/features/adminMcp/adapters/next/tools/` (reuse the route's Zod schema as the tool body)
 
 ## Special Files
 

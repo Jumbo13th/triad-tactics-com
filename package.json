@@ -11,6 +11,7 @@
     "canary:email": "tsx scripts/canaryEmail.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
     "aws4fetch": "^1.0.20",
     "better-sqlite3": "^13.0.3",
     "next": "16.4.3",

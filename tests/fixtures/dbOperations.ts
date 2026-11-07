@@ -23,6 +23,7 @@ export const dbOperations = {
 		const db = getDb();
 		try {
 			db.exec(
+				'DELETE FROM admin_mcp_tokens; ' +
 				'DELETE FROM replay_game_players; ' +
 				'DELETE FROM replay_games; ' +
 				'DELETE FROM replay_files; ' +

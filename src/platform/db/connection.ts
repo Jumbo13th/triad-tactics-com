@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { migrations } from './migrations';
 
-function resolveDbPath(): string {
+export function resolveDbPath(): string {
 	const override = process.env.DB_PATH;
 	if (override && override.trim().length > 0) {
 		return override.trim();
